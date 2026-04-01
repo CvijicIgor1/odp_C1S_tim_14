@@ -18,13 +18,10 @@ export function RegisterForm({ authApi }: { authApi: IAuthAPIService }) {
   };
 
   return (
-    <div className="w-full max-w-sm">
+    <div className="w-full max-w-sm rounded-3xl bg-[#0b1220]/90 backdrop-blur-xl shadow-[0_25px_80px_rgba(0,0,0,0.6)] px-8 py-10">
       <div className="text-center mb-10">
-        <div className="w-12 h-12 rounded-2xl bg-white/8 border border-white/12 flex items-center justify-center mx-auto mb-4">
-          <span className="text-white/60 text-lg">◈</span>
-        </div>
-        <h1 className="text-xl font-semibold text-white">Create account</h1>
-        <p className="text-sm text-white/35 mt-1">Register to get started</p>
+        <h1 className="text-2xl font-semibold text-white">Create account</h1>
+        <p className="text-sm text-slate-400 mt-1">Your journey starts here</p>
       </div>
 
       {error && (
@@ -40,19 +37,19 @@ export function RegisterForm({ authApi }: { authApi: IAuthAPIService }) {
             <input
               type={field === "password" ? "password" : field === "email" ? "email" : "text"}
               value={form[field]} onChange={set(field)} required
-              className="w-full bg-white/4 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-white/30 transition-colors"
-              placeholder={field === "password" ? "Min 8 chars, 1 uppercase, 1 number" : ""} />
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-slate-500 transition-colors"
+              placeholder={field === "password" ? "Minimum 8 chars, 1 uppercase, 1 number" : ""} />
           </div>
         ))}
         <button type="submit" disabled={loading}
-          className="mt-2 bg-white hover:bg-white/90 disabled:opacity-50 text-black font-semibold rounded-xl py-3 text-sm transition-colors">
+          className="mt-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl py-3 text-sm transition-colors cursor-pointer">
           {loading ? "Creating account…" : "Create account"}
         </button>
       </form>
 
-      <p className="text-center text-white/30 text-sm mt-6">
+      <p className="text-center text-slate-400 text-sm mt-6">
         Already have an account?{" "}
-        <a href="/login" className="text-white/60 hover:text-white transition-colors">Sign in</a>
+        <a href="/login" className="text-slate-100 hover:text-white transition-colors">Sign in</a>
       </p>
     </div>
   );
