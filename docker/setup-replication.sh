@@ -15,17 +15,17 @@ REPL_USER="replicator"
 REPL_PASS="repl1234"
 
 # TODO: Replace "project_db" with your actual database name
-DB_NAME="project_db"
+DB_NAME="nexushub"
 
 M="mysql  -h127.0.0.1    -P3306 -uroot -p${ROOT_PASS} --protocol=TCP --connect-timeout=5"
 S1="mysql -hmysql-slave1 -P3306 -uroot -p${ROOT_PASS} --protocol=TCP --connect-timeout=5"
 S2="mysql -hmysql-slave2 -P3306 -uroot -p${ROOT_PASS} --protocol=TCP --connect-timeout=5"
 
-SCHEMA_FILE="/tmp/project_schema.sql"
+SCHEMA_FILE="/tmp/nexushub_schema.sql"
 
 echo ""
 echo "========================================================"
-echo "  Project -- MySQL Replication Setup"
+echo "  NexusHub -- MySQL Replication Setup"
 echo "========================================================"
 
 # ── 1. Wait for all nodes ─────────────────────────────────────
@@ -59,31 +59,127 @@ $M -e "CREATE DATABASE ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_
 # TODO: Replace the SQL below with your actual table definitions
 $M ${DB_NAME} << 'SQL'
 CREATE TABLE users (
-  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  username     VARCHAR(40)  NOT NULL UNIQUE,
-  email        VARCHAR(120) NOT NULL UNIQUE,
-  passwordHash VARCHAR(255) NOT NULL,
-  role         ENUM('user','admin') DEFAULT 'user',
-  isActive     TINYINT(1)   DEFAULT 1,
-  createdAt    DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  id            INT                  AUTO_INCREMENT PRIMARY KEY,
+  username      VARCHAR(40)          NOT NULL UNIQUE,
+  email         VARCHAR(120)         NOT NULL UNIQUE,
+  passwordHash  VARCHAR(255)         NOT NULL,
+  firstName     VARCHAR(60)          NOT NULL,
+  lastName      VARCHAR(60)          NOT NULL,
+  avatar        TEXT                 NOT NULL DEFAULT '',
+  role          ENUM('user','admin') NOT NULL DEFAULT 'user',
+  isActive      INT                  NOT NULL DEFAULT 1,
+  createdAt     DATETIME             NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt     DATETIME             NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE teams (
+  id          INT           AUTO_INCREMENT PRIMARY KEY,
+  name        VARCHAR(80)   NOT NULL,
+  description TEXT          NOT NULL DEFAULT '',
+  avatar      TEXT          NOT NULL DEFAULT '',
+  createdAt   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE team_members (
+  teamId    INT                            NOT NULL,
+  userId    INT                            NOT NULL,
+  role      ENUM('owner','member')         NOT NULL DEFAULT 'member',
+  joinedAt  DATETIME                       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (teamId, userId),
+  FOREIGN KEY (teamId) REFERENCES teams(id) ON DELETE CASCADE,
+  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE tags (
+  id    INT           AUTO_INCREMENT PRIMARY KEY,
+  name  VARCHAR(40)   NOT NULL UNIQUE
+);
+
+CREATE TABLE projects (
+  id          INT                                              AUTO_INCREMENT PRIMARY KEY,
+  teamId      INT                                              NOT NULL,
+  name        VARCHAR(120)                                     NOT NULL,
+  description TEXT                                             NOT NULL DEFAULT '',
+  status      ENUM('planning','active','on_hold','completed')  NOT NULL DEFAULT 'planning',
+  priority    ENUM('low','medium','high','critical')           NOT NULL DEFAULT 'medium',
+  deadline    DATE                                             NOT NULL DEFAULT (CURDATE()),
+  createdAt   DATETIME                                         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt   DATETIME                                         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (teamId) REFERENCES teams(id) ON DELETE CASCADE
 );
 
 -- TODO: Replace "entities" with your domain table and its columns
-CREATE TABLE entities (
-  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  userId      INT UNSIGNED NOT NULL,
-  status      ENUM('pending','active','completed','cancelled') DEFAULT 'pending',
-  createdAt   DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (userId) REFERENCES users(id)
+CREATE TABLE project_tags (
+  projectId INT NOT NULL,
+  tagId     INT NOT NULL,
+  PRIMARY KEY (projectId, tagId),
+  FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (tagId)     REFERENCES tags(id)     ON DELETE CASCADE
+);
+
+CREATE TABLE project_watchers (
+  projectId     INT          NOT NULL,
+  userId        INT          NOT NULL,
+  watchingSince DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (projectId, userId),
+  FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (userId)    REFERENCES users(id)    ON DELETE CASCADE
+);
+
+CREATE TABLE tasks (
+  id               INT                                    AUTO_INCREMENT PRIMARY KEY,
+  projectId        INT                                    NOT NULL,
+  createdByUserId  INT                                    NOT NULL,
+  title            VARCHAR(200)                           NOT NULL,
+  description      TEXT                                   NOT NULL DEFAULT '',
+  status           ENUM('todo','in_progress','done')      NOT NULL DEFAULT 'todo',
+  priority         ENUM('low','medium','high','critical') NOT NULL DEFAULT 'medium',
+  deadline         DATE                                   NOT NULL DEFAULT (CURDATE()),
+  estimatedHours   DECIMAL(6,2)                           NOT NULL DEFAULT 0.00,
+  createdAt        DATETIME                               NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt        DATETIME                               NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (projectId)       REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (createdByUserId) REFERENCES users(id)    ON DELETE CASCADE
+);
+
+CREATE TABLE task_assignees (
+  taskId      INT          NOT NULL,
+  userId      INT          NOT NULL,
+  assignedBy  INT          NOT NULL,
+  assignedAt  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (taskId, userId),
+  FOREIGN KEY (taskId)     REFERENCES tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY (userId)     REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (assignedBy) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE comments (
+  id        INT          AUTO_INCREMENT PRIMARY KEY,
+  taskId    INT          NOT NULL,
+  userId    INT          NOT NULL,
+  content   TEXT         NOT NULL,
+  createdAt DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (taskId) REFERENCES tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE audits (
+  id            INT          AUTO_INCREMENT PRIMARY KEY,
+  actorId       INT          NOT NULL DEFAULT 0,
+  actorUsername VARCHAR(40)  NOT NULL DEFAULT 'system',
+  action        VARCHAR(80)  NOT NULL,
+  entityType    VARCHAR(40)  NOT NULL DEFAULT '',
+  entityId      INT          NOT NULL DEFAULT 0,
+  detail        TEXT         NOT NULL DEFAULT '',
+  createdAt     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 SQL
 
 MASTER_TABLES=$($M -s --skip-column-names \
   -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${DB_NAME}';" 2>/dev/null)
 echo "  Master tables: ${MASTER_TABLES}"
-if [ "${MASTER_TABLES:-0}" -lt "2" ]; then
+if [ "${MASTER_TABLES:-0}" -lt "10" ]; then
   echo "  ERROR: Schema creation failed on Master"
   exit 1
 fi
