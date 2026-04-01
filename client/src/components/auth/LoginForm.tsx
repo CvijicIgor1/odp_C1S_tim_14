@@ -18,13 +18,10 @@ export function LoginForm({ authApi }: { authApi: IAuthAPIService }) {
   };
 
   return (
-    <div className="w-full max-w-sm">
+    <div className="w-full max-w-sm rounded-3xl border border-white/5 bg-white/5 backdrop-blur-2xl shadow-[0_20px_70px_rgba(0,0,0,0.6)] ring-1 ring-white/10 px-8 py-10">
       <div className="text-center mb-10">
-        <div className="w-12 h-12 rounded-2xl bg-white/8 border border-white/12 flex items-center justify-center mx-auto mb-4">
-          <span className="text-white/60 text-lg">◈</span>
-        </div>
-        <h1 className="text-xl font-semibold text-white">Welcome back</h1>
-        <p className="text-sm text-white/35 mt-1">Sign in to your account</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-white">Welcome back</h1>
+        <p className="text-sm text-slate-300 mt-2">Log in</p>
       </div>
 
       {error && (
@@ -35,26 +32,26 @@ export function LoginForm({ authApi }: { authApi: IAuthAPIService }) {
 
       <form onSubmit={submit} className="flex flex-col gap-4">
         <div>
-          <label className="block text-xs text-white/40 mb-2 font-medium">Username</label>
+          <label className="block text-xs text-slate-300 mb-2 font-medium">Username</label>
           <input type="text" value={username} onChange={e => setUsername(e.target.value)} required
-            className="w-full bg-white/4 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-white/30 transition-colors"
-            placeholder="your_username" />
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-white/30 transition-all duration-200"
+            placeholder="username_here" />
         </div>
         <div>
-          <label className="block text-xs text-white/40 mb-2 font-medium">Password</label>
+          <label className="block text-xs text-slate-300 mb-2 font-medium">Password</label>
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-            className="w-full bg-white/4 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-white/30 transition-colors"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-white/30 transition-all duration-200"
             placeholder="••••••••" />
         </div>
         <button type="submit" disabled={loading}
-          className="mt-2 bg-white hover:bg-white/90 disabled:opacity-50 text-black font-semibold rounded-xl py-3 text-sm transition-colors">
+          className="mt-2 rounded-2xl bg-white text-slate-900 font-semibold py-3.5 text-sm transition-all duration-200 hover:bg-slate-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
 
-      <p className="text-center text-white/30 text-sm mt-6">
+      <p className="mt-8 text-center text-sm text-slate-300">
         Don't have an account?{" "}
-        <a href="/register" className="text-white/60 hover:text-white transition-colors">Create one</a>
+        <a href="/register" className="font-medium text-white hover:text-slate-200 transition-colors">Register here</a>
       </p>
     </div>
   );
