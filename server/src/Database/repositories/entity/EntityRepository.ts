@@ -2,7 +2,7 @@
 // TODO: Replace table name "entities" with your actual table name
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { IEntityRepository } from "../../../Domain/repositories/entity/IEntityRepository";
-import { Entity } from "../../../Domain/models/Entity";
+import { Entity } from "../../../Domain/models/AuditLog";
 import { EntityDto } from "../../../Domain/DTOs/entity/EntityDto";
 import { CreateEntityDto } from "../../../Domain/DTOs/entity/CreateEntityDto";
 import { EntityStatus } from "../../../Domain/enums/AuditLog";

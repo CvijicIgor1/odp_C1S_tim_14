@@ -1,12 +1,17 @@
 import { UserRole } from "../enums/UserRole";
 
 export class User {
-  constructor(
-    public id: number        = 0,
-    public username: string  = "",
-    public email: string     = "",
-    public role: UserRole    = UserRole.USER,
+  public constructor(
+    public id: number = 0,
+    public username: string = "",
+    public email: string = "",
     public passwordHash: string = "",
-    public isActive: number  = 1,
+    public firstName: string = "",
+    public lastName: string = "",
+    public avatar: string = "",
+    public role: UserRole = UserRole.USER,
+    public isActive: number = 1,
+    public createdAt: Date = new Date(),
+    public updatedAt: Date = new Date()
   ) {}
 }
