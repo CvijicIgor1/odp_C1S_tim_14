@@ -1,5 +1,5 @@
 // TODO: Replace with your domain-specific DTO fields
-import { EntityStatus } from "../../enums/EntityStatus";
+import { EntityStatus } from "../../enums/AuditLog";
 
 export class EntityDto {
   constructor(

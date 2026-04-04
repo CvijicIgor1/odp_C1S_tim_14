@@ -1,5 +1,5 @@
 // TODO: Replace "Entity" and its fields with your domain model
-import { EntityStatus } from "../enums/EntityStatus";
+import { EntityStatus } from "../enums/AuditLog";
 
 export class Entity {
   constructor(
