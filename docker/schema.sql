@@ -7,7 +7,7 @@ CREATE TABLE users (
   lastName      VARCHAR(60)          NOT NULL,
   avatar        TEXT                 NOT NULL DEFAULT '',
   role          ENUM('user','admin') NOT NULL DEFAULT 'user',
-  isActive      INT                  NOT NULL DEFAULT 1,
+  isActive      TINYINT(1)           NOT NULL DEFAULT 1,
   createdAt     DATETIME             NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updatedAt     DATETIME             NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
