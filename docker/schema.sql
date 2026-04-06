@@ -1,114 +1,113 @@
 CREATE TABLE users (
-  id            INT                  AUTO_INCREMENT PRIMARY KEY,
+  id            INT UNSIGNED         AUTO_INCREMENT PRIMARY KEY,
   username      VARCHAR(40)          NOT NULL UNIQUE,
   email         VARCHAR(120)         NOT NULL UNIQUE,
-  passwordHash  VARCHAR(255)         NOT NULL,
-  FullName     VARCHAR(120)          NOT NULL,
+  password_hash VARCHAR(255)         NOT NULL,
+  full_name     VARCHAR(121)         NOT NULL DEFAULT '',
   avatar        TEXT                 NOT NULL DEFAULT '',
   role          ENUM('user','admin') NOT NULL DEFAULT 'user',
-  isActive      TINYINT(1)           NOT NULL DEFAULT 1,
-  createdAt     DATETIME             NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updatedAt     DATETIME             NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  is_active     TINYINT(1) UNSIGNED  NOT NULL DEFAULT 1,
+  created_at    DATETIME             NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at    DATETIME             NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE teams (
-  id          INT           AUTO_INCREMENT PRIMARY KEY,
+  id          INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
   name        VARCHAR(80)   NOT NULL,
   description TEXT          NOT NULL DEFAULT '',
   avatar      TEXT          NOT NULL DEFAULT '',
-  createdAt   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updatedAt   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE team_members (
-  teamId    INT                            NOT NULL,
-  userId    INT                            NOT NULL,
+  team_id   INT UNSIGNED                   NOT NULL,
+  user_id   INT UNSIGNED                   NOT NULL,
   role      ENUM('owner','member')         NOT NULL DEFAULT 'member',
-  joinedAt  DATETIME                       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (teamId, userId),
-  FOREIGN KEY (teamId) REFERENCES teams(id) ON DELETE CASCADE,
-  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+  joined_at DATETIME                       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (team_id, user_id),
+  FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE tags (
-  id    INT           AUTO_INCREMENT PRIMARY KEY,
+  id    INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
   name  VARCHAR(40)   NOT NULL UNIQUE
 );
 
 CREATE TABLE projects (
-  id          INT                                              AUTO_INCREMENT PRIMARY KEY,
-  teamId      INT                                              NOT NULL,
+  id          INT UNSIGNED                                     AUTO_INCREMENT PRIMARY KEY,
+  team_id     INT UNSIGNED                                     NOT NULL,
   name        VARCHAR(120)                                     NOT NULL,
   description TEXT                                             NOT NULL DEFAULT '',
   status      ENUM('planning','active','on_hold','completed')  NOT NULL DEFAULT 'planning',
   priority    ENUM('low','medium','high','critical')           NOT NULL DEFAULT 'medium',
   deadline    DATE                                             NOT NULL DEFAULT (CURDATE()),
-  createdAt   DATETIME                                         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updatedAt   DATETIME                                         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (teamId) REFERENCES teams(id) ON DELETE CASCADE
+  created_at  DATETIME                                         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  DATETIME                                         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
 );
 
 CREATE TABLE project_tags (
-  projectId INT NOT NULL,
-  tagId     INT NOT NULL,
-  PRIMARY KEY (projectId, tagId),
-  FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE,
-  FOREIGN KEY (tagId)     REFERENCES tags(id)     ON DELETE CASCADE
+  project_id INT UNSIGNED NOT NULL,
+  tag_id     INT UNSIGNED NOT NULL,
+  PRIMARY KEY (project_id, tag_id),
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id)     REFERENCES tags(id)     ON DELETE CASCADE
 );
 
 CREATE TABLE project_watchers (
-  projectId     INT          NOT NULL,
-  userId        INT          NOT NULL,
-  watchingSince DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (projectId, userId),
-  FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE,
-  FOREIGN KEY (userId)    REFERENCES users(id)    ON DELETE CASCADE
+  project_id     INT UNSIGNED NOT NULL,
+  user_id        INT UNSIGNED NOT NULL,
+  watching_since DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (project_id, user_id),
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE CASCADE
 );
 
 CREATE TABLE tasks (
-  id               INT                                    AUTO_INCREMENT PRIMARY KEY,
-  projectId        INT                                    NOT NULL,
-  createdByUserId  INT                                    NOT NULL,
-  title            VARCHAR(200)                           NOT NULL,
-  description      TEXT                                   NOT NULL DEFAULT '',
-  status           ENUM('todo','in_progress','done')      NOT NULL DEFAULT 'todo',
-  priority         ENUM('low','medium','high','critical') NOT NULL DEFAULT 'medium',
-  deadline         DATE                                   NOT NULL DEFAULT (CURDATE()),
-  estimatedHours   DECIMAL(6,2)                           NOT NULL DEFAULT 0.00,
-  createdAt        DATETIME                               NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updatedAt        DATETIME                               NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (projectId)       REFERENCES projects(id) ON DELETE CASCADE,
-  FOREIGN KEY (createdByUserId) REFERENCES users(id)    ON DELETE CASCADE
+  id                  INT UNSIGNED                           AUTO_INCREMENT PRIMARY KEY,
+  project_id          INT UNSIGNED                           NOT NULL,
+  created_by_user_id  INT UNSIGNED                           NOT NULL,
+  title               VARCHAR(200)                           NOT NULL,
+  description         TEXT                                   NOT NULL DEFAULT '',
+  status              ENUM('todo','in_progress','done')      NOT NULL DEFAULT 'todo',
+  priority            ENUM('low','medium','high','critical') NOT NULL DEFAULT 'medium',
+  deadline            DATE                                   NOT NULL DEFAULT (CURDATE()),
+  estimated_hours     DECIMAL(6,2) UNSIGNED                  NOT NULL DEFAULT 0.00,
+  created_at          DATETIME                               NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at          DATETIME                               NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id)         REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by_user_id) REFERENCES users(id)    ON DELETE CASCADE
 );
 
 CREATE TABLE task_assignees (
-  taskId      INT          NOT NULL,
-  userId      INT          NOT NULL,
-  assignedBy  INT          NOT NULL,
-  assignedAt  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (taskId, userId),
-  FOREIGN KEY (taskId)     REFERENCES tasks(id) ON DELETE CASCADE,
-  FOREIGN KEY (userId)     REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (assignedBy) REFERENCES users(id) ON DELETE CASCADE
+  task_id     INT UNSIGNED NOT NULL,
+  user_id     INT UNSIGNED NOT NULL,
+  assigned_by INT UNSIGNED NOT NULL,
+  assigned_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (task_id, user_id),
+  FOREIGN KEY (task_id)     REFERENCES tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)     REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE comments (
-  id        INT          AUTO_INCREMENT PRIMARY KEY,
-  taskId    INT          NOT NULL,
-  userId    INT          NOT NULL,
-  content   TEXT         NOT NULL,
-  createdAt DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (taskId) REFERENCES tasks(id) ON DELETE CASCADE,
-  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  task_id    INT UNSIGNED NOT NULL,
+  user_id    INT UNSIGNED NOT NULL,
+  content    TEXT         NOT NULL,
+  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE audits (
-  id            INT          AUTO_INCREMENT PRIMARY KEY,
-  actorId       INT          NOT NULL DEFAULT 0,
-  actorUsername VARCHAR(40)  NOT NULL DEFAULT 'system',
-  action        VARCHAR(80)  NOT NULL,
-  entityType    VARCHAR(40)  NOT NULL DEFAULT '',
-  entityId      INT          NOT NULL DEFAULT 0,
-  detail        TEXT         NOT NULL DEFAULT '',
-  createdAt     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id     INT UNSIGNED NOT NULL DEFAULT 0,
+  action      VARCHAR(80)  NOT NULL,
+  entity_type VARCHAR(40)  NOT NULL DEFAULT '',
+  entity_id   INT UNSIGNED NOT NULL DEFAULT 0,
+  detail      TEXT         NOT NULL DEFAULT '',
+  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

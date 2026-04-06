@@ -12,7 +12,7 @@ export class UserRepository implements IUserRepository {
   ) {}
 
   private map(r: RowDataPacket): User {
-    return new User(r.id, r.username, r.email, r.role as UserRole, r.passwordHash, r.isActive);
+    return new User(r.id, r.username, r.email, r.role as UserRole, r.password_hash, r.full_name, r.is_active);
   }
 
   async create(user: User): Promise<User> {
@@ -20,11 +20,11 @@ export class UserRepository implements IUserRepository {
     if (!res) return new User();
     try {
       const [result] = await res.conn.execute<ResultSetHeader>(
-        `INSERT INTO users (username, email, role, passwordHash) VALUES (?, ?, ?, ?)`,
-        [user.username, user.email, user.role, user.passwordHash]
+        `INSERT INTO users (username, email, role, password_hash, full_name) VALUES (?, ?, ?, ?, ?)`,
+        [user.username, user.email, user.role, user.password_hash, user.full_name]
       );
       if (result.insertId === 0) return new User();
-      return new User(result.insertId, user.username, user.email, user.role, user.passwordHash);
+      return new User(result.insertId, user.username, user.email, user.role, user.password_hash, user.full_name);
     } catch (err) {
       this.logger.error("UserRepository", "create failed", err);
       return new User();
@@ -84,8 +84,8 @@ export class UserRepository implements IUserRepository {
     if (!res) return false;
     try {
       const [result] = await res.conn.execute<ResultSetHeader>(
-        `UPDATE users SET username = ?, email = ?, role = ?, isActive = ? WHERE id = ?`,
-        [user.username, user.email, user.role, user.isActive, user.id]
+        `UPDATE users SET username = ?, email = ?, role = ?, is_active = ? WHERE id = ?`,
+        [user.username, user.email, user.role, user.is_active, user.id]
       );
       return result.affectedRows > 0;
     } catch (err) {
@@ -99,7 +99,7 @@ export class UserRepository implements IUserRepository {
     if (!res) return false;
     try {
       const [result] = await res.conn.execute<ResultSetHeader>(
-        `UPDATE users SET isActive = 0 WHERE id = ?`, [id]
+        `UPDATE users SET is_active = 0 WHERE id = ?`, [id]
       );
       return result.affectedRows > 0;
     } catch (err) {

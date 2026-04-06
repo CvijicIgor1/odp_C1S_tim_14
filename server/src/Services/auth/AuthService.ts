@@ -12,13 +12,13 @@ export class AuthService implements IAuthService {
 
   async login(username: string, password: string): Promise<AuthUserDto> {
     const user = await this.userRepo.findByUsername(username);
-    if (user.id === 0 || user.isActive === 0) return new AuthUserDto();
-    const match = await bcrypt.compare(password, user.passwordHash).catch(() => false);
+    if (user.id === 0 || user.is_active === 0) return new AuthUserDto();
+    const match = await bcrypt.compare(password, user.password_hash).catch(() => false);
     if (!match) return new AuthUserDto();
     return new AuthUserDto(user.id, user.username, user.role);
   }
 
-  async register(username: string, email: string, role: string, password: string): Promise<AuthUserDto> {
+  async register(username: string, email: string, role: string, password: string, full_name: string = ""): Promise<AuthUserDto> {
     const byName = await this.userRepo.findByUsername(username);
     if (byName.id !== 0) return new AuthUserDto();
     const byEmail = await this.userRepo.findByEmail(email);
@@ -26,7 +26,7 @@ export class AuthService implements IAuthService {
     const hash = await bcrypt.hash(password, this.saltRounds).catch(() => "");
     if (!hash) return new AuthUserDto();
     const userRole = role === UserRole.ADMIN ? UserRole.ADMIN : UserRole.USER;
-    const created = await this.userRepo.create(new User(0, username, email, userRole, hash));
+    const created = await this.userRepo.create(new User(0, username, email, userRole, hash, full_name));
     if (created.id === 0) return new AuthUserDto();
     return new AuthUserDto(created.id, created.username, created.role);
   }
