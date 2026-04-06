@@ -64,7 +64,7 @@ CREATE TABLE users (
   email         VARCHAR(120)         NOT NULL UNIQUE,
   password_hash VARCHAR(255)         NOT NULL,
   full_name     VARCHAR(121)         NOT NULL DEFAULT '',
-  avatar        TEXT                 NOT NULL DEFAULT '',
+  avatar        TEXT                 NOT NULL,
   role          ENUM('user','admin') NOT NULL DEFAULT 'user',
   is_active     TINYINT(1) UNSIGNED  NOT NULL DEFAULT 1,
   created_at    DATETIME             NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -74,8 +74,8 @@ CREATE TABLE users (
 CREATE TABLE teams (
   id          INT UNSIGNED  AUTO_INCREMENT PRIMARY KEY,
   name        VARCHAR(80)   NOT NULL,
-  description TEXT          NOT NULL DEFAULT '',
-  avatar      TEXT          NOT NULL DEFAULT '',
+  description TEXT          NOT NULL,
+  avatar      TEXT          NOT NULL,
   created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -99,7 +99,7 @@ CREATE TABLE projects (
   id          INT UNSIGNED                                     AUTO_INCREMENT PRIMARY KEY,
   team_id     INT UNSIGNED                                     NOT NULL,
   name        VARCHAR(120)                                     NOT NULL,
-  description TEXT                                             NOT NULL DEFAULT '',
+  description TEXT                                             NOT NULL,
   status      ENUM('planning','active','on_hold','completed')  NOT NULL DEFAULT 'planning',
   priority    ENUM('low','medium','high','critical')           NOT NULL DEFAULT 'medium',
   deadline    DATE                                             NOT NULL DEFAULT (CURDATE()),
@@ -131,7 +131,7 @@ CREATE TABLE tasks (
   project_id          INT UNSIGNED                           NOT NULL,
   created_by_user_id  INT UNSIGNED                           NOT NULL,
   title               VARCHAR(200)                           NOT NULL,
-  description         TEXT                                   NOT NULL DEFAULT '',
+  description         TEXT                                   NOT NULL,
   status              ENUM('todo','in_progress','done')      NOT NULL DEFAULT 'todo',
   priority            ENUM('low','medium','high','critical') NOT NULL DEFAULT 'medium',
   deadline            DATE                                   NOT NULL DEFAULT (CURDATE()),
@@ -165,13 +165,13 @@ CREATE TABLE comments (
 
 CREATE TABLE audits (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  user_id     INT UNSIGNED NULL,
+  user_id     INT UNSIGNED NOT NULL,
   action      VARCHAR(80)  NOT NULL,
   entity_type VARCHAR(40)  NOT NULL DEFAULT '',
   entity_id   INT UNSIGNED NOT NULL DEFAULT 0,
-  detail      TEXT         NOT NULL DEFAULT '',
+  detail      TEXT         NOT NULL,
   created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 SQL
 
