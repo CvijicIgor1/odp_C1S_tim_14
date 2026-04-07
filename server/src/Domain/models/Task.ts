@@ -10,7 +10,7 @@ export class Task {
     public title: string = "",
     public description: string = "",
     public status: TaskStatus = TaskStatus.TODO,
-    public priority: Priority.MEDIUM,
+    public priority: Priority = Priority.MEDIUM,
     public deadline: Date = new Date() ,
     public estimatedHours: number = 0.00,
     public createdAt: Date = new Date(),

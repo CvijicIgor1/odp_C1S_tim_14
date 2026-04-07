@@ -5,7 +5,7 @@ import { IEntityRepository } from "../../../Domain/repositories/entity/IEntityRe
 import { Entity } from "../../../Domain/models/AuditLog";
 import { EntityDto } from "../../../Domain/DTOs/entity/EntityDto";
 import { CreateEntityDto } from "../../../Domain/DTOs/entity/CreateEntityDto";
-import { EntityStatus } from "../../../Domain/enums/AuditLog";
+import { EntityStatus } from "../../../Domain/enums/NodeStat";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 
