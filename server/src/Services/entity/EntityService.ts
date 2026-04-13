@@ -2,7 +2,7 @@
 import { IEntityService } from "../../Domain/services/entity/IEntityService";
 import { IEntityRepository } from "../../Domain/repositories/entity/IEntityRepository";
 import { EntityDto } from "../../Domain/DTOs/entity/EntityDto";
-import { CreateEntityDto } from "../../Domain/DTOs/entity/CreateEntityDto";
+import { CreateEntityDto } from "../../Domain/DTOs/entity/CreateUserDto";
 import { PaginatedListDto } from "../../Domain/DTOs/entity/PaginatedListDto";
 
 export class EntityService implements IEntityService {
