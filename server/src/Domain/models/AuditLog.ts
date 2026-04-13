@@ -1,12 +1,12 @@
 export class AuditLog {
   public constructor(
     public id: number = 0,
-    public userId: number = 0,
+    public user_id: number = 0,
     public action: string = "",
-    public entityType: string = "",
-    public entityId: number = 0,
+    public entity_type: string = "",
+    public entity_id: number = 0,
     public detail: string = "",
-    public createdAt: Date = new Date()
+    public created_at: Date = new Date()
   ) {}
 }
 }

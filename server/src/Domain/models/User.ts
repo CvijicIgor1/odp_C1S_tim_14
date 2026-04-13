@@ -5,11 +5,11 @@ export class User {
     public id: number = 0,
     public username: string = "",
     public email: string = "",
-    public passwordHash: string = "",
-    public fullName: string = "",
-    public avatar: string = "",
     public role: UserRole = UserRole.USER,
-    public isActive: number = 1,
+    public password_hash: string = "",
+    public full_name: string = "",
+    public avatar: string = "",
+    public is_active: number = 1,
     public createdAt: Date = new Date(),
     public updatedAt: Date = new Date()
   ) {}
