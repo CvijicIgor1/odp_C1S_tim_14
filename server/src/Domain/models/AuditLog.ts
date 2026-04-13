@@ -9,4 +9,3 @@ export class AuditLog {
     public created_at: Date = new Date()
   ) {}
 }
-}
