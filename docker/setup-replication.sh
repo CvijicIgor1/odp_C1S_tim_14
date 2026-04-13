@@ -15,7 +15,7 @@ REPL_USER="replicator"
 REPL_PASS="repl1234"
 
 # TODO: Replace "project_db" with your actual database name
-DB_NAME="nexushub"
+DB_NAME="project_db"
 
 M="mysql  -h127.0.0.1    -P3306 -uroot -p${ROOT_PASS} --protocol=TCP --connect-timeout=5"
 S1="mysql -hmysql-slave1 -P3306 -uroot -p${ROOT_PASS} --protocol=TCP --connect-timeout=5"

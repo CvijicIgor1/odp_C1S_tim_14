@@ -12,8 +12,8 @@ export class AuthService implements IAuthService {
 
   async login(username: string, password: string): Promise<AuthUserDto> {
     const user = await this.userRepo.findByUsername(username);
-    if (user.id === 0 || user.is_active === 0) return new AuthUserDto();
-    const match = await bcrypt.compare(password, user.password_hash).catch(() => false);
+    if (user.id === 0 || user.isActive === 0) return new AuthUserDto();
+    const match = await bcrypt.compare(password, user.passwordHash).catch(() => false);
     if (!match) return new AuthUserDto();
     return new AuthUserDto(user.id, user.username, user.role);
   }
