@@ -1,7 +1,7 @@
-// TODO: Replace with your domain-specific DTO fields
-import { EntityStatus } from "../../enums/EntityStatus";
+// TODO: Replace "Entity" and its fields with your domain model
+import { EntityStatus } from "../enums/EntityStatus";
 
-export class EntityDto {
+export class Entity {
   constructor(
     public id: number            = 0,
     public userId: number        = 0,
