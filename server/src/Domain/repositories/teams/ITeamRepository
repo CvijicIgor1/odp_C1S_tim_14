@@ -1,0 +1,17 @@
+import { TeamDto } from '../../DTOs/teams/TeamDto';
+import { TeamMemberRole } from '../../enums/TeamMemberRole';
+import { Team } from "../../models/Team";
+import { TeamMember } from '../../models/TeamMember';
+
+
+export interface ITeamRepository {
+  findAll(userId: number): Promise<Team[]>;
+  findById(teamId: number): Promise<Team | null>;
+  create(dto: TeamDto, ownerId: number): Promise<Team>;
+  update(teamId: number, dto: TeamDto): Promise<Team | null>;
+  delete(teamId: number): Promise<boolean>;
+  getMembers(teamId: number): Promise<TeamMember[]>;
+  addMember(teamId: number, dto: TeamDto): Promise<void>;
+  removeMember(teamId: number, memberId: number): Promise<boolean>;
+  updateMemberRole(teamId: number, memberId: number, role: TeamMemberRole): Promise<boolean>;
+}
