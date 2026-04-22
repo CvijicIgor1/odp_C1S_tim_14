@@ -16,14 +16,14 @@ export class TeamRepository implements ITeamRepository {
     ) { }
 
     private map(r: RowDataPacket): Team {
-    return new Team(
-      r.id,
-      r.name,
-      r.description ?? null,
-      r.avatar,
-      new Date(r.createdAt),
-      r.updatedAt ? new Date(r.updatedAt) : undefined,
-    );
+        return new Team(
+            r.id,
+            r.name,
+            r.description ?? null,
+            r.avatar,
+            new Date(r.createdAt),
+            r.updatedAt ? new Date(r.updatedAt) : undefined,
+        );
     }
 
     findAll(userId: number): Promise<Team[]> {
@@ -47,8 +47,33 @@ export class TeamRepository implements ITeamRepository {
             res.conn.release();
         }
     }
-    create(dto: CreateTeamDto, ownerId: number): Promise<boolean> {
-        throw new Error('Method not implemented.');
+    async create(dto: CreateTeamDto, ownerId: number): Promise<Team> {
+        const res = await this.db.getReadConnection();
+        if (!res) return new Team();
+        try {
+            const [result] = await res.conn.execute<ResultSetHeader>(
+                `INSERT INTO teams
+         (name, description, avatar)
+         VALUES (?, ?, ?)`,
+                [
+                    dto.name,
+                    dto.description,
+                    dto.avatar
+                ],
+            );
+            if (result.insertId === 0) return new Team();
+            return new Team(
+                result.insertId,
+                dto.name,
+                dto.description,
+                dto.avatar
+            );
+        } catch (err) {
+            this.logger.error("TeamRepository", "create failed", err);
+            return new Team();
+        } finally {
+            res.conn.release();
+        }
     }
     update(teamId: number, dto: UpdateTeamDto): Promise<Team | null> {
         throw new Error('Method not implemented.');

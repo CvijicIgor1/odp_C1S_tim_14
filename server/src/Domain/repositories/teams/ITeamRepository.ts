@@ -9,7 +9,7 @@ import { UpdateMemberRoleDto } from '../../DTOs/teams/UpdateMemberRoleDto';
 export interface ITeamRepository {
   findAll(userId: number): Promise<Team[]>;
   findById(teamId: number): Promise<Team | null>;
-  create(dto: CreateTeamDto, ownerId: number): Promise<boolean>;
+  create(dto: CreateTeamDto, ownerId: number): Promise<Team>;
   update(teamId: number, dto: UpdateTeamDto): Promise<Team | null>;
   delete(teamId: number): Promise<boolean>;
   getMembers(teamId: number): Promise<TeamMember[]>;
