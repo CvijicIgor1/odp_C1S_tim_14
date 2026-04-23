@@ -8,6 +8,8 @@ import { UpdateTeamDto } from '../../../Domain/DTOs/teams/UpdateTeamDto';
 import { Team } from '../../../Domain/models/Team';
 import { TeamMember } from '../../../Domain/models/TeamMember';
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { Request } from 'express';
+import { UserRole } from '../../../Domain/enums/UserRole';
 
 export class TeamRepository implements ITeamRepository {
     public constructor(
@@ -189,13 +191,59 @@ export class TeamRepository implements ITeamRepository {
         }
     }
 
-    addMember(teamId: number, dto: AddMemberDto): Promise<boolean> {
-        throw new Error('Method not implemented.');
+    async addMember(teamId: number, userId: number, dto: AddMemberDto): Promise<boolean> {
+        const res = await this.db.getWriteConnection();
+        if(!res) return false;
+
+        try{
+            const [result] = await res.conn.execute<ResultSetHeader[]>(
+                `INSERT INTO team_members (team_id, user_id, role) 
+                VALUES (?, ?, 'member')`,
+                [teamId, userId],
+            );
+            return true;
+        }catch(err){
+            this.logger.error("TeamsRepository", "addMember failed", err);
+            return false;
+        }finally{
+            res.conn.release();
+        }
     }
-    removeMember(teamId: number, memberId: number): Promise<boolean> {
-        throw new Error('Method not implemented.');
+    async removeMember(teamId: number, memberId: number): Promise<boolean> {
+        const res = await this.db.getWriteConnection();
+        if(!res) return false;
+
+        try{
+            const [result] = await res.conn.execute<ResultSetHeader[]>(
+                `DELTE FROM team_members
+                WHERE team_id = ? AND user_id = ?`,
+                [teamId, memberId],
+            );
+            return true;
+        }catch(err){
+            this.logger.error("TeamsRepository", "removeMember failed", err);
+            return false;
+        }finally{
+            res.conn.release();
+        }
     }
-    updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto): Promise<boolean> {
-        throw new Error('Method not implemented.');
+    async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto): Promise<boolean> {
+        const res = await this.db.getWriteConnection();
+        if(!res) return false;
+
+        try{
+            const [result] = await res.conn.execute<ResultSetHeader[]>(
+                `UPDATE team_members
+                SET role = ?
+                WHERE team_id = ? AND user_id = ?`,
+                [dto.role, teamId, memberId],
+            );
+            return true;
+        }catch(err){
+            this.logger.error("TeamsRepository", "updateMemberRole failed", err);
+            return false;
+        }finally{
+            res.conn.release();
+        }
     }
 }

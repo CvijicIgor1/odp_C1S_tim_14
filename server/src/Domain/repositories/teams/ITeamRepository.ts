@@ -13,7 +13,7 @@ export interface ITeamRepository {
   update(teamId: number, dto: UpdateTeamDto): Promise<Team | null>;
   delete(teamId: number): Promise<boolean>;
   getMembers(teamId: number): Promise<TeamMember[]>;
-  addMember(teamId: number, dto: AddMemberDto): Promise<boolean>;
+  addMember(teamId: number, userId:number, dto: AddMemberDto): Promise<boolean>;
   removeMember(teamId: number, memberId: number): Promise<boolean>;
   updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto): Promise<boolean>;
 }
