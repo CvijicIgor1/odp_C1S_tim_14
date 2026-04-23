@@ -26,6 +26,15 @@ export class TeamRepository implements ITeamRepository {
         );
     }
 
+    private mapMember(r: RowDataPacket): TeamMember { //zato sto neke funkcije vracaju teamMembere
+        return new TeamMember(
+            r.teamId,
+            r.userId,
+            r.role,
+            r.joinedAt,
+        );
+    }
+
     async findAll(userId: number): Promise<Team[]> {
         const res = await this.db.getReadConnection();
         if (!res) return [];
@@ -71,8 +80,8 @@ export class TeamRepository implements ITeamRepository {
         try {
             const [result] = await res.conn.execute<ResultSetHeader>(
                 `INSERT INTO teams
-         (name, description, avatar)
-         VALUES (?, ?, ?)`,
+                (name, description, avatar)
+                VALUES (?, ?, ?)`,
                 [
                     dto.name,
                     dto.description,
@@ -138,12 +147,48 @@ export class TeamRepository implements ITeamRepository {
             res.conn.release();
         }
     }
-    delete(teamId: number): Promise<boolean> {
-        throw new Error('Method not implemented.');
+
+    async delete(teamId: number): Promise<boolean> {
+        const res = await this.db.getWriteConnection();
+        if (!res) return false;
+
+        try {
+            const [result] = await res.conn.execute<ResultSetHeader>(
+                `DELETE FROM teams WHERE id = ?`,
+                [teamId]
+            );
+
+            return result.affectedRows > 0;
+        } catch (err) {
+            this.logger.error("TeamsRepository", "delete failed", err);
+            return false;
+        } finally {
+            res.conn.release();
+        }
     }
-    getMembers(teamId: number): Promise<TeamMember[]> {
-        throw new Error('Method not implemented.');
+
+    async getMembers(teamId: number): Promise<TeamMember[]> {
+        const res = await this.db.getReadConnection();
+        if (!res) return [];
+
+        try {
+            const [rows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT tm.*
+                FROM team_members tm
+                WHERE tm.team_id = ?
+                ORDER BY tm.role ASC`,
+                [teamId]
+            );
+
+            return rows.map((r) => this.mapMember(r));
+        } catch (err) {
+            this.logger.error("TeamsRepository", "findAll failed", err);
+            return [];
+        } finally {
+            res.conn.release();
+        }
     }
+
     addMember(teamId: number, dto: AddMemberDto): Promise<boolean> {
         throw new Error('Method not implemented.');
     }
