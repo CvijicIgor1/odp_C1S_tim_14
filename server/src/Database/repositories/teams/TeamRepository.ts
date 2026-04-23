@@ -26,9 +26,27 @@ export class TeamRepository implements ITeamRepository {
         );
     }
 
-    findAll(userId: number): Promise<Team[]> {
-        throw new Error('Method not implemented.');
+    async findAll(userId: number): Promise<Team[]> {
+        const res = await this.db.getReadConnection();
+        if (!res) return [];
+
+        try {
+            const [rows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT t.* FROM teams t INNER JOIN team_members tm ON tm.team_id = t.id
+                WHERE tm.user_id = ?
+                ORDER BY t.name ASC`,
+                [userId]
+            );
+
+            return rows.map((r) => this.map(r));
+        } catch (err) {
+            this.logger.error("TeamsRepository", "findAll failed", err);
+            return [];
+        } finally {
+            res.conn.release();
+        }
     }
+
     async findById(teamId: number): Promise<Team | null> {
         const res = await this.db.getReadConnection();
         if (!res) return new Team();
@@ -75,8 +93,50 @@ export class TeamRepository implements ITeamRepository {
             res.conn.release();
         }
     }
-    update(teamId: number, dto: UpdateTeamDto): Promise<Team | null> {
-        throw new Error('Method not implemented.');
+    async update(teamId: number, dto: UpdateTeamDto): Promise<Team | null> {
+        const res = await this.db.getWriteConnection();
+        if (!res) return null;
+
+        try {
+            // moram da pazim koja polja se zapravo menjaju
+            //updatedAt bi trebao sam od sebe u bazi da se promeni na trenutni datum
+            const fields: string[] = [];
+            const values: any[] = [];
+
+            if (dto.name !== undefined) {
+                fields.push("name = ?");
+                values.push(dto.name);
+            }
+            if (dto.description !== undefined) {
+                fields.push("description = ?");
+                values.push(dto.description);
+            }
+            if (dto.avatar !== undefined) {
+                fields.push("avatar = ?");
+                values.push(dto.avatar);
+            }
+
+            if (fields.length === 0) return this.findById(teamId);
+
+            values.push(teamId);
+
+            const [result] = await res.conn.execute<ResultSetHeader>(
+                `UPDATE teams SET ${fields.join(", ")} WHERE id = ?`,
+                values
+            );
+
+            if (result.affectedRows === 0) return null;
+
+            // buduci da sam metnuo da funkcija vraca TEAM objekat,
+            // morao bih ili jos jedan select upit ili samo da iskoristim
+            // findByID od malopre, a nisam lud da pisem jos upita
+            return this.findById(teamId);
+        } catch (err) {
+            this.logger.error("TeamsRepository", "update failed", err);
+            return null;
+        } finally {
+            res.conn.release();
+        }
     }
     delete(teamId: number): Promise<boolean> {
         throw new Error('Method not implemented.');
