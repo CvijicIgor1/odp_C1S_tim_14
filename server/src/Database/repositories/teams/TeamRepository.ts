@@ -71,13 +71,13 @@ export class TeamRepository implements ITeamRepository {
             return rows.length > 0 ? this.map(rows[0]) : new Team();
         } catch (err) {
             this.logger.error("TeamRepository", "findById failed", err);
-            return new Team();
+            return null;
         } finally {
             res.conn.release();
         }
     }
     async create(dto: CreateTeamDto, ownerId: number): Promise<Team> {
-        const res = await this.db.getReadConnection();
+        const res = await this.db.getWriteConnection();
         if (!res) return new Team();
         try {
             const [result] = await res.conn.execute<ResultSetHeader>(
@@ -196,7 +196,7 @@ export class TeamRepository implements ITeamRepository {
         if(!res) return false;
 
         try{
-            const [result] = await res.conn.execute<ResultSetHeader[]>(
+            const [result] = await res.conn.execute<ResultSetHeader>(
                 `INSERT INTO team_members (team_id, user_id, role) 
                 VALUES (?, ?, 'member')`,
                 [teamId, userId],
@@ -214,8 +214,8 @@ export class TeamRepository implements ITeamRepository {
         if(!res) return false;
 
         try{
-            const [result] = await res.conn.execute<ResultSetHeader[]>(
-                `DELTE FROM team_members
+            const [result] = await res.conn.execute<ResultSetHeader>(
+                `DELETE FROM team_members
                 WHERE team_id = ? AND user_id = ?`,
                 [teamId, memberId],
             );
@@ -232,7 +232,7 @@ export class TeamRepository implements ITeamRepository {
         if(!res) return false;
 
         try{
-            const [result] = await res.conn.execute<ResultSetHeader[]>(
+            const [result] = await res.conn.execute<ResultSetHeader>(
                 `UPDATE team_members
                 SET role = ?
                 WHERE team_id = ? AND user_id = ?`,
