@@ -1,14 +1,16 @@
+import { PaginatedListDto } from "../../DTOs/entity/PaginatedListDto";
 import { AddMemberDto } from "../../DTOs/teams/AddMemberDto";
 import { CreateTeamDto } from "../../DTOs/teams/CreateTeamDto";
+import { TeamDto } from "../../DTOs/teams/TeamDto";
 import { UpdateMemberRoleDto } from "../../DTOs/teams/UpdateMemberRoleDto";
 import { UpdateTeamDto } from "../../DTOs/teams/UpdateTeamDto";
 import { Team } from "../../models/Team";
 import { TeamMember } from "../../models/TeamMember";
 
 export interface ITeamService {
-    getAll(userId: number): Promise<Team[]>;
-    getMyTeams(teamId: number, userId: number): Promise<Team | null>;
-    createNewTeam(dto: CreateTeamDto, userId: number): Promise<Team>;
+    getAll(userId: number, page:number, limit: number): Promise<PaginatedListDto<TeamDto>>;
+    getWithTeamId(teamId: number, userId: number, isAdmin: boolean): Promise<Team | null>;
+    createNewTeam(dto: CreateTeamDto, userId: number): Promise<TeamDto>;
     updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<Team | null>;
     deleteTeam(teamId: number, userId: number): Promise<boolean>;
     getTeamMembers(teamId: number, userId: number): Promise<TeamMember[]>;

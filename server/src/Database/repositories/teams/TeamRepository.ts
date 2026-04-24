@@ -37,9 +37,9 @@ export class TeamRepository implements ITeamRepository {
         );
     }
 
-    async findAll(userId: number): Promise<Team[]> {
+    async findAll(userId: number): Promise<{ teams: Team[], totalNumber: number }> {
         const res = await this.db.getReadConnection();
-        if (!res) return [];
+        if (!res) return { teams: [], totalNumber: 0 };
 
         try {
             const [rows] = await res.conn.execute<RowDataPacket[]>(
@@ -49,10 +49,11 @@ export class TeamRepository implements ITeamRepository {
                 [userId]
             );
 
-            return rows.map((r) => this.map(r));
+            const teams = rows.map((r) => this.map(r));
+            return { teams, totalNumber: teams.length };
         } catch (err) {
             this.logger.error("TeamsRepository", "findAll failed", err);
-            return [];
+            return { teams: [], totalNumber: 0 };
         } finally {
             res.conn.release();
         }
@@ -193,45 +194,45 @@ export class TeamRepository implements ITeamRepository {
 
     async addMember(teamId: number, userId: number, dto: AddMemberDto): Promise<boolean> {
         const res = await this.db.getWriteConnection();
-        if(!res) return false;
+        if (!res) return false;
 
-        try{
+        try {
             const [result] = await res.conn.execute<ResultSetHeader>(
                 `INSERT INTO team_members (team_id, user_id, role) 
                 VALUES (?, ?, 'member')`,
                 [teamId, userId],
             );
             return true;
-        }catch(err){
+        } catch (err) {
             this.logger.error("TeamsRepository", "addMember failed", err);
             return false;
-        }finally{
+        } finally {
             res.conn.release();
         }
     }
     async removeMember(teamId: number, memberId: number): Promise<boolean> {
         const res = await this.db.getWriteConnection();
-        if(!res) return false;
+        if (!res) return false;
 
-        try{
+        try {
             const [result] = await res.conn.execute<ResultSetHeader>(
                 `DELETE FROM team_members
                 WHERE team_id = ? AND user_id = ?`,
                 [teamId, memberId],
             );
             return true;
-        }catch(err){
+        } catch (err) {
             this.logger.error("TeamsRepository", "removeMember failed", err);
             return false;
-        }finally{
+        } finally {
             res.conn.release();
         }
     }
     async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto): Promise<boolean> {
         const res = await this.db.getWriteConnection();
-        if(!res) return false;
+        if (!res) return false;
 
-        try{
+        try {
             const [result] = await res.conn.execute<ResultSetHeader>(
                 `UPDATE team_members
                 SET role = ?
@@ -239,10 +240,10 @@ export class TeamRepository implements ITeamRepository {
                 [dto.role, teamId, memberId],
             );
             return true;
-        }catch(err){
+        } catch (err) {
             this.logger.error("TeamsRepository", "updateMemberRole failed", err);
             return false;
-        }finally{
+        } finally {
             res.conn.release();
         }
     }
