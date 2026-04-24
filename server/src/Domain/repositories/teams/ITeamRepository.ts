@@ -10,7 +10,7 @@ export interface ITeamRepository {
   findAll(userId: number): Promise<{teams: Team[], totalNumber: number}>;
   findById(teamId: number): Promise<Team | null>;
   create(dto: CreateTeamDto, ownerId: number): Promise<Team>;
-  update(teamId: number, dto: UpdateTeamDto): Promise<Team | null>;
+  update(teamId: number, dto: UpdateTeamDto): Promise<boolean>;
   delete(teamId: number): Promise<boolean>;
   getMembers(teamId: number): Promise<TeamMember[]>;
   addMember(teamId: number, userId:number, dto: AddMemberDto): Promise<boolean>;

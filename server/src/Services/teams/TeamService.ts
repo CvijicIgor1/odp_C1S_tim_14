@@ -43,11 +43,11 @@ export class TeamService implements ITeamService {
         if (created.id === 0) return new TeamDto();
         return this.toDto(created);  //ima manje posla nego kod Almondovog CreateOrder, jer ne moramo da rukujemo brojkama
     }
-    updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<Team | null> {
-        throw new Error("Method not implemented.");
+    async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<boolean> {
+        return this.teamRepo.update(teamId, dto);
     }
-    deleteTeam(teamId: number, userId: number): Promise<boolean> {
-        throw new Error("Method not implemented.");
+    async deleteTeam(teamId: number, userId: number): Promise<boolean> {
+        return this.teamRepo.delete(teamId);
     }
     getTeamMembers(teamId: number, userId: number): Promise<TeamMember[]> {
         throw new Error("Method not implemented.");

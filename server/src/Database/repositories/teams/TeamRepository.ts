@@ -105,9 +105,9 @@ export class TeamRepository implements ITeamRepository {
             res.conn.release();
         }
     }
-    async update(teamId: number, dto: UpdateTeamDto): Promise<Team | null> {
+    async update(teamId: number, dto: UpdateTeamDto): Promise<boolean> {
         const res = await this.db.getWriteConnection();
-        if (!res) return null;
+        if (!res) return false;
 
         try {
             // moram da pazim koja polja se zapravo menjaju
@@ -128,7 +128,7 @@ export class TeamRepository implements ITeamRepository {
                 values.push(dto.avatar);
             }
 
-            if (fields.length === 0) return this.findById(teamId);
+            if (fields.length === 0) return false;
 
             values.push(teamId);
 
@@ -137,15 +137,12 @@ export class TeamRepository implements ITeamRepository {
                 values
             );
 
-            if (result.affectedRows === 0) return null;
+            if (result.affectedRows === 0) return false;
 
-            // buduci da sam metnuo da funkcija vraca TEAM objekat,
-            // morao bih ili jos jedan select upit ili samo da iskoristim
-            // findByID od malopre, a nisam lud da pisem jos upita
-            return this.findById(teamId);
+            return true;
         } catch (err) {
             this.logger.error("TeamsRepository", "update failed", err);
-            return null;
+            return false;
         } finally {
             res.conn.release();
         }
