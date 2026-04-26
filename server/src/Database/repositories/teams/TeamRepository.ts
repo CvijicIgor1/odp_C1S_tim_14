@@ -167,9 +167,9 @@ export class TeamRepository implements ITeamRepository {
         }
     }
 
-    async getMembers(teamId: number): Promise<TeamMember[]> {
+    async getMembers(teamId: number): Promise<{members: TeamMember[], totalNumber: number}>{
         const res = await this.db.getReadConnection();
-        if (!res) return [];
+        if (!res) return {members: [], totalNumber: 0};
 
         try {
             const [rows] = await res.conn.execute<RowDataPacket[]>(
@@ -179,11 +179,10 @@ export class TeamRepository implements ITeamRepository {
                 ORDER BY tm.role ASC`,
                 [teamId]
             );
-
-            return rows.map((r) => this.mapMember(r));
+            return {members: rows.map((r) => this.mapMember(r)), totalNumber: rows.length};
         } catch (err) {
             this.logger.error("TeamsRepository", "findAll failed", err);
-            return [];
+            return {members: [], totalNumber: 0};
         } finally {
             res.conn.release();
         }

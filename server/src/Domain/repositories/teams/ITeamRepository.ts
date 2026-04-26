@@ -12,7 +12,7 @@ export interface ITeamRepository {
   create(dto: CreateTeamDto, ownerId: number): Promise<Team>;
   update(teamId: number, dto: UpdateTeamDto): Promise<boolean>;
   delete(teamId: number): Promise<boolean>;
-  getMembers(teamId: number): Promise<TeamMember[]>;
+  getMembers(teamId: number): Promise<{members: TeamMember[], totalNumber: number}>;
   addMember(teamId: number, userId:number, dto: AddMemberDto): Promise<boolean>;
   removeMember(teamId: number, memberId: number): Promise<boolean>;
   updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto): Promise<boolean>;

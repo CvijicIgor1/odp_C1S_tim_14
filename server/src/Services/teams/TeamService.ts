@@ -8,6 +8,7 @@ import { Team } from "../../Domain/models/Team";
 import { TeamMember } from "../../Domain/models/TeamMember";
 import { PaginatedListDto } from '../../Domain/DTOs/entity/PaginatedListDto';
 import { TeamDto } from "../../Domain/DTOs/teams/TeamDto";
+import { TeamMemberDto } from "../../Domain/DTOs/teams/TeamMemberDto";
 
 export class TeamService implements ITeamService {
     public constructor(
@@ -23,6 +24,15 @@ export class TeamService implements ITeamService {
             team.avatar,
             team.updatedAt,
             team.createdAt
+        );
+    }
+
+    private toMemberDto(member: TeamMember): TeamMemberDto {
+        return new TeamMemberDto(
+            member.teamId,
+            member.userId,
+            member.role,
+            member.joinedAt
         );
     }
 
@@ -43,22 +53,28 @@ export class TeamService implements ITeamService {
         if (created.id === 0) return new TeamDto();
         return this.toDto(created);  //ima manje posla nego kod Almondovog CreateOrder, jer ne moramo da rukujemo brojkama
     }
+
     async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<boolean> {
         return this.teamRepo.update(teamId, dto);
     }
+
     async deleteTeam(teamId: number, userId: number): Promise<boolean> {
         return this.teamRepo.delete(teamId);
     }
-    getTeamMembers(teamId: number, userId: number): Promise<TeamMember[]> {
-        throw new Error("Method not implemented.");
+
+    async getTeamMembers(teamId: number, page:number, limit:number, userId: number): Promise<PaginatedListDto<TeamMemberDto>> {
+        const { members, totalNumber } = await this.teamRepo.getMembers(teamId);
+        return new PaginatedListDto(members.map((o) => this.toMemberDto(o)), totalNumber, page, limit);
     }
-    addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean> {
-        throw new Error("Method not implemented.");
+
+    async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean> {
+        return this.teamRepo.addMember(teamId, userId, dto);
     }
-    removeTeamMember(teamId: number, memberId: number, userId: number): Promise<boolean> {
-        throw new Error("Method not implemented.");
+    
+    async removeTeamMember(teamId: number, memberId: number, userId: number): Promise<boolean> {
+        return this.teamRepo.removeMember(teamId, memberId);
     }
-    updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<boolean> {
-        throw new Error("Method not implemented.");
+    async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<boolean> {
+        return this.teamRepo.updateMemberRole(teamId, memberId, dto);
     }
 } 
