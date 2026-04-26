@@ -40,18 +40,25 @@ export class TeamService implements ITeamService {
         const { teams, totalNumber } = await this.teamRepo.findAll(userId);
         return new PaginatedListDto(teams.map((o) => this.toDto(o)), totalNumber, page, limit);
     }
-    async getWithTeamId(teamId: number, userId: number, isAdmin: boolean): Promise<Team> {
-        const foundTeam = await this.teamRepo.findById(teamId);
-        if (foundTeam != null) {
-            return foundTeam;
-        }                                               //TODO dodaj admin proveru, nemamo to i dalje
-        return new Team();
+    async getWithTeamId(teamId: number, userId: number, isAdmin: boolean): Promise<TeamDto> {
+        const team = await this.teamRepo.findById(teamId);
+
+        const {members, totalNumber} = await this.teamRepo.getMembers(teamId);
+        var isMember = members.some((m) => m.userId === userId);  
+
+        if (team != null) {
+            if (team.id === 0) return new TeamDto();
+            if (!isAdmin && !isMember) return new TeamDto(); //ako je clan tima ne mora da bude admin, ako je admin svejedno. Dakle ako nije nijedno, nista
+            return this.toDto(team);
+        }
+        return new TeamDto();
     }
 
     async createNewTeam(dto: CreateTeamDto, userId: number): Promise<TeamDto> {
         const created = await this.teamRepo.create(dto, userId);
         if (created.id === 0) return new TeamDto();
         return this.toDto(created);  //ima manje posla nego kod Almondovog CreateOrder, jer ne moramo da rukujemo brojkama
+        //fali logovanje, kad se doda audit
     }
 
     async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<boolean> {
@@ -62,7 +69,7 @@ export class TeamService implements ITeamService {
         return this.teamRepo.delete(teamId);
     }
 
-    async getTeamMembers(teamId: number, page:number, limit:number, userId: number): Promise<PaginatedListDto<TeamMemberDto>> {
+    async getTeamMembers(teamId: number, page: number, limit: number, userId: number): Promise<PaginatedListDto<TeamMemberDto>> {
         const { members, totalNumber } = await this.teamRepo.getMembers(teamId);
         return new PaginatedListDto(members.map((o) => this.toMemberDto(o)), totalNumber, page, limit);
     }
@@ -70,7 +77,7 @@ export class TeamService implements ITeamService {
     async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean> {
         return this.teamRepo.addMember(teamId, userId, dto);
     }
-    
+
     async removeTeamMember(teamId: number, memberId: number, userId: number): Promise<boolean> {
         return this.teamRepo.removeMember(teamId, memberId);
     }
