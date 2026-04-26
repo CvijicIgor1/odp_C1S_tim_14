@@ -4,6 +4,9 @@ import { authenticate } from "../../Middlewares/authentification/AuthMiddleware"
 import { authorize } from '../../Middlewares/authorization/AuthorizeMiddleware';
 import { UserRole } from "../../Domain/enums/UserRole";
 import { CreateTeamDto } from "../../Domain/DTOs/teams/CreateTeamDto";
+import { AddMemberDto } from "../../Domain/DTOs/teams/AddMemberDto";
+import { UpdateMemberRoleDto } from "../../Domain/DTOs/teams/UpdateMemberRoleDto";
+import { UpdateTeamDto } from "../../Domain/DTOs/teams/UpdateTeamDto";
 
 export class TeamController {
     private readonly router = Router();
@@ -52,7 +55,12 @@ export class TeamController {
     }
 
     private async update(req: Request, res: Response): Promise<void> {
-
+        const id = parseInt(req.params.id as string, 10);
+        if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid ID" }); return; }
+        const dto = req.body as UpdateTeamDto;
+        const ok = await this.teamService.updateTeam(id, dto, req.user!.id);
+        if (!ok) { res.status(404).json({ success: false, message: "Team not found"}); return; }
+        res.status(200).json({ success: true, message: "Team updated successfully" });
     }
 
     private async delete(req: Request, res: Response): Promise<void> {
@@ -64,14 +72,34 @@ export class TeamController {
     }
 
     private async addMember(req: Request, res: Response): Promise<void> {
-
+        const id = parseInt(req.params.id as string, 10);
+        if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid member ID" }); return; }
+        const { username } = req.body as AddMemberDto;
+        if (!username) { res.status(400).json({ success: false, message: "Username is required" }); return; }
+        const ok = await this.teamService.addTeamMember(id, new AddMemberDto(username), req.user!.id);
+        if (!ok) { res.status(404).json({ success: false, message: "User not found" }); return; }
+        res.status(201).json({ success: true, message: "Member added successfully" });
     }
 
     private async updateMemberRole(req: Request, res: Response): Promise<void> {
-
+        const id = parseInt(req.params.id as string, 10);
+        const memberId = parseInt(req.params.userId as string, 10);
+        if (isNaN(id) || isNaN(memberId)) { res.status(400).json({ success: false, message: "Invalid IDs" }); return; }
+        const { role } = req.body as UpdateMemberRoleDto;
+        if (!role || (role !== "owner" && role !== "member")) {
+            res.status(400).json({ success: false, message: "Role must be 'owner' or 'member'" }); return;
+        }
+        const ok = await this.teamService.updateMemberRole(id, memberId, new UpdateMemberRoleDto(role), req.user!.id);
+        if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
+        res.status(200).json({ success: true, message: "Role changed successfully/" });
     }
 
     private async removeMember(req: Request, res: Response): Promise<void> {
-
+        const id = parseInt(req.params.id as string, 10);
+        const memberId = parseInt(req.params.userId as string, 10);
+        if (isNaN(id) || isNaN(memberId)) { res.status(400).json({ success: false, message: "Invalid IDs" }); return; }
+        const ok = await this.teamService.removeTeamMember(id, memberId, req.user!.id);
+        if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
+        res.status(200).json({ success: true, message: "Member removed successfully" });
     }
 }
