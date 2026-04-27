@@ -40,6 +40,15 @@ export class TeamService implements ITeamService {
         const { teams, totalNumber } = await this.teamRepo.findAll(userId);
         return new PaginatedListDto(teams.map((o) => this.toDto(o)), totalNumber, page, limit);
     }
+
+    async getAllAsAdmin(userId: number, page: number, limit: number, isAdmin: boolean): Promise<PaginatedListDto<TeamDto>> {
+        if(isAdmin){
+        const { teams, totalNumber } = await this.teamRepo.findAllAsAdmin();
+        return new PaginatedListDto(teams.map((o) => this.toDto(o)), totalNumber, page, limit);
+        }
+        return new PaginatedListDto<TeamDto>;
+    }
+
     async getWithTeamId(teamId: number, userId: number, isAdmin: boolean): Promise<TeamDto> {
         const team = await this.teamRepo.findById(teamId);
 

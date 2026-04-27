@@ -59,6 +59,25 @@ export class TeamRepository implements ITeamRepository {
         }
     }
 
+    async findAllAsAdmin(): Promise<{ teams: Team[], totalNumber: number }> {
+        const res = await this.db.getReadConnection();
+        if (!res) return { teams: [], totalNumber: 0 };
+
+        try {
+            const [rows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT * FROM teams ORDER BY name ASC`
+            );
+
+            const teams = rows.map((r) => this.map(r));
+            return { teams, totalNumber: teams.length };
+        } catch (err) {
+            this.logger.error("TeamsRepository", "findAllAsAdmin failed", err);
+            return { teams: [], totalNumber: 0 };
+        } finally {
+            res.conn.release();
+        }
+    }
+
     async findById(teamId: number): Promise<Team | null> {
         const res = await this.db.getReadConnection();
         if (!res) return new Team();

@@ -10,6 +10,7 @@ import { TeamMember } from "../../models/TeamMember";
 
 export interface ITeamService {
     getAll(userId: number, page:number, limit: number): Promise<PaginatedListDto<TeamDto>>;
+    getAllAsAdmin(userId: number, page: number, limit: number, isAdmin: boolean): Promise<PaginatedListDto<TeamDto>>;
     getWithTeamId(teamId: number, userId: number, isAdmin: boolean): Promise<TeamDto>;
     createNewTeam(dto: CreateTeamDto, userId: number): Promise<TeamDto>;
     updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<boolean>;

@@ -12,7 +12,7 @@ export class TeamController {
     private readonly router = Router();
     public constructor(private readonly teamService: ITeamService) { // treba i private readonly IAuditService kad se doda
         this.router.get("/teams", authenticate, this.getAll.bind(this));
-        this.router.get("/teams/all", authenticate, authorize(UserRole.ADMIN), this.getAllAdmin.bind(this));
+        this.router.get("/teams/all", authenticate, authorize(UserRole.ADMIN), this.getAllAsAdmin.bind(this));
         this.router.post("/teams", authenticate, this.create.bind(this));
         this.router.get("/teams/:id", authenticate, this.getById.bind(this));
         this.router.put("/teams/:id", authenticate, this.update.bind(this));
@@ -31,8 +31,11 @@ export class TeamController {
         res.status(200).json({ success: true, data: result });
     }
 
-    private async getAllAdmin(req: Request, res: Response): Promise<void> {  //admin vidi sve timove generalno, fali mi u servisu i repou (TODO)
-
+    private async getAllAsAdmin(req: Request, res: Response): Promise<void> {  //admin vidi sve timove generalno, fali mi u servisu i repou (TODO)
+        const page = parseInt(String(req.query.page ?? "1"), 10);
+        const limit = Math.min(parseInt(String(req.query.limit ?? "20"), 10), 100);
+        const result = await this.teamService.getAllAsAdmin(req.user!.id, page, limit, req.user?.role === UserRole.ADMIN);
+        res.status(200).json({ success: true, data: result });
     }
 
     private async create(req: Request, res: Response): Promise<void> {

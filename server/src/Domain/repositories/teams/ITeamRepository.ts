@@ -8,6 +8,7 @@ import { UpdateMemberRoleDto } from '../../DTOs/teams/UpdateMemberRoleDto';
 
 export interface ITeamRepository {
   findAll(userId: number): Promise<{teams: Team[], totalNumber: number}>;
+  findAllAsAdmin(): Promise<{ teams: Team[], totalNumber: number }>;
   findById(teamId: number): Promise<Team | null>;
   create(dto: CreateTeamDto, ownerId: number): Promise<Team>;
   update(teamId: number, dto: UpdateTeamDto): Promise<boolean>;
