@@ -6,4 +6,3 @@ import { CreateProjectDto } from "../../Domain/DTOs/projects/CreateProjectDto";
 import { UpdateProjectDto } from "../../Domain/DTOs/projects/UpdateProjectDto";
 import { ProjectStatus } from "../../Domain/enums/ProjectStatus";
 import { Priority } from "../../Domain/enums/Priority";
-import { ProjectFilters } from "../../Domain/types/ProjectFilters";
