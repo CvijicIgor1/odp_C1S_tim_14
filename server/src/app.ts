@@ -17,6 +17,7 @@ import { TeamService } from "./Services/teams/TeamService";
 import { AuthController }   from "./WebAPI/controllers/AuthController";
 import { UserController }   from "./WebAPI/controllers/UserController";
 import { TeamController } from "./WebAPI/controllers/TeamController";
+import { HealthController }  from "./WebAPI/controllers/HealthController";
 
 export const logger = new ConsoleLoggerService();
 export const db     = new DbManager(logger);
@@ -40,5 +41,6 @@ app.use(express.json());
 app.use("/api/v1", new AuthController(authService, auditService).getRouter());
 app.use("/api/v1", new UserController(userService).getRouter());
 app.use("/api/v1", new TeamController(teamService).getRouter());
+app.use("/api/v1", new HealthController(db, auditService).getRouter());
 
 export default app;
