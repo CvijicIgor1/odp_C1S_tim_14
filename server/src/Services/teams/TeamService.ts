@@ -1,5 +1,7 @@
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
 import { ITeamRepository } from '../../Domain/repositories/teams/ITeamRepository';
+import { IAuditService } from "../../Domain/services/audit/IAuditService";
+import { AuditAction } from "../../Domain/enums/AuditLog";
 import { AddMemberDto } from "../../Domain/DTOs/teams/AddMemberDto";
 import { CreateTeamDto } from "../../Domain/DTOs/teams/CreateTeamDto";
 import { UpdateMemberRoleDto } from "../../Domain/DTOs/teams/UpdateMemberRoleDto";
@@ -12,8 +14,8 @@ import { TeamMemberDto } from "../../Domain/DTOs/teams/TeamMemberDto";
 
 export class TeamService implements ITeamService {
     public constructor(
-        private readonly teamRepo: ITeamRepository
-        //private readonly auditService: IAuditService  //fali nam audit service! TODO: dodati ga posle 
+        private readonly teamRepo: ITeamRepository,
+        private readonly auditService: IAuditService
     ) { }
 
     private toDto(team: Team): TeamDto {
@@ -66,8 +68,8 @@ export class TeamService implements ITeamService {
     async createNewTeam(dto: CreateTeamDto, userId: number): Promise<TeamDto> {
         const created = await this.teamRepo.create(dto, userId);
         if (created.id === 0) return new TeamDto();
+        await this.auditService.log(userId, AuditAction.CREATE, "team", created.id);
         return this.toDto(created);  //ima manje posla nego kod Almondovog CreateOrder, jer ne moramo da rukujemo brojkama
-        //fali logovanje, kad se doda audit
     }
 
     async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<boolean> {

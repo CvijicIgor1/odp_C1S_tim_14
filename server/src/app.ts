@@ -11,6 +11,7 @@ import { TeamRepository } from "./Database/repositories/teams/TeamRepository";
 
 import { AuthService }   from "./Services/auth/AuthService";
 import { UserService }   from "./Services/users/UserService";
+import { AuditService } from "./Services/audit/AuditService";
 import { TeamService } from "./Services/teams/TeamService";
 
 import { AuthController }   from "./WebAPI/controllers/AuthController";
@@ -26,16 +27,17 @@ const auditRepo = new AuditRepository(db, logger);
 const teamRepo = new TeamRepository(db, logger);
 
 // Services
+const auditService = new AuditService(auditRepo);
 const authService   = new AuthService(userRepo);
 const userService   = new UserService(userRepo);
-const teamService = new TeamService(teamRepo);
+const teamService = new TeamService(teamRepo, auditService);
 
 // Express
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL ?? "*" }));
 app.use(express.json());
 
-app.use("/api/v1", new AuthController(authService, auditRepo).getRouter());
+app.use("/api/v1", new AuthController(authService, auditService).getRouter());
 app.use("/api/v1", new UserController(userService).getRouter());
 app.use("/api/v1", new TeamController(teamService).getRouter());
 
