@@ -1,6 +1,6 @@
 import { ProjectStatus } from "../../enums/ProjectStatus";
 import { Priority } from "../../enums/Priority";
-import { TagDto } from "./TagDto";
+import { TagDto } from "../tags/TagDto";
 
 export class ProjectDto  {
     public constructor(

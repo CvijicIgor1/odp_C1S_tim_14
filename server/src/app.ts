@@ -46,5 +46,6 @@ app.use("/api/v1", new AuthController(authService, auditRepo).getRouter());
 app.use("/api/v1", new UserController(userService).getRouter());
 app.use("/api/v1", new TeamController(teamService).getRouter());
 app.use("/api/v1", new ProjectController(projectService).getRouter());
+app.use("/api/v1", new TagController(tagService).getRouter());
 
 export default app;
