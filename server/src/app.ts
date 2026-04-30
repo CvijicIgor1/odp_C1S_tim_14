@@ -19,23 +19,25 @@ import { AuthController }   from "./WebAPI/controllers/AuthController";
 import { UserController }   from "./WebAPI/controllers/UserController";
 import { TeamController } from "./WebAPI/controllers/TeamController";
 import { ProjectController } from "./WebAPI/controllers/ProjectController"; 
+import { TagRepository } from "./Database/repositories/tags/TagRepository";
+import { TagService } from "./Services/tags/TagService";
+import { TagController } from "./WebAPI/controllers/TagController";
 
 export const logger = new ConsoleLoggerService();
 export const db     = new DbManager(logger);
 
-// Repositories
 const userRepo   = new UserRepository(db, logger);
 const auditRepo = new AuditRepository(db, logger);
 const teamRepo = new TeamRepository(db, logger);
 const projectRepo = new ProjectRepository(db, logger);
+const tagRepo = new TagRepository(db, logger);
 
-// Services
 const authService   = new AuthService(userRepo);
 const userService   = new UserService(userRepo);
 const teamService = new TeamService(teamRepo);
 const projectService = new ProjectService(projectRepo);
+const tagService = new TagService(tagRepo);
 
-// Express
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL ?? "*" }));
 app.use(express.json());

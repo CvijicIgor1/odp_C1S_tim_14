@@ -8,8 +8,6 @@ import { UpdateTeamDto } from '../../../Domain/DTOs/teams/UpdateTeamDto';
 import { Team } from '../../../Domain/models/Team';
 import { TeamMember } from '../../../Domain/models/TeamMember';
 import { RowDataPacket, ResultSetHeader } from "mysql2";
-import { Request } from 'express';
-import { UserRole } from '../../../Domain/enums/UserRole';
 
 export class TeamRepository implements ITeamRepository {
     public constructor(
