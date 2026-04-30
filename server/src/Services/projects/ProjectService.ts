@@ -34,15 +34,10 @@ export class ProjectService implements IProjectService
         )
     }
 
-    async checkOwnerOrAdmin(projectId: number, userId: number, isAdmin: boolean): Promise<void> 
+    async checkOwnerOrAdmin(projectId: number, userId: number, isAdmin: boolean): Promise<boolean> 
     {
-        if(isAdmin) return; // globalni admin je najjaci i to je to 
-
-        const isOwner = await this.projectRepository.isTeamOwner(projectId, userId);
-        if(!isOwner)
-        {
-            throw new Error("User must be project owner or admin.");
-        }
+        if (isAdmin) return true; // globalni admin je najvisi u hijerarhiji
+        return this.projectRepository.isTeamOwner(projectId, userId);
     }
 
     async getTeamProjects(teamId: number, userId: number, page: number, limit: number, filters?: ProjectFilters): Promise<PaginatedListDto<ProjectDto>> 
@@ -72,56 +67,55 @@ export class ProjectService implements IProjectService
     {
         const created = await this.projectRepository.create(teamId, dto);
         if (created.id === 0) return new ProjectDto();
-        // Dodajemo tagove (prosledjeni pri kreiranju projekta) u vezu M:N
 
         if (dto.tagIds && dto.tagIds.length > 0) {
             await Promise.all(
                 dto.tagIds.map((tagId) => this.projectRepository.addTag(created.id, tagId))
             );
         }
-        const tags = await this.projectRepository.getTagsForProject(created.id);
-        const watcherCount = await this.projectRepository.getWatcherCount(created.id);
+
+        
+        const tags = dto.tagIds?.map(id => new Tag(id, "")) ?? [];
+        const watcherCount = 0; // novi projekat, nema pratilaca
         return this.toDto(created, tags, watcherCount);
     }
 
     async updateProject(id: number, dto: UpdateProjectDto, userId: number,isAdmin: boolean = false): Promise<boolean> 
     {
-        await this.checkOwnerOrAdmin(id, userId, isAdmin); // ovo ce bacati gresku ako nije owner/admin , a ako je sve oke ide dalje i moze update-ovati
+        const canEdit = await this.checkOwnerOrAdmin(id, userId, isAdmin); // proverava da li je admin/owner ako jeste poziva repo ako ne vraca false
+        if (!canEdit) return false;
         return this.projectRepository.update(id, dto);
     }
 
     async deleteProject(id: number, userId: number, isAdmin: boolean = false): Promise<boolean> 
     {
-        await this.checkOwnerOrAdmin(id, userId, isAdmin);
+        const canEdit = await this.checkOwnerOrAdmin(id, userId, isAdmin);
+        if (!canEdit) return false;
         return this.projectRepository.delete(id);
     }
 
     async addTag(projectId: number, tagId: number, userId: number, isAdmin: boolean = false): Promise<boolean> 
     {
-        await this.checkOwnerOrAdmin(projectId, userId, isAdmin);
+        const canEdit = await this.checkOwnerOrAdmin(projectId, userId, isAdmin);
+        if (!canEdit) return false;
         return this.projectRepository.addTag(projectId, tagId);
     }
  
     async removeTag(projectId: number, tagId: number, userId: number, isAdmin: boolean = false): Promise<boolean> 
     {
-        await this.checkOwnerOrAdmin(projectId, userId, isAdmin);
+        const canEdit = await this.checkOwnerOrAdmin(projectId, userId, isAdmin);
+        if (!canEdit) return false;
         return this.projectRepository.removeTag(projectId, tagId);
     }
 
     async watchProject(projectId: number, userId: number): Promise<boolean>
     {
         const isMember = await this.projectRepository.isTeamMember(projectId, userId);
-        if(!isMember)
-        {
-            throw new Error("Not part of the team");
-        }
+        if (!isMember) return false;
 
-        const alrdyWather = await this.projectRepository.isWatcher(projectId, userId);  
-        if(alrdyWather)
-        {
-            return true;
-        }
-        
+        const alreadyWatcher = await this.projectRepository.isWatcher(projectId, userId);
+        if (alreadyWatcher) return true;
+
         return this.projectRepository.addWatcher(projectId, userId);
     }
 
