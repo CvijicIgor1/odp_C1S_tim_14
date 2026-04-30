@@ -44,7 +44,7 @@ export class ProjectRepository implements IProjectRepository
 
         try{
             const conditions: string[] = ["team_id = ?"];
-            const values: any[] = [teamId];
+            const values: (string | number)[] = [teamId];
 
             if (filters?.status) {
                 conditions.push("status = ?");
@@ -143,7 +143,7 @@ export class ProjectRepository implements IProjectRepository
         try
         {
             const fields: string[] = [];
-            const values: any[] = [];
+            const values: (string | number | Date)[] = [];
 
             if(dto.name !== undefined)
             {
