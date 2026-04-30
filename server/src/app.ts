@@ -16,6 +16,9 @@ import { TeamService } from "./Services/teams/TeamService";
 import { AuthController }   from "./WebAPI/controllers/AuthController";
 import { UserController }   from "./WebAPI/controllers/UserController";
 import { TeamController } from "./WebAPI/controllers/TeamController";
+import { TagRepository } from "./Database/repositories/tags/TagRepository";
+import { TagService } from "./Services/tags/TagService";
+import { TagController } from "./WebAPI/controllers/TagController";
 
 export const logger = new ConsoleLoggerService();
 export const db     = new DbManager(logger);
@@ -24,11 +27,13 @@ export const db     = new DbManager(logger);
 const userRepo   = new UserRepository(db, logger);
 const auditRepo = new AuditRepository(db, logger);
 const teamRepo = new TeamRepository(db, logger);
+const tagRepo = new TagRepository(db, logger);
 
 // Services
 const authService   = new AuthService(userRepo);
 const userService   = new UserService(userRepo);
 const teamService = new TeamService(teamRepo);
+const tagService = new TagService(tagRepo);
 
 // Express
 const app = express();
@@ -38,5 +43,6 @@ app.use(express.json());
 app.use("/api/v1", new AuthController(authService, auditRepo).getRouter());
 app.use("/api/v1", new UserController(userService).getRouter());
 app.use("/api/v1", new TeamController(teamService).getRouter());
+app.use("/api/v1", new TagController(tagService).getRouter());
 
 export default app;

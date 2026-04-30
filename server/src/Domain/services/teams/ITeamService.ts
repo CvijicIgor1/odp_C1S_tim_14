@@ -5,8 +5,7 @@ import { TeamDto } from "../../DTOs/teams/TeamDto";
 import { TeamMemberDto } from "../../DTOs/teams/TeamMemberDto";
 import { UpdateMemberRoleDto } from "../../DTOs/teams/UpdateMemberRoleDto";
 import { UpdateTeamDto } from "../../DTOs/teams/UpdateTeamDto";
-import { Team } from "../../models/Team";
-import { TeamMember } from "../../models/TeamMember";
+
 
 export interface ITeamService {
     getAll(userId: number, page:number, limit: number): Promise<PaginatedListDto<TeamDto>>;

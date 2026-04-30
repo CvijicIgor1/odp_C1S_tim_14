@@ -75,7 +75,7 @@ export class TeamService implements ITeamService {
     }
 
     async deleteTeam(teamId: number, userId: number): Promise<boolean> {
-        return this.teamRepo.delete(teamId);
+        return await this.teamRepo.delete(teamId);
     }
 
     async getTeamMembers(teamId: number, page: number, limit: number, userId: number): Promise<PaginatedListDto<TeamMemberDto>> {
@@ -84,13 +84,13 @@ export class TeamService implements ITeamService {
     }
 
     async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean> {
-        return this.teamRepo.addMember(teamId, userId, dto);
+        return await this.teamRepo.addMember(teamId, userId, dto);
     }
 
     async removeTeamMember(teamId: number, memberId: number, userId: number): Promise<boolean> {
-        return this.teamRepo.removeMember(teamId, memberId);
+        return await this.teamRepo.removeMember(teamId, memberId);
     }
     async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<boolean> {
-        return this.teamRepo.updateMemberRole(teamId, memberId, dto);
+        return await this.teamRepo.updateMemberRole(teamId, memberId, dto);
     }
 } 
