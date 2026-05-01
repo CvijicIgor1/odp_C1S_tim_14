@@ -14,6 +14,12 @@ export interface ITaskRepository {
 
   findById(id: number): Promise<Task>;
 
+  getAssignees(taskId: number): Promise<TaskAssignee[]>;
+
+  getComments(taskId: number): Promise<Comment[]>;
+
+  findCommentById(commentId: number): Promise<Comment>;
+
   update(taskId: number, dto: UpdateTaskDto): Promise<boolean>;
 
   updateStatus(taskId: number, dto: UpdateTaskStatusDto): Promise<boolean>;
@@ -27,4 +33,10 @@ export interface ITaskRepository {
   addComment(taskId: number, userId: number, dto: AddCommentDto): Promise<Comment>;
 
   deleteComment(commentId: number): Promise<boolean>;
+
+  isUserInProjectTeam(projectId: number, userId: number): Promise<boolean>;
+
+  isTeamOwnerOfTask(taskId: number, userId: number): Promise<boolean>;
+
+  isAssignee(taskId: number, userId: number): Promise<boolean>;
 }
