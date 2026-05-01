@@ -49,7 +49,7 @@ app.use(express.json());
 app.use("/api/v1", new AuthController(authService, auditService).getRouter());
 app.use("/api/v1", new UserController(userService).getRouter());
 app.use("/api/v1", new TeamController(teamService).getRouter());
-app.use("/api/v1", new ProjectController(projectService).getRouter());
+app.use("/api/v1", new ProjectController(projectService, auditService).getRouter());
 app.use("/api/v1", new TagController(tagService).getRouter());
 app.use("/api/v1", new HealthController(db, auditService).getRouter());
 

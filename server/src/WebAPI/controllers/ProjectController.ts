@@ -1,7 +1,9 @@
 import { Request, Response, Router } from "express";
 import { IProjectService } from "../../Domain/services/projects/IProjectService";
+import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
+import { AuditAction } from "../../Domain/enums/AuditLog";
 import { CreateProjectDto } from "../../Domain/DTOs/projects/CreateProjectDto";
 import { UpdateProjectDto } from "../../Domain/DTOs/projects/UpdateProjectDto";
 import { ProjectStatus } from "../../Domain/enums/ProjectStatus";
@@ -10,7 +12,7 @@ import { Priority } from "../../Domain/enums/Priority";
 export class ProjectController {
     private readonly router = Router();
 
-    public constructor(private readonly projectService: IProjectService) {
+    public constructor(private readonly projectService: IProjectService, private readonly auditService: IAuditService) {
         this.router.get("/teams/:teamId/projects",      authenticate, this.getTeamProjects.bind(this));
         this.router.post("/teams/:teamId/projects",     authenticate, this.create.bind(this));
         this.router.get("/projects/watched",            authenticate, this.getWatched.bind(this)); // mora biti PRIJE /:id
@@ -82,6 +84,7 @@ export class ProjectController {
         const project = await this.projectService.createProject(teamId, dto, req.user!.id);
 
         if (project.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
+        await this.auditService.log(req.user!.id, AuditAction.CREATE, "project", project.id);
         res.status(201).json({ success: true, message: "Project created successfully", data: project });
     }
 
@@ -96,6 +99,7 @@ export class ProjectController {
 
         const ok = await this.projectService.updateProject(id, dto, req.user!.id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Project not found or forbidden" }); return; }
+        await this.auditService.log(req.user!.id, AuditAction.UPDATE, "project", id);
         res.status(200).json({ success: true, message: "Project updated successfully" });
     }
 
@@ -109,6 +113,7 @@ export class ProjectController {
 
         const ok = await this.projectService.deleteProject(id, req.user!.id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Project not found or forbidden" }); return; }
+        await this.auditService.log(req.user!.id, AuditAction.DELETE, "project", id);
         res.status(200).json({ success: true, message: "Project deleted successfully" });
     }
 
@@ -123,6 +128,7 @@ export class ProjectController {
 
         const ok = await this.projectService.addTag(id, tagId, req.user!.id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Not found or forbidden" }); return; }
+        await this.auditService.log(req.user!.id, AuditAction.UPDATE, "project", id, `tag:${tagId}`);
         res.status(200).json({ success: true, message: "Tag added successfully" });
     }
 
@@ -137,6 +143,7 @@ export class ProjectController {
 
         const ok = await this.projectService.removeTag(id, tagId, req.user!.id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Not found or forbidden" }); return; }
+        await this.auditService.log(req.user!.id, AuditAction.UPDATE, "project", id, `tag:${tagId}`);
         res.status(200).json({ success: true, message: "Tag removed successfully" });
     }
 
