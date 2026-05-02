@@ -144,7 +144,7 @@ CREATE TABLE tasks (
 
 CREATE TABLE task_assignees (
   task_id     INT UNSIGNED NOT NULL,
-  user_id     INT UNSIGNED NOT NULL,
+  user_id     INT UNSIGNED NULL,
   assigned_by INT UNSIGNED NOT NULL,
   assigned_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (task_id, user_id),
@@ -165,13 +165,14 @@ CREATE TABLE comments (
 
 CREATE TABLE audits (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  user_id     INT UNSIGNED NOT NULL,
+  user_id     INT UNSIGNED NULL,
   action      VARCHAR(80)  NOT NULL,
-  entity_type VARCHAR(40)  NOT NULL DEFAULT '',
-  entity_id   INT UNSIGNED NOT NULL DEFAULT 0,
-  detail      TEXT         NOT NULL,
+  entity_type VARCHAR(40)  NULL,
+  entity_id   INT UNSIGNED NULL,
+  detail      TEXT         NULL,
+  ip_address  VARCHAR(45)  NULL,
   created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id)
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 SQL
 

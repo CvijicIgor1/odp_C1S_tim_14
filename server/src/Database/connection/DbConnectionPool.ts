@@ -2,7 +2,7 @@ import mysql, { Pool, PoolConnection } from "mysql2/promise";
 import dotenv from "dotenv";
 import { DbNode } from "../../Domain/models/DbNode";
 import { NodeStatus } from "../../Domain/enums/NodeStatus";
-import { HEALTH_CHECK_TIMEOUT, HEALTH_CHECK_INTERVAL_MS } from "../../Domain/constants/Constants";
+import { HEALTH_CHECK_TIMEOUT, HEALTH_CHECK_INTERVAL_MS, DEGRADED_THRESHOLD_MS } from "../../Domain/constants/Constants";
 import { ILoggerService } from "../../Domain/services/logger/ILoggerService";
 
 dotenv.config();
@@ -45,8 +45,8 @@ const slave2Pool: Pool = mysql.createPool({
 interface NodeInfo { name: string; pool: Pool; node: DbNode; }
 
 export class DbManager {
-  private readonly master: NodeInfo;
-  private readonly slaves: NodeInfo[];
+  private master: NodeInfo;
+  private slaves: NodeInfo[];
   private slaveRrIndex: number = 0;
   private healthTimer: NodeJS.Timeout | null = null;
 
@@ -68,8 +68,8 @@ export class DbManager {
       conn = await info.pool.getConnection();
       await conn.query("SELECT 1");
       const ms = Date.now() - start;
-      info.node.status = ms > HEALTH_CHECK_TIMEOUT ? NodeStatus.DEGRADED : NodeStatus.HEALTHY;
-    } catch (err) {
+      info.node.status = ms > DEGRADED_THRESHOLD_MS ? NodeStatus.DEGRADED : NodeStatus.HEALTHY;
+    } catch {
       info.node.status = NodeStatus.OFFLINE;
       info.node.failedWrites++;
       this.logger.warn("DB", `Node ${info.name} failed health check`);
@@ -87,6 +87,23 @@ export class DbManager {
   public async init(): Promise<void> {
     await this.runHealthCheck();
     this.healthTimer = setInterval(() => void this.runHealthCheck(), HEALTH_CHECK_INTERVAL_MS);
+  }
+
+  // Ако је master офлајн, промовиши slave
+  public async promoteSlaveToMaster(slaveIndex: 0 | 1): Promise<{ success: boolean; message: string }> {
+    if (slaveIndex < 0 || slaveIndex >= this.slaves.length) {
+      return { success: false, message: `Invalid slave index: ${slaveIndex}` };
+    }
+    const candidate = this.slaves[slaveIndex];
+    if (candidate.node.status === NodeStatus.OFFLINE) {
+      return { success: false, message: `Cannot promote ${candidate.name} — node is OFFLINE` };
+    }
+    const prevName = this.master.name;
+    this.master = { name: "master", pool: candidate.pool, node: candidate.node };
+    this.slaves = this.slaves.filter((_, i) => i !== slaveIndex);
+    this.slaveRrIndex = 0;
+    this.logger.warn("DB", `Failover: ${candidate.name} promoted to master (replaced: ${prevName})`);
+    return { success: true, message: `${candidate.name} promoted to master` };
   }
 
   /** All writes (INSERT/UPDATE/DELETE) → Master only */

@@ -1,8 +1,7 @@
 import { Request, Response, Router } from "express";
 import jwt from "jsonwebtoken";
 import { IAuthService } from "../../Domain/services/auth/IAuthService";
-import { IAuditRepository } from "../../Domain/repositories/audit/IAuditRepository";
-import { AuditLog } from "../../Domain/models/AuditLog";
+import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { AuditAction } from "../../Domain/enums/AuditLog";
 import { ValidationResult } from "../../Domain/types/ValidationResult";
 import { validateLogin } from "../validators/auth/validateLogin";
@@ -12,7 +11,10 @@ import { authenticate } from "../../Middlewares/authentification/AuthMiddleware"
 export class AuthController {
   private readonly router = Router();
 
-  public constructor(private readonly authService: IAuthService, private readonly auditRepo: IAuditRepository,) {
+  public constructor(
+    private readonly authService: IAuthService,
+    private readonly auditService: IAuditService
+  ) {
     this.router.post("/auth/login", this.login.bind(this));
     this.router.post("/auth/register", this.register.bind(this));
     this.router.post("/auth/logout",   authenticate, this.logout.bind(this));
@@ -29,7 +31,7 @@ export class AuthController {
       process.env.JWT_SECRET ?? "",
       { expiresIn: "24h" }
     );
-    await this.auditRepo.create(new AuditLog(0, result.id, AuditAction.LOGIN));
+    await this.auditService.log(result.id, AuditAction.LOGIN, undefined, undefined, undefined, req.ip);
     res.status(200).json({ success: true, message: "Login successful", data: token });
   }
 
@@ -44,12 +46,12 @@ export class AuthController {
       process.env.JWT_SECRET ?? "",
       { expiresIn: "24h" }
     );
-    await this.auditRepo.create(new AuditLog(0, result.id, AuditAction.REGISTER));
+    await this.auditService.log(result.id, AuditAction.REGISTER, undefined, undefined, undefined, req.ip);
     res.status(201).json({ success: true, message: "Registration successful", data: token });
   }
 
   private async logout(req: Request, res: Response): Promise<void> {
-    await this.auditRepo.create(new AuditLog(0, req.user!.id, AuditAction.LOGOUT));
+    await this.auditService.log(req.user!.id, AuditAction.LOGOUT, undefined, undefined, undefined, req.ip);
     res.status(200).json({ success: true, message: "Logged out" });
   }
 
