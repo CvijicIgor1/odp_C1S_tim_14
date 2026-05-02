@@ -40,11 +40,7 @@ export class AuditRepository implements IAuditRepository{
     const offset = safeInt(Math.max(0, (page - 1) * lim));
     try {
       const [rows] = await res.conn.execute<RowDataPacket[]>(
-        `SELECT au.*, u.username
-         FROM audits au
-         LEFT JOIN users u ON au.user_id = u.id
-         ORDER BY au.created_at DESC
-         LIMIT ${lim} OFFSET ${offset}`
+        `SELECT * FROM audits ORDER BY created_at DESC LIMIT ${lim} OFFSET ${offset}`
       );
       const [cnt] = await res.conn.execute<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM audits`
