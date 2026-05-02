@@ -31,7 +31,7 @@ export class AuthController {
       process.env.JWT_SECRET ?? "",
       { expiresIn: "24h" }
     );
-    await this.auditService.log(result.id, AuditAction.LOGIN);
+    await this.auditService.log(result.id, AuditAction.LOGIN, undefined, undefined, undefined, req.ip);
     res.status(200).json({ success: true, message: "Login successful", data: token });
   }
 
@@ -46,12 +46,12 @@ export class AuthController {
       process.env.JWT_SECRET ?? "",
       { expiresIn: "24h" }
     );
-    await this.auditService.log(result.id, AuditAction.REGISTER);
+    await this.auditService.log(result.id, AuditAction.REGISTER, undefined, undefined, undefined, req.ip);
     res.status(201).json({ success: true, message: "Registration successful", data: token });
   }
 
   private async logout(req: Request, res: Response): Promise<void> {
-    await this.auditService.log(req.user!.id, AuditAction.LOGOUT);
+    await this.auditService.log(req.user!.id, AuditAction.LOGOUT, undefined, undefined, undefined, req.ip);
     res.status(200).json({ success: true, message: "Logged out" });
   }
 

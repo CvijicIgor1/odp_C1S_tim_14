@@ -84,7 +84,7 @@ export class ProjectController {
         const project = await this.projectService.createProject(teamId, dto, req.user!.id);
 
         if (project.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
-        await this.auditService.log(req.user!.id, AuditAction.CREATE, "project", project.id);
+        await this.auditService.log(req.user!.id, AuditAction.CREATE, "project", project.id, undefined, req.ip);
         res.status(201).json({ success: true, message: "Project created successfully", data: project });
     }
 
@@ -99,7 +99,7 @@ export class ProjectController {
 
         const ok = await this.projectService.updateProject(id, dto, req.user!.id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Project not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.id, AuditAction.UPDATE, "project", id);
+        await this.auditService.log(req.user!.id, AuditAction.UPDATE, "project", id, undefined, req.ip);
         res.status(200).json({ success: true, message: "Project updated successfully" });
     }
 
@@ -113,7 +113,7 @@ export class ProjectController {
 
         const ok = await this.projectService.deleteProject(id, req.user!.id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Project not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.id, AuditAction.DELETE, "project", id);
+        await this.auditService.log(req.user!.id, AuditAction.DELETE, "project", id, undefined, req.ip);
         res.status(200).json({ success: true, message: "Project deleted successfully" });
     }
 
@@ -128,7 +128,7 @@ export class ProjectController {
 
         const ok = await this.projectService.addTag(id, tagId, req.user!.id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.id, AuditAction.UPDATE, "project", id, `tag:${tagId}`);
+        await this.auditService.log(req.user!.id, AuditAction.UPDATE, "project", id, `tag:${tagId}`, req.ip);
         res.status(200).json({ success: true, message: "Tag added successfully" });
     }
 
@@ -143,7 +143,7 @@ export class ProjectController {
 
         const ok = await this.projectService.removeTag(id, tagId, req.user!.id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.id, AuditAction.UPDATE, "project", id, `tag:${tagId}`);
+        await this.auditService.log(req.user!.id, AuditAction.UPDATE, "project", id, `tag:${tagId}`, req.ip);
         res.status(200).json({ success: true, message: "Tag removed successfully" });
     }
 

@@ -9,21 +9,22 @@ import { UserRepository }   from "./Database/repositories/users/UserRepository";
 import { AuditRepository } from "./Database/repositories/audit/AuditRepository";
 import { TeamRepository } from "./Database/repositories/teams/TeamRepository";
 import { ProjectRepository } from "./Database/repositories/projects/ProjectRepository";
+import { TagRepository }     from "./Database/repositories/tags/TagRepository";
 
 import { AuthService }   from "./Services/auth/AuthService";
 import { UserService }   from "./Services/users/UserService";
 import { AuditService } from "./Services/audit/AuditService";
 import { TeamService } from "./Services/teams/TeamService";
 import { ProjectService } from "./Services/projects/ProjectService";
+import { TagService }     from "./Services/tags/TagService";
 
 import { AuthController }   from "./WebAPI/controllers/AuthController";
 import { UserController }   from "./WebAPI/controllers/UserController";
 import { TeamController } from "./WebAPI/controllers/TeamController";
 import { HealthController }  from "./WebAPI/controllers/HealthController";
 import { ProjectController } from "./WebAPI/controllers/ProjectController"; 
-import { TagRepository } from "./Database/repositories/tags/TagRepository";
-import { TagService } from "./Services/tags/TagService";
 import { TagController } from "./WebAPI/controllers/TagController";
+import { AuditController }   from "./WebAPI/controllers/AuditController";
 
 export const logger = new ConsoleLoggerService();
 export const db     = new DbManager(logger);
@@ -52,5 +53,6 @@ app.use("/api/v1", new TeamController(teamService).getRouter());
 app.use("/api/v1", new ProjectController(projectService, auditService).getRouter());
 app.use("/api/v1", new TagController(tagService).getRouter());
 app.use("/api/v1", new HealthController(db, auditService).getRouter());
+app.use("/api/v1", new AuditController(auditService).getRouter());
 
 export default app;

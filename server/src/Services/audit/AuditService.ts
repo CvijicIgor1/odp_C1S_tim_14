@@ -9,14 +9,15 @@ export class AuditService implements IAuditService {
     public constructor(private readonly auditRepo: IAuditRepository) {}
 
     async log(
-        userId: number,
+        userId: number | null,
         action: AuditAction,
         entityType?: string,
         entityId?: number,
-        detail?: string
+        detail?: string,
+        ipAddress?: string
     ): Promise<void> {
         await this.auditRepo.create(
-            new AuditLog(0, userId, action, entityType ?? "", entityId ?? 0, detail ?? "")
+            new AuditLog(0, userId ?? null, action, entityType ?? null, entityId ?? null, detail ?? null, ipAddress ?? null)
         );
     }
 

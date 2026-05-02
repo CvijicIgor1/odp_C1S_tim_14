@@ -40,7 +40,7 @@ export class HealthController {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
-    await this.auditService.log(req.user!.id, AuditAction.FAILOVER, "db", slaveIndex, result.message);
+    await this.auditService.log(req.user!.id, AuditAction.FAILOVER, "db", slaveIndex, result.message, req.ip);
     res.status(200).json({ success: true, message: result.message });
   }
 
