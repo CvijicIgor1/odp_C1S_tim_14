@@ -206,21 +206,39 @@ export class TeamRepository implements ITeamRepository {
     }
 
     async addMember(teamId: number, userId: number, dto: AddMemberDto): Promise<boolean> {
-        const res = await this.db.getWriteConnection();
-        if (!res) return false;
+        const readRes = await this.db.getReadConnection();
+        if (!readRes) return false;
+
+        let targetUserId: number;
+        try {
+            const [rows] = await readRes.conn.execute<RowDataPacket[]>(
+                `SELECT id FROM users WHERE username = ?`,
+                [dto.username]
+            );
+            if (rows.length === 0) return false;
+            targetUserId = rows[0].id;
+        } catch (err) {
+            this.logger.error("TeamsRepository", "addMember user lookup failed", err);
+            return false;
+        } finally {
+            readRes.conn.release();
+        }
+
+        const writeRes = await this.db.getWriteConnection();
+        if (!writeRes) return false;
 
         try {
-            const [result] = await res.conn.execute<ResultSetHeader>(
+            await writeRes.conn.execute<ResultSetHeader>(
                 `INSERT INTO team_members (team_id, user_id, role) 
                 VALUES (?, ?, 'member')`,
-                [teamId, userId],
+                [teamId, targetUserId],
             );
             return true;
         } catch (err) {
             this.logger.error("TeamsRepository", "addMember failed", err);
             return false;
         } finally {
-            res.conn.release();
+            writeRes.conn.release();
         }
     }
     async removeMember(teamId: number, memberId: number): Promise<boolean> {

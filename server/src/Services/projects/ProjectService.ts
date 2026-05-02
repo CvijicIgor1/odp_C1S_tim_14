@@ -63,6 +63,7 @@ export class ProjectService implements IProjectService
         const watcherCount = await this.projectRepository.getWatcherCount(id);
         return this.toDto(project, tags, watcherCount);
     }
+
     async createProject(teamId: number, dto: CreateProjectDto, userId: number): Promise<ProjectDto> 
     {
         const created = await this.projectRepository.create(teamId, dto);
@@ -74,8 +75,7 @@ export class ProjectService implements IProjectService
             );
         }
 
-        
-        const tags = dto.tagIds?.map(id => new Tag(id, "")) ?? [];
+        const tags = await this.projectRepository.getTagsForProject(created.id);
         const watcherCount = 0; // novi projekat, nema pratilaca
         return this.toDto(created, tags, watcherCount);
     }

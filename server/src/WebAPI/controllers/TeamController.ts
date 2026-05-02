@@ -45,7 +45,7 @@ export class TeamController {
             return;
         }
         const team = await this.teamService.createNewTeam(new CreateTeamDto(name, description, avatar), req.user!.id);
-        if (team.id === 0) { res.status(503).json({ success: false, message: "No database nodea available" }); return; }
+        if (team.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
         res.status(201).json({ success: true, message: "Team created successfully", data: team });
     }
 
@@ -94,7 +94,7 @@ export class TeamController {
         }
         const ok = await this.teamService.updateMemberRole(id, memberId, new UpdateMemberRoleDto(role), req.user!.id);
         if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
-        res.status(200).json({ success: true, message: "Role changed successfully/" });
+        res.status(200).json({ success: true, message: "Role changed successfully" });
     }
 
     private async removeMember(req: Request, res: Response): Promise<void> {
