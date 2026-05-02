@@ -86,7 +86,7 @@ export class TeamService implements ITeamService {
     }
 
     async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean> {
-        return await this.teamRepo.addMember(teamId, userId, dto);
+        return await this.teamRepo.addMember(teamId, dto);
     }
 
     async removeTeamMember(teamId: number, memberId: number, userId: number): Promise<boolean> {

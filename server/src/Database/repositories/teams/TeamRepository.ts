@@ -205,7 +205,7 @@ export class TeamRepository implements ITeamRepository {
         }
     }
 
-    async addMember(teamId: number, userId: number, dto: AddMemberDto): Promise<boolean> {
+    async addMember(teamId: number, dto: AddMemberDto): Promise<boolean> {
         const readRes = await this.db.getReadConnection();
         if (!readRes) return false;
 
