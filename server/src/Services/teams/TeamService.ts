@@ -53,16 +53,13 @@ export class TeamService implements ITeamService {
 
     async getWithTeamId(teamId: number, userId: number, isAdmin: boolean): Promise<TeamDto> {
         const team = await this.teamRepo.findById(teamId);
+        if (!team) return new TeamDto();
 
-        const {members, totalNumber} = await this.teamRepo.getMembers(teamId);
-        var isMember = members.some((m) => m.userId === userId);  
+        const {members} = await this.teamRepo.getMembers(teamId);
+        const isMember = members.some((m) => m.userId === userId);
 
-        if (team != null) {
-            if (team.id === 0) return new TeamDto();
-            if (!isAdmin && !isMember) return new TeamDto(); //ako je clan tima ne mora da bude admin, ako je admin svejedno. Dakle ako nije nijedno, nista
-            return this.toDto(team);
-        }
-        return new TeamDto();
+        if (!isAdmin && !isMember) return new TeamDto(); //ako je clan tima ne mora da bude admin, ako je admin svejedno. Dakle ako nije nijedno, nista
+        return this.toDto(team);
     }
 
     async createNewTeam(dto: CreateTeamDto, userId: number): Promise<TeamDto> {

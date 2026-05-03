@@ -21,17 +21,17 @@ export class TeamRepository implements ITeamRepository {
             r.name,
             r.description ?? null,
             r.avatar,
-            new Date(r.createdAt),
-            r.updatedAt ? new Date(r.updatedAt) : undefined,
+            r.created_at ? new Date(r.created_at) : new Date(),
+            r.updated_at ? new Date(r.updated_at) : new Date(),
         );
     }
 
     private mapMember(r: RowDataPacket): TeamMember { //zato sto neke funkcije vracaju teamMembere
         return new TeamMember(
-            r.teamId,
-            r.userId,
+            r.team_id,
+            r.user_id,
             r.role,
-            r.joinedAt,
+            r.joined_at ? new Date(r.joined_at) : new Date(),
         );
     }
 
@@ -78,7 +78,7 @@ export class TeamRepository implements ITeamRepository {
 
     async findById(teamId: number): Promise<Team | null> {
         const res = await this.db.getReadConnection();
-        if (!res) return new Team();
+        if (!res) return null;
 
         try {
             const [rows] = await res.conn.execute<RowDataPacket[]>(
@@ -86,7 +86,7 @@ export class TeamRepository implements ITeamRepository {
                 [teamId]
             );
 
-            return rows.length > 0 ? this.map(rows[0]) : new Team();
+            return rows.length > 0 ? this.map(rows[0]) : null;
         } catch (err) {
             this.logger.error("TeamRepository", "findById failed", err);
             return null;
@@ -109,6 +109,10 @@ export class TeamRepository implements ITeamRepository {
                 ],
             );
             if (result.insertId === 0) return new Team();
+            await res.conn.execute<ResultSetHeader>(
+                `INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, 'owner')`,
+                [result.insertId, ownerId],
+            );
             return new Team(
                 result.insertId,
                 dto.name,
@@ -229,9 +233,9 @@ export class TeamRepository implements ITeamRepository {
 
         try {
             await writeRes.conn.execute<ResultSetHeader>(
-                `INSERT INTO team_members (team_id, user_id, role) 
-                VALUES (?, ?, 'member')`,
-                [teamId, targetUserId],
+                `INSERT INTO team_members (team_id, user_id, role)
+                VALUES (?, ?, ?)`,
+                [teamId, targetUserId, dto.role],
             );
             return true;
         } catch (err) {
@@ -251,7 +255,7 @@ export class TeamRepository implements ITeamRepository {
                 WHERE team_id = ? AND user_id = ?`,
                 [teamId, memberId],
             );
-            return true;
+            return result.affectedRows > 0;
         } catch (err) {
             this.logger.error("TeamsRepository", "removeMember failed", err);
             return false;
@@ -270,7 +274,7 @@ export class TeamRepository implements ITeamRepository {
                 WHERE team_id = ? AND user_id = ?`,
                 [dto.role, teamId, memberId],
             );
-            return true;
+            return result.affectedRows > 0;
         } catch (err) {
             this.logger.error("TeamsRepository", "updateMemberRole failed", err);
             return false;

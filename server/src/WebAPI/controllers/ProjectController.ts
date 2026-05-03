@@ -42,7 +42,7 @@ export class ProjectController {
             tagId:    req.query.tagId    ? parseInt(String(req.query.tagId), 10)        : undefined,
         };
 
-        const result = await this.projectService.getTeamProjects(teamId, req.user!.id, page, limit, filters);
+        const result = await this.projectService.getTeamProjects(teamId, req.user!.user_id, page, limit, filters);
         res.status(200).json({ success: true, data: result });
     }
 
@@ -52,7 +52,7 @@ export class ProjectController {
         const page  = parseInt(String(req.query.page  ?? "1"),  10);
         const limit = Math.min(parseInt(String(req.query.limit ?? "20"), 10), 100);
 
-        const result = await this.projectService.getWatchedProjects(req.user!.id, page, limit);
+        const result = await this.projectService.getWatchedProjects(req.user!.user_id, page, limit);
         res.status(200).json({ success: true, data: result });
     }
 
@@ -62,7 +62,7 @@ export class ProjectController {
         const id = parseInt(String(req.params.id), 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid project ID" }); return; }
 
-        const project = await this.projectService.getProjectById(id, req.user!.id);
+        const project = await this.projectService.getProjectById(id, req.user!.user_id);
         if (project.id === 0) { res.status(404).json({ success: false, message: "Project not found" }); return; }
 
         res.status(200).json({ success: true, data: project });
@@ -81,10 +81,10 @@ export class ProjectController {
         }
 
         const dto = new CreateProjectDto(name, description, status, priority, deadline, tagIds ?? []);
-        const project = await this.projectService.createProject(teamId, dto, req.user!.id);
+        const project = await this.projectService.createProject(teamId, dto, req.user!.user_id);
 
         if (project.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
-        await this.auditService.log(req.user!.id, AuditAction.CREATE, "project", project.id, undefined, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "project", project.id, undefined, req.ip);
         res.status(201).json({ success: true, message: "Project created successfully", data: project });
     }
 
@@ -97,9 +97,9 @@ export class ProjectController {
         const dto = req.body as UpdateProjectDto;
         const isAdmin = req.user?.role === UserRole.ADMIN;
 
-        const ok = await this.projectService.updateProject(id, dto, req.user!.id, isAdmin);
+        const ok = await this.projectService.updateProject(id, dto, req.user!.user_id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Project not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.id, AuditAction.UPDATE, "project", id, undefined, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "project", id, undefined, req.ip);
         res.status(200).json({ success: true, message: "Project updated successfully" });
     }
 
@@ -111,9 +111,9 @@ export class ProjectController {
 
         const isAdmin = req.user?.role === UserRole.ADMIN;
 
-        const ok = await this.projectService.deleteProject(id, req.user!.id, isAdmin);
+        const ok = await this.projectService.deleteProject(id, req.user!.user_id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Project not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.id, AuditAction.DELETE, "project", id, undefined, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "project", id, undefined, req.ip);
         res.status(200).json({ success: true, message: "Project deleted successfully" });
     }
 
@@ -126,9 +126,9 @@ export class ProjectController {
 
         const isAdmin = req.user?.role === UserRole.ADMIN;
 
-        const ok = await this.projectService.addTag(id, tagId, req.user!.id, isAdmin);
+        const ok = await this.projectService.addTag(id, tagId, req.user!.user_id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.id, AuditAction.UPDATE, "project", id, `tag:${tagId}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "project", id, `tag:${tagId}`, req.ip);
         res.status(200).json({ success: true, message: "Tag added successfully" });
     }
 
@@ -141,9 +141,9 @@ export class ProjectController {
 
         const isAdmin = req.user?.role === UserRole.ADMIN;
 
-        const ok = await this.projectService.removeTag(id, tagId, req.user!.id, isAdmin);
+        const ok = await this.projectService.removeTag(id, tagId, req.user!.user_id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.id, AuditAction.UPDATE, "project", id, `tag:${tagId}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "project", id, `tag:${tagId}`, req.ip);
         res.status(200).json({ success: true, message: "Tag removed successfully" });
     }
 
@@ -153,7 +153,7 @@ export class ProjectController {
         const id = parseInt(String(req.params.id), 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid project ID" }); return; }
 
-        const ok = await this.projectService.watchProject(id, req.user!.id);
+        const ok = await this.projectService.watchProject(id, req.user!.user_id);
         if (!ok) { res.status(403).json({ success: false, message: "You must be a team member to watch this project" }); return; }
         res.status(200).json({ success: true, message: "Now watching project" });
     }
@@ -164,7 +164,7 @@ export class ProjectController {
         const id = parseInt(String(req.params.id), 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid project ID" }); return; }
 
-        const ok = await this.projectService.unwatchProject(id, req.user!.id);
+        const ok = await this.projectService.unwatchProject(id, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "You are not watching this project" }); return; }
         res.status(200).json({ success: true, message: "Stopped watching project" });
     }

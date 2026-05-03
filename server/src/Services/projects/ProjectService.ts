@@ -44,14 +44,17 @@ export class ProjectService implements IProjectService
     {
         const { projects, totalNumber } = await this.projectRepository.findAllByTeam(teamId, filters);
 
+        const start = (page - 1) * limit;
+        const paged = projects.slice(start, start + limit);
+
         // Za svaki projekat hvatam njegove tagove — da frontend može to da izfiltrira
-        const dtos = await Promise.all(projects.map(async (project) => {
+        const dtos = await Promise.all(paged.map(async (project) => {
             const tags = await this.projectRepository.getTagsForProject(project.id);
             const watcherCount = await this.projectRepository.getWatcherCount(project.id);
             return this.toDto(project, tags , watcherCount);
         }));
 
-        return new PaginatedListDto<ProjectDto>(dtos, totalNumber);
+        return new PaginatedListDto<ProjectDto>(dtos, totalNumber, page, limit);
     }
 
     async getProjectById(id: number, userId: number): Promise<ProjectDto> 
@@ -128,9 +131,12 @@ export class ProjectService implements IProjectService
     async getWatchedProjects(userId: number, page: number, limit: number): Promise<PaginatedListDto<ProjectDto>> 
     {
         const { projects, totalNumber } = await this.projectRepository.findWatchedByUser(userId);
+
+        const start = (page - 1) * limit;
+        const paged = projects.slice(start, start + limit);
  
         const dtos = await Promise.all(
-            projects.map(async (p) => {
+            paged.map(async (p) => {
                 const tags = await this.projectRepository.getTagsForProject(p.id);
                 const watcherCount = await this.projectRepository.getWatcherCount(p.id);
                 return this.toDto(p, tags, watcherCount);

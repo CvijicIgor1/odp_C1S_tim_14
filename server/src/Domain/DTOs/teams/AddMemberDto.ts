@@ -1,6 +1,9 @@
-export class AddMemberDto{
+import { TeamMemberRole } from "../../enums/TeamMemberRole";
+
+export class AddMemberDto {
     public constructor(
-        public username : string
+        public username: string,
+        public role: TeamMemberRole = TeamMemberRole.MEMBER
     ) {}
 }
 

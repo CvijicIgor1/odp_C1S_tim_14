@@ -14,8 +14,8 @@ export class AuditController {
     public getRouter(): Router { return this.router; }
 
     private async getLogs(req: Request, res: Response): Promise<void> {
-        const page  = parseInt(String(req.query.page  ?? "1"),  10);
-        const limit = Math.min(parseInt(String(req.query.limit ?? "20"), 10), 100);
+        const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),  10) || 1);
+        const limit = Math.min(Math.max(1, parseInt(String(req.query.limit ?? "20"), 10) || 20), 100);
 
         const result = await this.auditService.findAll(page, limit);
         res.status(200).json({ success: true, data: result });

@@ -10,7 +10,7 @@ const KEY = "authToken";
 const decode = (token: string): JwtTokenClaims | null => {
   try {
     const d = jwtDecode<JwtTokenClaims>(token);
-    return d?.id ? d : null;
+    return d?.user_id ? d : null;
   } catch {
     return null;
   }
@@ -33,7 +33,7 @@ const getInitialAuth = () => {
     if (claims) {
       return {
         token: saved,
-        user: { id: claims.id, username: claims.username, role: claims.role, } as AuthUser,
+        user: { id: claims.user_id, username: claims.username, role: claims.role, } as AuthUser,
       };
     }
   }
@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!claims || expired(t)) return;
 
     setToken(t);
-    setUser({ id: claims.id, username: claims.username, role: claims.role });
+    setUser({ id: claims.user_id, username: claims.username, role: claims.role });
     localStorage.setItem(KEY, t);
   };
 

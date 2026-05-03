@@ -18,15 +18,14 @@ export class AuthService implements IAuthService {
     return new AuthUserDto(user.id, user.username, user.role);
   }
 
-  async register(username: string, email: string, role: string, password: string, full_name: string = "", avatar: string = ""): Promise<AuthUserDto> {
+  async register(username: string, email: string, password: string, full_name: string = "", avatar: string = ""): Promise<AuthUserDto> {
     const byName = await this.userRepo.findByUsername(username);
     if (byName.id !== 0) return new AuthUserDto();
     const byEmail = await this.userRepo.findByEmail(email);
     if (byEmail.id !== 0) return new AuthUserDto();
     const hash = await bcrypt.hash(password, this.saltRounds).catch(() => "");
     if (!hash) return new AuthUserDto();
-    const userRole = role === UserRole.ADMIN ? UserRole.ADMIN : UserRole.USER;
-    const created = await this.userRepo.create(new User(0, username, email, userRole, hash, full_name, avatar));
+    const created = await this.userRepo.create(new User(0, username, email, UserRole.USER, hash, full_name, avatar));
     if (created.id === 0) return new AuthUserDto();
     return new AuthUserDto(created.id, created.username, created.role);
   }
