@@ -1,42 +1,58 @@
 import { Task } from "../../models/Task";
 import { TaskAssignee } from "../../models/TaskAssignee";
 import { Comment } from "../../models/Comment";
-import { CreateTaskDto } from "../../DTOs/tasks/CreateTaskDto";
-import { UpdateTaskDto } from "../../DTOs/tasks/UpdateTaskDto";
-import { UpdateTaskStatusDto } from "../../DTOs/tasks/UpdateTaskStatusDto";
-import { AddTaskAssigneeDto } from "../../DTOs/tasks/AddTaskAssigneeDto";
-import { AddCommentDto } from "../../DTOs/tasks/AddCommentDto";
+import { TaskStatus } from "../../enums/TaskStatus";
+import { Priority } from "../../enums/Priority";
 
 export interface ITaskRepository {
-  findByProjectId(projectId: number): Promise<{ todo: Task[]; in_progress: Task[]; done: Task[] }>;
 
-  create(dto: CreateTaskDto, createdByUserId: number): Promise<Task>;
+    findByProjectId(projectId: number): Promise<{ todo: Task[]; in_progress: Task[]; done: Task[] }>;
 
-  findById(id: number): Promise<Task>;
+    findById(id: number): Promise<Task>;
 
-  getAssignees(taskId: number): Promise<TaskAssignee[]>;
+    create(
+        projectId: number,
+        createdByUserId: number,
+        title: string,
+        description: string,
+        status: TaskStatus,
+        priority: Priority,
+        deadline: Date,
+        estimatedHours: number,
+    ): Promise<Task>;
 
-  getComments(taskId: number): Promise<Comment[]>;
+    update(
+        taskId: number,
+        title?: string,
+        description?: string,
+        priority?: Priority,
+        deadline?: Date,
+        estimatedHours?: number,
+    ): Promise<boolean>;
 
-  findCommentById(commentId: number): Promise<Comment>;
+    updateStatus(taskId: number, status: TaskStatus): Promise<boolean>;
 
-  update(taskId: number, dto: UpdateTaskDto): Promise<boolean>;
+    delete(taskId: number): Promise<boolean>;
 
-  updateStatus(taskId: number, dto: UpdateTaskStatusDto): Promise<boolean>;
+    getAssignees(taskId: number): Promise<TaskAssignee[]>;
 
-  delete(taskId: number): Promise<boolean>;
+    addAssignee(taskId: number, userId: number, assignedBy: number): Promise<boolean>;
 
-  addAssignee(taskId: number, assignedBy: number, dto: AddTaskAssigneeDto): Promise<boolean>;
+    removeAssignee(taskId: number, userId: number): Promise<boolean>;
 
-  removeAssignee(taskId: number, userId: number): Promise<boolean>;
+    isAssignee(taskId: number, userId: number): Promise<boolean>;
 
-  addComment(taskId: number, userId: number, dto: AddCommentDto): Promise<Comment>;
+    getComments(taskId: number): Promise<Comment[]>;
 
-  deleteComment(commentId: number): Promise<boolean>;
+    findCommentById(commentId: number): Promise<Comment>;
 
-  isUserInProjectTeam(projectId: number, userId: number): Promise<boolean>;
+    addComment(taskId: number, userId: number, content: string): Promise<Comment>;
 
-  isTeamOwnerOfTask(taskId: number, userId: number): Promise<boolean>;
+    deleteComment(commentId: number): Promise<boolean>;
 
-  isAssignee(taskId: number, userId: number): Promise<boolean>;
+    //Helpers
+
+    isUserInProjectTeam(projectId: number, userId: number): Promise<boolean>;
+
+    isTeamOwnerOfTask(taskId: number, userId: number): Promise<boolean>;
 }
