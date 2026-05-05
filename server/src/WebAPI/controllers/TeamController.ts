@@ -1,9 +1,11 @@
 import { Request, Response, Router } from "express";
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
+import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { authorize } from '../../Middlewares/authorization/AuthorizeMiddleware';
 import { UserRole } from "../../Domain/enums/UserRole";
 import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
+import { AuditAction } from "../../Domain/enums/AuditLog";
 import { CreateTeamDto } from "../../Domain/DTOs/teams/CreateTeamDto";
 import { AddMemberDto } from "../../Domain/DTOs/teams/AddMemberDto";
 import { UpdateMemberRoleDto } from "../../Domain/DTOs/teams/UpdateMemberRoleDto";
@@ -11,7 +13,7 @@ import { UpdateTeamDto } from "../../Domain/DTOs/teams/UpdateTeamDto";
 
 export class TeamController {
     private readonly router = Router();
-    public constructor(private readonly teamService: ITeamService) { // treba i private readonly IAuditService kad se doda
+    public constructor(private readonly teamService: ITeamService, private readonly auditService: IAuditService) {
         this.router.get("/teams", authenticate, this.getAll.bind(this));
         this.router.get("/teams/all", authenticate, authorize(UserRole.ADMIN), this.getAllAsAdmin.bind(this));
         this.router.post("/teams", authenticate, this.create.bind(this));
@@ -64,6 +66,7 @@ export class TeamController {
         const dto = req.body as UpdateTeamDto;
         const ok = await this.teamService.updateTeam(id, dto, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Team not found"}); return; }
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team", id, undefined, req.ip);
         res.status(200).json({ success: true, message: "Team updated successfully" });
     }
 
@@ -72,6 +75,7 @@ export class TeamController {
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid team ID" }); return; }
         const ok = await this.teamService.deleteTeam(id, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Team not found" }); return; }
+        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team", id, undefined, req.ip);
         res.status(200).json({ success: true, message: "Team deleted successfully" });
     }
 
@@ -82,6 +86,7 @@ export class TeamController {
         if (!username) { res.status(400).json({ success: false, message: "Username is required" }); return; }
         const ok = await this.teamService.addTeamMember(id, new AddMemberDto(username, role ?? TeamMemberRole.MEMBER), req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "User not found" }); return; }
+        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "team_member", id, `username=${username}`, req.ip);
         res.status(201).json({ success: true, message: "Member added successfully" });
     }
 
@@ -95,6 +100,7 @@ export class TeamController {
         }
         const ok = await this.teamService.updateMemberRole(id, memberId, new UpdateMemberRoleDto(role), req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team_member", memberId, `role=${role}`, req.ip);
         res.status(200).json({ success: true, message: "Role changed successfully" });
     }
 
@@ -104,6 +110,7 @@ export class TeamController {
         if (isNaN(id) || isNaN(memberId)) { res.status(400).json({ success: false, message: "Invalid IDs" }); return; }
         const ok = await this.teamService.removeTeamMember(id, memberId, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
+        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team_member", memberId, undefined, req.ip);
         res.status(200).json({ success: true, message: "Member removed successfully" });
     }
 }

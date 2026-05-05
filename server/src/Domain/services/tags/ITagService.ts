@@ -4,6 +4,6 @@ import { TagDto } from "../../DTOs/tags/TagDto"
 
 export interface ITagService{
     getAll(page: number, limit: number): Promise<PaginatedListDto<TagDto>>;
-    create(dto: CreateTagDto, isAdmin: boolean): Promise<TagDto>;
-    delete(tagId: number, isAdmin: boolean): Promise<boolean>;
+    create(dto: CreateTagDto): Promise<TagDto>;
+    delete(tagId: number): Promise<boolean>;
 }

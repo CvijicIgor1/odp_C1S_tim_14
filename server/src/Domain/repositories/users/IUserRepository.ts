@@ -1,4 +1,5 @@
 import { User } from "../../models/User";
+import { UserRole } from "../../enums/UserRole";
 
 export interface IUserRepository {
   findById(id: number): Promise<User>;
@@ -7,5 +8,7 @@ export interface IUserRepository {
   findAll(): Promise<User[]>;
   create(user: User): Promise<User>;
   update(user: User): Promise<boolean>;
+  updateRole(id: number, role: UserRole): Promise<boolean>;
+  updateStatus(id: number, isActive: boolean): Promise<boolean>;
   deactivate(id: number): Promise<boolean>;
 }

@@ -37,10 +37,20 @@ export class ProjectRepository implements IProjectRepository
         return new Tag(r.id,r.name);
     }
 
-    async findAllByTeam(teamId: number, filters?: ProjectFilters): Promise<{ projects: Project[]; totalNumber: number }>
+    private safeInt(value: number, fallback: number): number
+    {
+        const n = Math.floor(value);
+        return Number.isFinite(n) && n > 0 ? n : fallback;
+    }
+    
+    async findAllByTeam(teamId: number, page: number, limit: number, filters?: ProjectFilters): Promise<{ projects: Project[]; totalNumber: number }>
     {
         const res = await this.db.getReadConnection();
         if (!res) return { projects: [], totalNumber: 0 };
+
+        const safePage = this.safeInt(page,  1);
+        const safeLimit = this.safeInt(limit, 20);
+        const offset = (safePage - 1) * safeLimit;
 
         try{
             const conditions: string[] = ["team_id = ?"];
@@ -60,13 +70,21 @@ export class ProjectRepository implements IProjectRepository
                 values.push(filters.tagId);
             }
 
-            const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT * FROM projects WHERE ${conditions.join(" AND ")} ORDER BY created_at DESC`,
+            const where = `WHERE ${conditions.join(" AND ")}`;
+
+            const [countRows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT COUNT(*) AS cnt FROM projects ${where}`,
                 values
+            );
+            const totalNumber = countRows[0].cnt ?? 0;
+
+            const [rows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT * FROM projects ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+                [...values, safeLimit, offset]
             );
 
             const projects = rows.map((r) => this.map(r));
-            return { projects, totalNumber: projects.length };
+            return { projects, totalNumber };
         }
         catch(err)
         {
@@ -341,20 +359,31 @@ export class ProjectRepository implements IProjectRepository
         }
     }
 
-     async findWatchedByUser(userId: number,): Promise<{ projects: Project[]; totalNumber: number }>
+    async findWatchedByUser(userId: number, page: number, limit: number): Promise<{ projects: Project[]; totalNumber: number }>
     {
         const res = await this.db.getReadConnection(); 
         if (!res) return { projects: [], totalNumber: 0 };
 
+        const safePage  = this.safeInt(page,  1);
+        const safeLimit = this.safeInt(limit, 20);
+        const offset    = (safePage - 1) * safeLimit;
+
         try{
+            const [countRows] = await res.conn.execute<RowDataPacket[]>
+            (
+                `SELECT COUNT(*) AS cnt FROM projects WHERE id IN (SELECT project_id FROM project_watchers WHERE user_id = ?)`,
+                [userId],
+            );
+            const totalNumber = countRows[0].cnt ?? 0;
+
             const [rows] = await res.conn.execute<RowDataPacket[]>
             (
-                `SELECT * FROM projects WHERE id IN (SELECT project_id FROM project_watchers WHERE user_id = ?) ORDER BY created_at DESC`,
-                [userId],
+                `SELECT * FROM projects WHERE id IN (SELECT project_id FROM project_watchers WHERE user_id = ?) ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+                [userId, safeLimit, offset],
             );
 
             const projects = rows.map((r) => this.map(r));
-            return { projects, totalNumber: projects.length };
+            return { projects, totalNumber };
         }
         catch(err)
         {

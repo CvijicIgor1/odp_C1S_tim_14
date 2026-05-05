@@ -42,10 +42,7 @@ export class ProjectService implements IProjectService
 
     async getTeamProjects(teamId: number, userId: number, page: number, limit: number, filters?: ProjectFilters): Promise<PaginatedListDto<ProjectDto>> 
     {
-        const { projects, totalNumber } = await this.projectRepository.findAllByTeam(teamId, filters);
-
-        const start = (page - 1) * limit;
-        const paged = projects.slice(start, start + limit);
+        const { projects: paged, totalNumber } = await this.projectRepository.findAllByTeam(teamId, page, limit, filters);
 
         // Za svaki projekat hvatam njegove tagove — da frontend može to da izfiltrira
         const dtos = await Promise.all(paged.map(async (project) => {
@@ -130,11 +127,8 @@ export class ProjectService implements IProjectService
     
     async getWatchedProjects(userId: number, page: number, limit: number): Promise<PaginatedListDto<ProjectDto>> 
     {
-        const { projects, totalNumber } = await this.projectRepository.findWatchedByUser(userId);
+        const { projects: paged, totalNumber } = await this.projectRepository.findWatchedByUser(userId, page, limit);
 
-        const start = (page - 1) * limit;
-        const paged = projects.slice(start, start + limit);
- 
         const dtos = await Promise.all(
             paged.map(async (p) => {
                 const tags = await this.projectRepository.getTagsForProject(p.id);

@@ -23,13 +23,13 @@ export class TagService implements ITagService {
         return new PaginatedListDto(tags.map((o) => this.tagToDto(o)), totalNumber, page, limit);
     }
 
-    async create(dto: CreateTagDto, isAdmin: boolean): Promise<TagDto> {
+    async create(dto: CreateTagDto): Promise<TagDto> {
         const createdTag = await this.tagRepo.createNewTag(dto);
         if (createdTag.id === 0) return new TagDto();
         return this.tagToDto(createdTag);
     }
 
-    async delete(tagId: number, isAdmin: boolean): Promise<boolean> {
-        return await this.tagRepo.deleteTag(tagId);
+    async delete(tagId: number): Promise<boolean> {
+        return this.tagRepo.deleteTag(tagId);
     }
 }

@@ -5,7 +5,7 @@ import { Tag } from "../../models/Tag";
 import { ProjectFilters } from '../../types/ProjectFilters';
 
 export interface IProjectRepository {
-    findAllByTeam(teamId:number , filters?: ProjectFilters): Promise<{ projects: Project[]; totalNumber: number }>;
+    findAllByTeam(teamId:number, page: number, limit: number, filters?: ProjectFilters): Promise<{ projects: Project[]; totalNumber: number }>;
     findById(id: number): Promise<Project | null>;
     create(teamId: number, dto: CreateProjectDto): Promise<Project>;
     update(id: number, dto: UpdateProjectDto): Promise<boolean>;
@@ -15,7 +15,7 @@ export interface IProjectRepository {
     getTagsForProject(projectId: number): Promise<Tag[]>;
     addWatcher(projectId: number, userId: number): Promise<boolean>;
     removeWatcher(projectId: number, userId: number): Promise<boolean>;
-    findWatchedByUser(userId: number): Promise<{ projects: Project[]; totalNumber: number }>;
+    findWatchedByUser(userId: number, page: number, limit: number): Promise<{ projects: Project[]; totalNumber: number }>;
     isTeamMember(projectId: number, userId: number): Promise<boolean>;
     isTeamOwner(projectId: number, userId: number): Promise<boolean>;
     isWatcher(projectId: number, userId: number): Promise<boolean>;
