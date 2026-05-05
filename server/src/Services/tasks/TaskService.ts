@@ -13,11 +13,13 @@ import { GroupedTasksDto } from "../../Domain/DTOs/tasks/GroupedTasksDto";
 import { Task } from "../../Domain/models/Task";
 import { Comment } from "../../Domain/models/Comment";
 import { TaskAssignee } from "../../Domain/models/TaskAssignee";
+import { IAuditService } from "../../Domain/services/audit/IAuditService";
+
 
 export class TaskService implements ITaskService {
     public constructor(
-        private readonly taskRepo: ITaskRepository
-        // private readonly auditService: IAuditService s
+        private readonly taskRepo: ITaskRepository,
+        private readonly auditService: IAuditService 
     ) { }
 
 
