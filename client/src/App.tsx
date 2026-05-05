@@ -12,6 +12,8 @@ import ProjectKanbanPage from "./pages/user/ProjectKanbanPage";
 import TaskDetailPage from "./pages/user/TaskDetailPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersPage from "./pages/admin/UsersPage";
+import HealthDashboard from "./pages/admin/HealthDashboard";
+import TagsPage from "./pages/admin/TagsPage";
 
 export default function App() {
   return (
@@ -29,6 +31,8 @@ export default function App() {
       {/* Admin routes */}
       <Route path="/admin"       element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><UsersPage /></ProtectedRoute>} />
+      <Route path="/admin/health" element={<ProtectedRoute requiredRole="admin"><HealthDashboard /></ProtectedRoute>} />
+      <Route path="/admin/tags" element={<ProtectedRoute requiredRole="admin"><TagsPage /></ProtectedRoute>} />
 
       <Route path="/"    element={<Navigate to="/login" replace />} />
       <Route path="/404" element={<NotFoundPage />} />
