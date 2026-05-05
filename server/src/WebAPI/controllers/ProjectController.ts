@@ -33,7 +33,7 @@ export class ProjectController {
         const teamId = parseInt(String(req.params.teamId), 10);
         if (isNaN(teamId)) { res.status(400).json({ success: false, message: "Invalid team ID" }); return; }
 
-        const page  = parseInt(String(req.query.page  ?? "1"),  10);
+        const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),  10));
         const limit = Math.min(parseInt(String(req.query.limit ?? "20"), 10), 100);
 
         const filters = {
@@ -49,7 +49,7 @@ export class ProjectController {
     
     private async getWatched(req: Request, res: Response): Promise<void> 
     {
-        const page  = parseInt(String(req.query.page  ?? "1"),  10);
+        const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),  10));
         const limit = Math.min(parseInt(String(req.query.limit ?? "20"), 10), 100);
 
         const result = await this.projectService.getWatchedProjects(req.user!.user_id, page, limit);

@@ -6,6 +6,7 @@ import RegisterPage from "./pages/auth/RegisterPage";
 import NotFoundPage from "./pages/not_found/NotFoundPage";
 
 import UserDashboard from "./pages/user/UserDashboard";
+import UserTeams     from "./pages/user/UserTeams";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersPage from "./pages/admin/UsersPage";
 
@@ -17,6 +18,7 @@ export default function App() {
 
       {/* User routes */}
       <Route path="/dashboard" element={<ProtectedRoute requiredRole="user"><UserDashboard /></ProtectedRoute>} />
+      <Route path="/teams"     element={<ProtectedRoute requiredRole="user"><UserTeams /></ProtectedRoute>} />
 
       {/* Admin routes */}
       <Route path="/admin"       element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />

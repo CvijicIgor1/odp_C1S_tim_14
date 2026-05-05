@@ -144,7 +144,7 @@ CREATE TABLE tasks (
 
 CREATE TABLE task_assignees (
   task_id     INT UNSIGNED NOT NULL,
-  user_id     INT UNSIGNED NULL,
+  user_id     INT UNSIGNED NOT NULL,
   assigned_by INT UNSIGNED NOT NULL,
   assigned_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (task_id, user_id),

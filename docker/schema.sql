@@ -115,6 +115,7 @@ CREATE TABLE IF NOT EXISTS  audits (
   entity_type VARCHAR(40)  NULL,
   entity_id   INT UNSIGNED NULL,
   detail      TEXT         NULL,
+  ip_address  VARCHAR(45)  NULL,
   created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
