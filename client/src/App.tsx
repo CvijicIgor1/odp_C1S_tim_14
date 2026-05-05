@@ -7,6 +7,9 @@ import NotFoundPage from "./pages/not_found/NotFoundPage";
 
 import UserDashboard from "./pages/user/UserDashboard";
 import UserTeams     from "./pages/user/UserTeams";
+import TeamProjectsPage from "./pages/user/TeamProjectsPage";
+import ProjectKanbanPage from "./pages/user/ProjectKanbanPage";
+import TaskDetailPage from "./pages/user/TaskDetailPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersPage from "./pages/admin/UsersPage";
 
@@ -19,6 +22,9 @@ export default function App() {
       {/* User routes */}
       <Route path="/dashboard" element={<ProtectedRoute requiredRole="user"><UserDashboard /></ProtectedRoute>} />
       <Route path="/teams"     element={<ProtectedRoute requiredRole="user"><UserTeams /></ProtectedRoute>} />
+      <Route path="/teams/:teamId/projects" element={<ProtectedRoute requiredRole="user"><TeamProjectsPage /></ProtectedRoute>} />
+      <Route path="/projects/:id" element={<ProtectedRoute requiredRole="user"><ProjectKanbanPage /></ProtectedRoute>} />
+      <Route path="/tasks/:id" element={<ProtectedRoute requiredRole="user"><TaskDetailPage /></ProtectedRoute>} />
 
       {/* Admin routes */}
       <Route path="/admin"       element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />

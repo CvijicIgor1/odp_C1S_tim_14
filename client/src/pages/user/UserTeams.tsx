@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader, Empty, ErrorBox, SuccessBox, Spinner } from "../../components/ui/UI";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { teamsApi } from "../../api_services/team/TeamAPIService";
@@ -6,6 +7,7 @@ import type { TeamDto } from "../../models/team/TeamTypes";
 
 export default function UserTeams() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [teams, setTeams] = useState<TeamDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -188,6 +190,12 @@ export default function UserTeams() {
 
                 {/* Opasne akcije */}
                 <div className="flex gap-4 mt-6 pt-4 border-t border-white/5">
+                  <button
+                    onClick={() => navigate(`/teams/${team.id}/projects`)}
+                    className="text-[11px] text-white/40 hover:text-white transition-colors"
+                  >
+                    View projects
+                  </button>
                   <button
                     onClick={() => handleDelete(team.id)}
                     className="text-[11px] text-red-500/40 hover:text-red-500 transition-colors"
