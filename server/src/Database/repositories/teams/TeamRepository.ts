@@ -35,19 +35,19 @@ export class TeamRepository implements ITeamRepository {
         );
     }
 
-    async findAll(userId: number): Promise<{ teams: Team[], totalNumber: number }> {
+    async findAll(userId: number): Promise<{ teams: Array<{team: Team; role: string}>, totalNumber: number }> {
         const res = await this.db.getReadConnection();
         if (!res) return { teams: [], totalNumber: 0 };
 
         try {
             const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT t.* FROM teams t INNER JOIN team_members tm ON tm.team_id = t.id
+                `SELECT t.*, tm.role AS member_role FROM teams t INNER JOIN team_members tm ON tm.team_id = t.id
                 WHERE tm.user_id = ?
                 ORDER BY t.name ASC`,
                 [userId]
             );
 
-            const teams = rows.map((r) => this.map(r));
+            const teams = rows.map((r) => ({ team: this.map(r), role: r.member_role as string }));
             return { teams, totalNumber: teams.length };
         } catch (err) {
             this.logger.error("TeamsRepository", "findAll failed", err);

@@ -5,6 +5,7 @@ export type TeamDto = {
   avatar: string;
   updatedAt: string | null;
   createdAt: string | null;
+  currentUserRole: "owner" | "member";
 };
 
 export type TeamMemberDto = {

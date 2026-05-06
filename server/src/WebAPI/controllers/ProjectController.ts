@@ -62,7 +62,9 @@ export class ProjectController {
         const id = parseInt(String(req.params.id), 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid project ID" }); return; }
 
-        const project = await this.projectService.getProjectById(id, req.user!.user_id);
+        const isAdmin = req.user?.role === UserRole.ADMIN;
+
+        const project = await this.projectService.getProjectById(id, req.user!.user_id, isAdmin);
         if (project.id === 0) { res.status(404).json({ success: false, message: "Project not found" }); return; }
 
         res.status(200).json({ success: true, data: project });

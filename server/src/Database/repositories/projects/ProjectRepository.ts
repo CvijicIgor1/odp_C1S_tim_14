@@ -309,6 +309,57 @@ export class ProjectRepository implements IProjectRepository
         }
     }
 
+    async getTagsForProjects(projectIds: number[]): Promise<Map<number, Tag[]>>
+    {
+        const result = new Map<number, Tag[]>();
+        if (projectIds.length === 0) return result;
+
+        const res = await this.db.getReadConnection();
+        if (!res) return result;
+
+        try
+        {
+            const placeholders = projectIds.map(() => "?").join(", ");
+
+            const [bridgeRows] = await res.conn.execute<RowDataPacket[]>
+            (
+                `SELECT project_id, tag_id FROM project_tags WHERE project_id IN (${placeholders})`,
+                projectIds,
+            );
+
+            if (bridgeRows.length === 0) return result;
+
+            const tagIds = [...new Set(bridgeRows.map((r) => r.tag_id as number))];
+            const tagPlaceholders = tagIds.map(() => "?").join(", ");
+
+            const [tagRows] = await res.conn.execute<RowDataPacket[]>
+            (
+                `SELECT id, name FROM tags WHERE id IN (${tagPlaceholders}) ORDER BY name ASC`,
+                tagIds,
+            );
+
+            const tagMap = new Map<number, Tag>(tagRows.map((r) => [r.id as number, new Tag(r.id, r.name)]));
+
+            for (const b of bridgeRows)
+            {
+                const tag = tagMap.get(b.tag_id);
+                if (!tag) continue;
+                if (!result.has(b.project_id)) result.set(b.project_id, []);
+                result.get(b.project_id)!.push(tag);
+            }
+            return result;
+        }
+        catch(err)
+        {
+            this.logger.error("ProjectRepository", "getTagsForProjects failed", err);
+            return result;
+        }
+        finally
+        {
+            res.conn.release();
+        }
+    }
+
     async addWatcher(projectId: number, userId: number): Promise<boolean> 
     {
           const res = await this.db.getWriteConnection();
@@ -512,4 +563,41 @@ export class ProjectRepository implements IProjectRepository
         res.conn.release();
     }
   }
+
+    async getWatcherCounts(projectIds: number[]): Promise<Map<number, number>>
+    {
+        const result = new Map<number, number>();
+        if (projectIds.length === 0) return result;
+
+        const res = await this.db.getReadConnection();
+        if (!res) return result;
+
+        try
+        {
+            const placeholders = projectIds.map(() => "?").join(", ");
+            const [rows] = await res.conn.execute<RowDataPacket[]>
+            (
+                `SELECT project_id, COUNT(*) AS cnt
+                 FROM project_watchers
+                 WHERE project_id IN (${placeholders})
+                 GROUP BY project_id`,
+                projectIds,
+            );
+
+            for (const r of rows)
+            {
+                result.set(r.project_id, r.cnt ?? 0);
+            }
+            return result;
+        }
+        catch(err)
+        {
+            this.logger.error("ProjectRepository", "getWatcherCounts failed", err);
+            return result;
+        }
+        finally
+        {
+            res.conn.release();
+        }
+    }
 }

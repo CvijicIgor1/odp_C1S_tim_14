@@ -7,8 +7,15 @@ import NotFoundPage from "./pages/not_found/NotFoundPage";
 
 import UserDashboard from "./pages/user/UserDashboard";
 import UserTeams     from "./pages/user/UserTeams";
+import TeamProjectsPage from "./pages/user/TeamProjectsPage";
+import ProjectKanbanPage from "./pages/user/ProjectKanbanPage";
+import TaskDetailPage from "./pages/user/TaskDetailPage";
+import MyTasksPage from "./pages/user/MyTasksPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersPage from "./pages/admin/UsersPage";
+import HealthDashboard from "./pages/admin/HealthDashboard";
+import TagsPage from "./pages/admin/TagsPage";
+import AuditLogPage from "./pages/admin/AuditLogPage";
 
 export default function App() {
   return (
@@ -19,10 +26,17 @@ export default function App() {
       {/* User routes */}
       <Route path="/dashboard" element={<ProtectedRoute requiredRole="user"><UserDashboard /></ProtectedRoute>} />
       <Route path="/teams"     element={<ProtectedRoute requiredRole="user"><UserTeams /></ProtectedRoute>} />
+      <Route path="/teams/:teamId/projects" element={<ProtectedRoute requiredRole="user"><TeamProjectsPage /></ProtectedRoute>} />
+      <Route path="/projects/:id" element={<ProtectedRoute requiredRole="user"><ProjectKanbanPage /></ProtectedRoute>} />
+      <Route path="/tasks/:id" element={<ProtectedRoute requiredRole="user"><TaskDetailPage /></ProtectedRoute>} />
+      <Route path="/my-tasks" element={<ProtectedRoute requiredRole="user"><MyTasksPage /></ProtectedRoute>} />
 
       {/* Admin routes */}
       <Route path="/admin"       element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><UsersPage /></ProtectedRoute>} />
+      <Route path="/admin/health" element={<ProtectedRoute requiredRole="admin"><HealthDashboard /></ProtectedRoute>} />
+      <Route path="/admin/tags" element={<ProtectedRoute requiredRole="admin"><TagsPage /></ProtectedRoute>} />
+      <Route path="/admin/audit-log"  element={<ProtectedRoute requiredRole="admin"><AuditLogPage /></ProtectedRoute>} />
 
       <Route path="/"    element={<Navigate to="/login" replace />} />
       <Route path="/404" element={<NotFoundPage />} />

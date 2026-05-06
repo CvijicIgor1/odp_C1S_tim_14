@@ -8,6 +8,7 @@ import { UpdateMemberRoleDto } from "../../Domain/DTOs/teams/UpdateMemberRoleDto
 import { UpdateTeamDto } from "../../Domain/DTOs/teams/UpdateTeamDto";
 import { Team } from "../../Domain/models/Team";
 import { TeamMember } from "../../Domain/models/TeamMember";
+import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
 import { PaginatedListDto } from '../../Domain/DTOs/entity/PaginatedListDto';
 import { TeamDto } from "../../Domain/DTOs/teams/TeamDto";
 import { TeamMemberDto } from "../../Domain/DTOs/teams/TeamMemberDto";
@@ -18,14 +19,15 @@ export class TeamService implements ITeamService {
         private readonly auditService: IAuditService
     ) { }
 
-    private toDto(team: Team): TeamDto {
+    private toDto(team: Team, role: TeamMemberRole = TeamMemberRole.MEMBER): TeamDto {
         return new TeamDto(
             team.id,
             team.name,
             team.description,
             team.avatar,
             team.updatedAt,
-            team.createdAt
+            team.createdAt,
+            role
         );
     }
 
@@ -40,7 +42,12 @@ export class TeamService implements ITeamService {
 
     async getAll(userId: number, page: number, limit: number): Promise<PaginatedListDto<TeamDto>> {
         const { teams, totalNumber } = await this.teamRepo.findAll(userId);
-        return new PaginatedListDto(teams.map((o) => this.toDto(o)), totalNumber, page, limit);
+        return new PaginatedListDto(
+            teams.map(({ team, role }) => this.toDto(team, role as TeamMemberRole)),
+            totalNumber,
+            page,
+            limit
+        );
     }
 
     async getAllAsAdmin(userId: number, page: number, limit: number, isAdmin: boolean): Promise<PaginatedListDto<TeamDto>> {
@@ -66,7 +73,7 @@ export class TeamService implements ITeamService {
         const created = await this.teamRepo.create(dto, userId);
         if (created.id === 0) return new TeamDto();
         await this.auditService.log(userId, AuditAction.CREATE, "team", created.id);
-        return this.toDto(created);  //ima manje posla nego kod Almondovog CreateOrder, jer ne moramo da rukujemo brojkama
+        return this.toDto(created, TeamMemberRole.OWNER);  //ima manje posla nego kod Almondovog CreateOrder, jer ne moramo da rukujemo brojkama
     }
 
     async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<boolean> {

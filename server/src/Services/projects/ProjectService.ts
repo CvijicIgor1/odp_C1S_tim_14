@@ -44,21 +44,33 @@ export class ProjectService implements IProjectService
     {
         const { projects: paged, totalNumber } = await this.projectRepository.findAllByTeam(teamId, page, limit, filters);
 
-        // Za svaki projekat hvatam njegove tagove — da frontend može to da izfiltrira
-        const dtos = await Promise.all(paged.map(async (project) => {
-            const tags = await this.projectRepository.getTagsForProject(project.id);
-            const watcherCount = await this.projectRepository.getWatcherCount(project.id);
-            return this.toDto(project, tags , watcherCount);
-        }));
+        const ids = paged.map((p) => p.id);
+        const [tagsMap, countsMap] = await Promise.all([
+            this.projectRepository.getTagsForProjects(ids),
+            this.projectRepository.getWatcherCounts(ids),
+        ]);
+
+        const dtos = paged.map((project) =>
+            this.toDto(
+                project,
+                tagsMap.get(project.id) ?? [],
+                countsMap.get(project.id) ?? 0,
+            )
+        );
 
         return new PaginatedListDto<ProjectDto>(dtos, totalNumber, page, limit);
     }
 
-    async getProjectById(id: number, userId: number): Promise<ProjectDto> 
+    async getProjectById(id: number, userId: number, isAdmin: boolean = false): Promise<ProjectDto> 
     {
         const project = await this.projectRepository.findById(id);
         if (!project || project.id === 0) return new ProjectDto();
  
+        if (!isAdmin) {
+            const isMember = await this.projectRepository.isTeamMember(id, userId);
+            if (!isMember) return new ProjectDto();
+        }
+
         const tags = await this.projectRepository.getTagsForProject(id);
         const watcherCount = await this.projectRepository.getWatcherCount(id);
         return this.toDto(project, tags, watcherCount);
@@ -129,12 +141,18 @@ export class ProjectService implements IProjectService
     {
         const { projects: paged, totalNumber } = await this.projectRepository.findWatchedByUser(userId, page, limit);
 
-        const dtos = await Promise.all(
-            paged.map(async (p) => {
-                const tags = await this.projectRepository.getTagsForProject(p.id);
-                const watcherCount = await this.projectRepository.getWatcherCount(p.id);
-                return this.toDto(p, tags, watcherCount);
-            })
+        const ids = paged.map((p) => p.id);
+        const [tagsMap, countsMap] = await Promise.all([
+            this.projectRepository.getTagsForProjects(ids),
+            this.projectRepository.getWatcherCounts(ids),
+        ]);
+
+        const dtos = paged.map((p) =>
+            this.toDto(
+                p,
+                tagsMap.get(p.id) ?? [],
+                countsMap.get(p.id) ?? 0,
+            )
         );
  
         return new PaginatedListDto(dtos, totalNumber, page, limit);

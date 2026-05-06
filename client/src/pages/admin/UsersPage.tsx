@@ -1,23 +1,34 @@
-import { useEffect, useState } from "react";
-import { PageHeader, Table, TableHead, RoleBadge, Empty, ErrorBox } from "../../components/ui/UI";
+import { useCallback, useEffect, useState } from "react";
+import { PageHeader, Table, TableHead, RoleBadge, Empty, ErrorBox, Spinner } from "../../components/ui/UI";
 import { usersApi } from "../../api_services/users/UsersAPIService";
 import type { UserDto } from "../../models/user/UserTypes";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserDto[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    usersApi.getAll()
-      .then(res => { if (res.success) setUsers(res.data ?? []); else setError(res.message); })
-      .catch(() => setError("Failed to load users"));
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await usersApi.getAll();
+      if (res.success) setUsers(res.data ?? []);
+      else setError(res.message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   return (
     <div>
       <PageHeader eyebrow="Admin" title="Users" />
       {error && <ErrorBox message={error} />}
-      {users.length === 0 && !error ? <Empty message="No users found" /> : (
+      {loading && <div className="flex justify-center py-12"><Spinner size={24} /></div>}
+      {!loading && users.length === 0 && !error && <Empty message="No users found" />}
+      {!loading && users.length > 0 && (
         <Table>
           <TableHead columns={["ID", "Username", "Email", "Role", "Status"]} />
           <tbody>

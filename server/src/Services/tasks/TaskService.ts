@@ -99,6 +99,11 @@ export class TaskService implements ITaskService {
         );
     }
 
+    async getMyTasks(userId: number): Promise<TaskDto[]> {
+        const tasks = await this.taskRepo.findByAssignee(userId);
+        return tasks.map((t) => this.toDto(t));
+    }
+
     async createTask(dto: CreateTaskDto, userId: number): Promise<TaskDto> {
         const created = await this.taskRepo.create(
             dto.projectId,
@@ -197,9 +202,9 @@ export class TaskService implements ITaskService {
         taskId: number,
         dto: AddCommentDto,
         userId: number
-    ): Promise<CommentDto> {
+    ): Promise<CommentDto | null> {
         const task = await this.taskRepo.findById(taskId);
-        if (task.id === 0) return new CommentDto();
+        if (task.id === 0) return null;
 
         const canComment = await this.taskRepo.isAssignee(taskId, userId)
             || await this.taskRepo.isTeamOwnerOfTask(taskId, userId);

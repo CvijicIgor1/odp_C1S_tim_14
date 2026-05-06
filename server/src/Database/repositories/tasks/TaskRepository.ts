@@ -111,6 +111,36 @@ export class TaskRepository implements ITaskRepository
         }
     }
 
+    async findByAssignee(userId: number): Promise<Task[]>
+    {
+        const res = await this.db.getReadConnection();
+        if (!res) return [];
+        try
+        {
+            const [rows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT t.*
+                FROM tasks t
+                WHERE t.id IN (
+                    SELECT ta.task_id
+                    FROM task_assignees ta
+                    WHERE ta.user_id = ?
+                )
+                ORDER BY t.priority DESC, t.deadline ASC;`,
+                [userId],
+            );
+            return rows.map((r) => this.mapTask(r));
+        }
+        catch (err)
+        {
+            this.logger.error("TaskRepository", "findByAssignee failed", err);
+            return [];
+        }
+        finally
+        {
+            res.conn.release();
+        }
+    }
+
     async create(
         projectId: number,
         createdByUserId: number,

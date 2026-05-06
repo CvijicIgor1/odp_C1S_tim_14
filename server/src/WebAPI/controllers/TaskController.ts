@@ -16,6 +16,7 @@ export class TaskController {
     public constructor(private readonly taskService: ITaskService, private readonly auditService: IAuditService) {
         this.router.get("/projects/:projectId/tasks", authenticate, this.getByProject.bind(this));
         this.router.post("/projects/:projectId/tasks", authenticate, this.create.bind(this));
+        this.router.get("/tasks/my", authenticate, this.getMyTasks.bind(this));
         this.router.get("/tasks/:id", authenticate, this.getById.bind(this));
         this.router.put("/tasks/:id", authenticate, this.update.bind(this));
         this.router.patch("/tasks/:id/status", authenticate, this.updateStatus.bind(this));
@@ -38,6 +39,13 @@ export class TaskController {
 
         const result = await this.taskService.getByProjectId(projectId, req.user!.user_id, isAdmin);
         res.status(200).json({ success: true, data: result });
+    }
+
+
+    private async getMyTasks(req: Request, res: Response): Promise<void>
+    {
+        const tasks = await this.taskService.getMyTasks(req.user!.user_id);
+        res.status(200).json({ success: true, data: tasks });
     }
 
 
@@ -152,7 +160,8 @@ export class TaskController {
         if (!dto.content) { res.status(400).json({ success: false, message: "content is required" }); return; }
 
         const comment = await this.taskService.addComment(id, dto, req.user!.user_id);
-        if (comment.id === 0) { res.status(403).json({ success: false, message: "Task not found or you are not an assignee" }); return; }
+        if (comment === null) { res.status(404).json({ success: false, message: "Task not found" }); return; }
+        if (comment.id === 0) { res.status(403).json({ success: false, message: "You are not authorized to comment on this task" }); return; }
         res.status(201).json({ success: true, message: "Comment added successfully", data: comment });
     }
 

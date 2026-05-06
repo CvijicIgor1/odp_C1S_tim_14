@@ -6,11 +6,14 @@ import { useAuth } from "../../hooks/auth/useAuthHook";
 const userNav = [
   { to: "/dashboard", label: "Dashboard", icon: "⬡" },
   // add more user routes here
+  { to: "/teams",     label: "Teams",     icon: "◎" },
 ];
 const adminNav = [
   { to: "/admin",       label: "Dashboard", icon: "⬡" },
   { to: "/admin/users", label: "Users",     icon: "◎" },
   // add more admin routes here
+  { to: "/admin/health", label: "DB Health", icon: "◈" },
+  { to: "/admin/tags",   label: "Tags",      icon: "◦" },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -28,7 +31,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
           <div>
             {/* TODO: Replace with your app name */}
-            <p className="text-sm font-semibold text-white tracking-tight">AppName</p>
+            <p className="text-sm font-semibold text-white tracking-tight">NexusHub</p>
             <p className="text-[10px] text-white/25 uppercase tracking-widest">{user?.role}</p>
           </div>
         </div>

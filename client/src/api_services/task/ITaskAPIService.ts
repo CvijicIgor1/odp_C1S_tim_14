@@ -1,10 +1,12 @@
 import type { ApiResponse } from "../team/ITeamAPIService";
-import type { TaskDetailDto, GroupedTasksDto, CommentDto, TaskStatus, Priority } from "../../models/project/ProjectTypes";
+import type { TaskDetailDto, GroupedTasksDto, CommentDto, TaskStatus, Priority, TaskDto } from "../../models/project/ProjectTypes";
 
 export interface ITaskAPIService {
   getByProject(projectId: number): Promise<ApiResponse<GroupedTasksDto>>;
 
   getById(id: number): Promise<ApiResponse<TaskDetailDto>>;
+
+  getMyTasks(): Promise<ApiResponse<TaskDto[]>>;
 
   create(
     projectId: number,
@@ -14,7 +16,7 @@ export interface ITaskAPIService {
     priority: Priority,
     deadline: string,
     estimatedHours?: number
-  ): Promise<ApiResponse<import("../../models/project/ProjectTypes").TaskDto>>;
+  ): Promise<ApiResponse<TaskDto>>;
 
   update(
     id: number,

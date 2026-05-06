@@ -13,6 +13,7 @@ export interface IProjectRepository {
     addTag(projectId: number, tagId: number): Promise<boolean>;
     removeTag(projectId: number, tagId: number): Promise<boolean>;
     getTagsForProject(projectId: number): Promise<Tag[]>;
+    getTagsForProjects(projectIds: number[]): Promise<Map<number, Tag[]>>;
     addWatcher(projectId: number, userId: number): Promise<boolean>;
     removeWatcher(projectId: number, userId: number): Promise<boolean>;
     findWatchedByUser(userId: number, page: number, limit: number): Promise<{ projects: Project[]; totalNumber: number }>;
@@ -20,4 +21,5 @@ export interface IProjectRepository {
     isTeamOwner(projectId: number, userId: number): Promise<boolean>;
     isWatcher(projectId: number, userId: number): Promise<boolean>;
     getWatcherCount(projectId: number): Promise<number>;    
+    getWatcherCounts(projectIds: number[]): Promise<Map<number, number>>;
 }

@@ -31,6 +31,13 @@ export const tasksApi: ITaskAPIService = {
       .catch(e => err(e, "Failed to load task"));
   },
 
+  async getMyTasks() {
+    return axios
+      .get<ApiResponse<TaskDto[]>>(`${BASE}tasks/my`, { headers: auth() })
+      .then(r => r.data)
+      .catch(e => err(e, "Failed to load your tasks"));
+  },
+
   async create(projectId, title, description, status, priority, deadline, estimatedHours = 0) {
     return axios
       .post<ApiResponse<TaskDto>>(`${BASE}projects/${projectId}/tasks`, { title, description, status, priority, deadline, estimatedHours }, { headers: auth() })

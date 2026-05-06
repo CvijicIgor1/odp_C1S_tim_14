@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader, Empty, ErrorBox, SuccessBox, Spinner } from "../../components/ui/UI";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { teamsApi } from "../../api_services/team/TeamAPIService";
@@ -6,6 +7,7 @@ import type { TeamDto } from "../../models/team/TeamTypes";
 
 export default function UserTeams() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [teams, setTeams] = useState<TeamDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -84,9 +86,7 @@ export default function UserTeams() {
     else setError(res.message);
   };
 
-  const isOwner = (team: TeamDto) => {
-    return true;
-  };
+  const isOwner = (team: TeamDto) => team.currentUserRole === "owner";
 
   return (
     <div className="space-y-12">
@@ -160,40 +160,50 @@ export default function UserTeams() {
                     </div>
                   </div>
                   <span className="bg-white/5 text-[10px] text-white/40 px-2 py-1 rounded border border-white/10 uppercase tracking-tighter">
-                    Member
+                    {team.currentUserRole}
                   </span>
                 </div>
 
                 <p className="text-white/50 text-sm mb-6 line-clamp-2">{team.description}</p>
 
                 {/* Dodavanje člana */}
-                <div className="border-t border-white/5 pt-4 space-y-4">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="Add member by username..."
-                      value={addInputs[team.id] ?? ""}
-                      onChange={e => setAddInputs(prev => ({ ...prev, [team.id]: e.target.value }))}
-                      className="flex-1 bg-white/5 border border-transparent rounded-lg px-3 py-2 text-xs text-white focus:border-white/10 outline-none"
-                    />
-                    <button
-                      onClick={() => handleAddMember(team.id)}
-                      disabled={addingTo === team.id || !(addInputs[team.id] ?? "").trim()}
-                      className="text-xs text-white bg-white/10 px-3 py-2 rounded-lg hover:bg-white/20 disabled:opacity-40"
-                    >
-                      {addingTo === team.id ? <Spinner size={12} /> : "Add"}
-                    </button>
+                {isOwner(team) && (
+                  <div className="border-t border-white/5 pt-4 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Add member by username..."
+                        value={addInputs[team.id] ?? ""}
+                        onChange={e => setAddInputs(prev => ({ ...prev, [team.id]: e.target.value }))}
+                        className="flex-1 bg-white/5 border border-transparent rounded-lg px-3 py-2 text-xs text-white focus:border-white/10 outline-none"
+                      />
+                      <button
+                        onClick={() => handleAddMember(team.id)}
+                        disabled={addingTo === team.id || !(addInputs[team.id] ?? "").trim()}
+                        className="text-xs text-white bg-white/10 px-3 py-2 rounded-lg hover:bg-white/20 disabled:opacity-40"
+                      >
+                        {addingTo === team.id ? <Spinner size={12} /> : "Add"}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Opasne akcije */}
                 <div className="flex gap-4 mt-6 pt-4 border-t border-white/5">
                   <button
-                    onClick={() => handleDelete(team.id)}
-                    className="text-[11px] text-red-500/40 hover:text-red-500 transition-colors"
+                    onClick={() => navigate(`/teams/${team.id}/projects`)}
+                    className="text-[11px] text-white/40 hover:text-white transition-colors"
                   >
-                    Delete team (cascade)
+                    View projects
                   </button>
+                  {isOwner(team) && (
+                    <button
+                      onClick={() => handleDelete(team.id)}
+                      className="text-[11px] text-red-500/40 hover:text-red-500 transition-colors"
+                    >
+                      Delete team (cascade)
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
