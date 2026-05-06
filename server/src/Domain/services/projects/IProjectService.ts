@@ -22,5 +22,4 @@ export interface IProjectService {
   getWatchedProjects(userId: number, page: number, limit: number): Promise<PaginatedListDto<ProjectDto>>;
   watchProject(projectId: number, userId: number): Promise<boolean>;
   unwatchProject(projectId: number, userId: number): Promise<boolean>;
-  checkOwnerOrAdmin(projectId: number, userId: number, isAdmin: boolean): Promise<boolean>;
 }

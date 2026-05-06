@@ -86,10 +86,10 @@ export class TeamRepository implements ITeamRepository {
                 [teamId]
             );
 
-            return rows.length > 0 ? this.map(rows[0]) : null;
+            return rows.length > 0 ? this.map(rows[0]) : new Team();
         } catch (err) {
             this.logger.error("TeamRepository", "findById failed", err);
-            return null;
+            return new Team();
         } finally {
             res.conn.release();
         }

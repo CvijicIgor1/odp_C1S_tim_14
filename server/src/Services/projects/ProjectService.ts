@@ -34,7 +34,7 @@ export class ProjectService implements IProjectService
         )
     }
 
-    async checkOwnerOrAdmin(projectId: number, userId: number, isAdmin: boolean): Promise<boolean> 
+    private async checkOwnerOrAdmin(projectId: number, userId: number, isAdmin: boolean): Promise<boolean> 
     {
         if (isAdmin) return true; // globalni admin je najvisi u hijerarhiji
         return this.projectRepository.isTeamOwner(projectId, userId);

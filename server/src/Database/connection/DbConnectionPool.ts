@@ -71,7 +71,7 @@ export class DbManager {
       info.node.status = ms > DEGRADED_THRESHOLD_MS ? NodeStatus.DEGRADED : NodeStatus.HEALTHY;
     } catch {
       info.node.status = NodeStatus.OFFLINE;
-      info.node.failedWrites++;
+      info.node.failedConnections++;
       this.logger.warn("DB", `Node ${info.name} failed health check`);
     } finally {
       if (conn) conn.release();
@@ -114,11 +114,11 @@ export class DbManager {
     }
     try {
       const conn = await this.master.pool.getConnection();
-      this.master.node.successfulWrites++;
+      this.master.node.successfulConnections++;
       return { conn, nodeName: this.master.name };
     } catch (err) {
       this.master.node.status = NodeStatus.OFFLINE;
-      this.master.node.failedWrites++;
+      this.master.node.failedConnections++;
       this.logger.error("DB", "Failed to connect to master", err);
       return null;
     }
@@ -134,11 +134,11 @@ export class DbManager {
       try {
         const conn = await info.pool.getConnection();
         this.slaveRrIndex = (idx + 1) % n;
-        info.node.successfulWrites++;
+        info.node.successfulConnections++;
         return { conn, nodeName: info.name };
       } catch (err) {
         info.node.status = NodeStatus.OFFLINE;
-        info.node.failedWrites++;
+        info.node.failedConnections++;
         this.logger.warn("DB", `Slave ${info.name} unreachable, trying next`);
       }
     }
@@ -150,7 +150,7 @@ export class DbManager {
     }
     try {
       const conn = await this.master.pool.getConnection();
-      this.master.node.successfulWrites++;
+      this.master.node.successfulConnections++;
       return { conn, nodeName: this.master.name };
     } catch (err) {
       this.master.node.status = NodeStatus.OFFLINE;
