@@ -1,24 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
 import { PageHeader, NodeBadge, StatCard, ErrorBox, SuccessBox, Spinner } from "../../components/ui/UI";
-import { readItem } from "../../helpers/local_storage";
-
-const BASE = import.meta.env.VITE_API_URL;
-
-const auth = () => {
-  const token = readItem("authToken");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
-interface DbNodeInfo {
-  name: string;
-  host: string;
-  port: number;
-  status: string;
-  lastCheck: string | null;
-  successfulWrites: number;
-  failedWrites: number;
-}
+import { healthApi } from "../../api_services/health/HealthAPIService";
+import type { DbNodeInfo } from "../../api_services/health/IHealthAPIService";
 
 export default function HealthDashboard() {
   const [nodes, setNodes] = useState<DbNodeInfo[]>([]);
@@ -31,14 +14,9 @@ export default function HealthDashboard() {
     setLoading(true);
     setError("");
     try {
-      const res = await axios.get<{ success: boolean; data: DbNodeInfo[] }>(
-        `${BASE}health/db`,
-        { headers: auth() },
-      );
-      if (res.data.success) setNodes(res.data.data);
-      else setError("Failed to load DB health");
-    } catch (e) {
-      setError(axios.isAxiosError(e) ? (e.response?.data as { message?: string })?.message ?? "Request failed" : "Request failed");
+      const res = await healthApi.getDbHealth();
+      if (res.success) setNodes(res.data ?? []);
+      else setError(res.message);
     } finally {
       setLoading(false);
     }
@@ -51,19 +29,13 @@ export default function HealthDashboard() {
     setError("");
     setSuccess("");
     try {
-      const res = await axios.post<{ success: boolean; message: string }>(
-        `${BASE}health/failover`,
-        { slaveIndex },
-        { headers: auth() },
-      );
-      if (res.data.success) {
-        setSuccess(res.data.message);
+      const res = await healthApi.failover(slaveIndex);
+      if (res.success) {
+        setSuccess((res as { message?: string }).message ?? "Failover successful");
         await load();
       } else {
-        setError(res.data.message);
+        setError(res.message);
       }
-    } catch (e) {
-      setError(axios.isAxiosError(e) ? (e.response?.data as { message?: string })?.message ?? "Failover failed" : "Failover failed");
     } finally {
       setFailing(false);
     }
