@@ -42,6 +42,10 @@ const userService   = new UserService(userRepo);
 const teamService = new TeamService(teamRepo, auditService);
 const projectService = new ProjectService(projectRepo);
 const tagService = new TagService(tagRepo);
+<<<<<<< Updated upstream
+=======
+const taskService = new TaskService(taskRepo,auditService);
+>>>>>>> Stashed changes
 
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL ?? "*" }));
