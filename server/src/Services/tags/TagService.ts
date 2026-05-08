@@ -19,7 +19,7 @@ export class TagService implements ITagService {
     }
 
     async getAll(page: number, limit: number): Promise<PaginatedListDto<TagDto>> {
-        const { tags, totalNumber } = await this.tagRepo.findAllTags();
+        const { tags, totalNumber } = await this.tagRepo.findAllTags(page, limit);
         return new PaginatedListDto(tags.map((o) => this.tagToDto(o)), totalNumber, page, limit);
     }
 
