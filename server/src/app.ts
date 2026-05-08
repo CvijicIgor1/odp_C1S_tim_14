@@ -50,7 +50,7 @@ const taskService = new TaskService(taskRepo);
 
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL ?? "*" }));
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
 app.use("/api/v1", new AuthController(authService, auditService).getRouter());
 app.use("/api/v1", new UserController(userService, auditService).getRouter());
