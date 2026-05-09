@@ -58,23 +58,35 @@ export class TagRepository implements ITagRepository {
         }
     }
 
-    async findAllTags(): Promise<{ tags: Tag[]; totalNumber: number; }> {
+    async findAllTags(page: number, limit: number): Promise<{ tags: Tag[]; totalNumber: number; }> 
+    {
+        const safePage  = Math.max(1, Math.floor(page));
+        const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 100);
+        const offset    = (safePage - 1) * safeLimit;
         const res = await this.db.getReadConnection();
         if (!res) return { tags: [], totalNumber: 0 };
-
-        try {
-            const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT * FROM tags ORDER BY name ASC`
-            );
-
-            const tags = rows.map((r) => this.map(r));
-            return { tags, totalNumber: tags.length };
-        } catch (err) {
-            this.logger.error("TagRepository", "findAllTags failed", err);
-            return { tags: [], totalNumber: 0 };
-        } finally {
-            res.conn.release();
-        }
-    }
+            try 
+            {
+                const [[countRow]] = await res.conn.execute<RowDataPacket[]>(
+                    `SELECT COUNT(*) AS total FROM tags`
+                );
+                const totalNumber = (countRow as RowDataPacket).total as number;
+                const [rows] = await res.conn.execute<RowDataPacket[]>(
+                    `SELECT * FROM tags ORDER BY name ASC LIMIT ? OFFSET ?`,
+                    [safeLimit, offset]
+                );
+                const tags = rows.map((r) => this.map(r));
+                return { tags, totalNumber };
+            } 
+            catch (err) 
+            {
+                this.logger.error("TagRepository", "findAllTags failed", err);
+                return { tags: [], totalNumber: 0 };
+            } 
+            finally 
+            {
+                res.conn.release();
+            }
+}
 
 }

@@ -102,7 +102,7 @@ export function StatCard({ label, value, sub, color }: { label: string; value: s
 
 export function Table({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-white/2 border border-white/6 rounded-2xl overflow-hidden">
+    <div className="bg-[#2b2626] border border-white/8 rounded-2xl overflow-hidden">
       <table className="w-full text-sm">{children}</table>
     </div>
   );
@@ -111,9 +111,9 @@ export function Table({ children }: { children: ReactNode }) {
 export function TableHead({ columns }: { columns: string[] }) {
   return (
     <thead>
-      <tr className="border-b border-white/6">
+      <tr className="border-b border-white/12">
         {columns.map((c) => (
-          <th key={c} className="text-left px-5 py-3.5 text-xs text-white/25 font-mono uppercase tracking-wider">{c}</th>
+          <th key={c} className="text-left px-5 py-3.5 text-xs text-white/60 font-mono uppercase tracking-wider">{c}</th>
         ))}
       </tr>
     </thead>
