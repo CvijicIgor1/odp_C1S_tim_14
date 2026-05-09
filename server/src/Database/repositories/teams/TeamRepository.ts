@@ -8,6 +8,7 @@ import { UpdateTeamDto } from '../../../Domain/DTOs/teams/UpdateTeamDto';
 import { Team } from '../../../Domain/models/Team';
 import { TeamMember } from '../../../Domain/models/TeamMember';
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { TeamMemberRole } from '../../../Domain/enums/TeamMemberRole';
 
 export class TeamRepository implements ITeamRepository {
     public constructor(
@@ -94,7 +95,7 @@ export class TeamRepository implements ITeamRepository {
             res.conn.release();
         }
     }
-    async create(dto: CreateTeamDto, ownerId: number): Promise<Team> {
+    async create(newTeam: Team, ownerId: number): Promise<Team> {
         const res = await this.db.getWriteConnection();
         if (!res) return new Team();
         try {
@@ -103,9 +104,9 @@ export class TeamRepository implements ITeamRepository {
                 (name, description, avatar)
                 VALUES (?, ?, ?)`,
                 [
-                    dto.name,
-                    dto.description,
-                    dto.avatar
+                    newTeam.name,
+                    newTeam.description,
+                    newTeam.avatar
                 ],
             );
             if (result.insertId === 0) return new Team();
@@ -115,9 +116,9 @@ export class TeamRepository implements ITeamRepository {
             );
             return new Team(
                 result.insertId,
-                dto.name,
-                dto.description,
-                dto.avatar
+                newTeam.name,
+                newTeam.description,
+                newTeam.avatar
             );
         } catch (err) {
             this.logger.error("TeamRepository", "create failed", err);
@@ -126,7 +127,7 @@ export class TeamRepository implements ITeamRepository {
             res.conn.release();
         }
     }
-    async update(teamId: number, dto: UpdateTeamDto): Promise<boolean> {
+    async update(teamId: number, inputTeam: Team): Promise<boolean> {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
 
@@ -136,17 +137,17 @@ export class TeamRepository implements ITeamRepository {
             const fields: string[] = [];
             const values: (string | number)[] = [];
 
-            if (dto.name !== undefined) {
+            if (inputTeam.name !== "") {
                 fields.push("name = ?");
-                values.push(dto.name);
+                values.push(inputTeam.name);
             }
-            if (dto.description !== undefined) {
+            if (inputTeam.description !== "") {
                 fields.push("description = ?");
-                values.push(dto.description);
+                values.push(inputTeam.description);
             }
-            if (dto.avatar !== undefined) {
+            if (inputTeam.avatar !== "") {
                 fields.push("avatar = ?");
-                values.push(dto.avatar);
+                values.push(inputTeam.avatar);
             }
 
             if (fields.length === 0) return false;
@@ -225,7 +226,7 @@ export class TeamRepository implements ITeamRepository {
             res.conn.release();
         }
     }
-    async addMember(teamId: number, dto: AddMemberDto): Promise<boolean> {
+    async addMember(teamId: number, noviClan: TeamMember): Promise<boolean> {
         const readRes = await this.db.getReadConnection();
         if (!readRes) return false;
 
@@ -233,7 +234,7 @@ export class TeamRepository implements ITeamRepository {
         try {
             const [rows] = await readRes.conn.execute<RowDataPacket[]>(
                 `SELECT id FROM users WHERE username = ?`,
-                [dto.username]
+                [noviClan.username]
             );
             if (rows.length === 0) return false;
             targetUserId = rows[0].id;
@@ -251,7 +252,7 @@ export class TeamRepository implements ITeamRepository {
             await writeRes.conn.execute<ResultSetHeader>(
                 `INSERT INTO team_members (team_id, user_id, role)
                 VALUES (?, ?, ?)`,
-                [teamId, targetUserId, dto.role],
+                [teamId, targetUserId, noviClan.role],
             );
             return true;
         } catch (err) {
@@ -306,7 +307,7 @@ export class TeamRepository implements ITeamRepository {
         }
     }
 
-    async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto): Promise<boolean> {
+    async updateMemberRole(teamId: number, memberId: number, novaUloga: TeamMemberRole): Promise<boolean> {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
 
@@ -315,7 +316,7 @@ export class TeamRepository implements ITeamRepository {
                 `UPDATE team_members
                 SET role = ?
                 WHERE team_id = ? AND user_id = ?`,
-                [dto.role, teamId, memberId],
+                [novaUloga, teamId, memberId],
             );
             return result.affectedRows > 0;
         } catch (err) {

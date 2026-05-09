@@ -70,14 +70,16 @@ export class TeamService implements ITeamService {
     }
 
     async createNewTeam(dto: CreateTeamDto, userId: number): Promise<TeamDto> {
-        const created = await this.teamRepo.create(dto, userId);
+        const newTeam = new Team(0, dto.name, dto.description, dto.avatar, new Date(), new Date());
+        const created = await this.teamRepo.create(newTeam, userId);
         if (created.id === 0) return new TeamDto();
         await this.auditService.log(userId, AuditAction.CREATE, "team", created.id);
         return this.toDto(created, TeamMemberRole.OWNER);  //ima manje posla nego kod Almondovog CreateOrder, jer ne moramo da rukujemo brojkama
     }
 
     async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<boolean> {
-        return this.teamRepo.update(teamId, dto);
+        const input = new Team(0, dto.name, dto.description, dto.avatar, new Date(), new Date());
+        return this.teamRepo.update(teamId, input);
     }
 
     async deleteTeam(teamId: number, userId: number): Promise<boolean> {
@@ -96,7 +98,8 @@ export class TeamService implements ITeamService {
     }
 
     async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean> {
-        return await this.teamRepo.addMember(teamId, dto);
+        const noviClan = new TeamMember(0, 0, dto.role, new Date(), dto.username);
+        return await this.teamRepo.addMember(teamId, noviClan);
     }
 
     async removeTeamMember(teamId: number, memberId: number, userId: number): Promise<boolean> {
@@ -104,6 +107,7 @@ export class TeamService implements ITeamService {
     }
 
     async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<boolean> {
-        return await this.teamRepo.updateMemberRole(teamId, memberId, dto);
+        return await this.teamRepo.updateMemberRole(teamId, memberId, dto.role);
+
     }
 } 
