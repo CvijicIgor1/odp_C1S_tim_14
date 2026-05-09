@@ -6,15 +6,16 @@ import { useAuth } from "../../hooks/auth/useAuthHook";
 const userNav = [
   { to: "/dashboard", label: "Dashboard"},
   // add more user routes here
-  { to: "/teams",     label: "Teams"},
+  { to: "/teams",     label: "Teams",     icon: "◎" },
+  { to: "/my-tasks", label: "My Tasks", icon: "✓" },
+  { to: "/profile",   label: "Profile",   icon: "◉" },
 ];
 const adminNav = [
   { to: "/admin",       label: "Dashboard"},
   { to: "/admin/users", label: "Users"},
   // add more admin routes here
-  { to: "/admin/health", label: "DB Health"},
-  { to: "/admin/tags",   label: "Tags"},
-
+  { to: "/admin/health", label: "DB Health", icon: "◈" },
+  { to: "/admin/tags",   label: "Tags",      icon: "◦" },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {

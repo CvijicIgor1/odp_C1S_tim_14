@@ -11,6 +11,7 @@ import TeamProjectsPage from "./pages/user/TeamProjectsPage";
 import ProjectKanbanPage from "./pages/user/ProjectKanbanPage";
 import TaskDetailPage from "./pages/user/TaskDetailPage";
 import MyTasksPage from "./pages/user/MyTasksPage";
+import ProfilePage from "./pages/user/ProfilePage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersPage from "./pages/admin/UsersPage";
 import HealthDashboard from "./pages/admin/HealthDashboard";
@@ -30,6 +31,7 @@ export default function App() {
       <Route path="/projects/:id" element={<ProtectedRoute requiredRole="user"><ProjectKanbanPage /></ProtectedRoute>} />
       <Route path="/tasks/:id" element={<ProtectedRoute requiredRole="user"><TaskDetailPage /></ProtectedRoute>} />
       <Route path="/my-tasks" element={<ProtectedRoute requiredRole="user"><MyTasksPage /></ProtectedRoute>} />
+      <Route path="/profile"  element={<ProtectedRoute requiredRole="user"><ProfilePage /></ProtectedRoute>} />
 
       {/* Admin routes */}
       <Route path="/admin"       element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />

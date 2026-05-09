@@ -11,4 +11,5 @@ export interface ITeamAPIService {
   addMember(teamId: number, username: string, role?: "owner" | "member"): Promise<ApiResponse<void>>;
   updateMemberRole(teamId: number, userId: number, role: "owner" | "member"): Promise<ApiResponse<void>>;
   removeMember(teamId: number, userId: number): Promise<ApiResponse<void>>;
+  getMembers(teamId: number): Promise<ApiResponse<PaginatedList<TeamMemberDto>>>;
 }

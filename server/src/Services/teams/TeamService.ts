@@ -86,7 +86,9 @@ export class TeamService implements ITeamService {
 
     async getTeamMembers(teamId: number, page: number, limit: number, userId: number): Promise<PaginatedListDto<TeamMemberDto>> {
         const { members, totalNumber } = await this.teamRepo.getMembers(teamId);
-        return new PaginatedListDto(members.map((o) => this.toMemberDto(o)), totalNumber, page, limit);
+        const offset = (page - 1) * limit;
+        const paginated = members.slice(offset, offset + limit);
+        return new PaginatedListDto(paginated.map((o) => this.toMemberDto(o)), totalNumber, page, limit);
     }
 
     async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean> {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader, Empty, ErrorBox, SuccessBox, Spinner } from "../../components/ui/UI";
 import { useAuth } from "../../hooks/auth/useAuthHook";
@@ -17,7 +17,10 @@ export default function UserTeams() {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newAvatar, setNewAvatar] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState("");
   const [creating, setCreating] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [addInputs, setAddInputs] = useState<Record<number, string>>({});
   const [addingTo, setAddingTo] = useState<number | null>(null);
@@ -35,6 +38,18 @@ export default function UserTeams() {
 
   useEffect(() => { load(); }, [load]);
 
+  const handleAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setNewAvatar(base64);
+      setAvatarPreview(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleCreate = async () => {
     if (!newName.trim() || !newDesc.trim() || !newAvatar.trim()) return;
     setCreating(true);
@@ -43,7 +58,8 @@ export default function UserTeams() {
     try {
       const res = await teamsApi.create(newName.trim(), newDesc.trim(), newAvatar.trim());
       if (res.success) {
-        setNewName(""); setNewDesc(""); setNewAvatar("");
+        setNewName(""); setNewDesc(""); setNewAvatar(""); setAvatarPreview("");
+        if (fileInputRef.current) fileInputRef.current.value = "";
         setSuccess("Team created successfully");
         await load();
       } else {
@@ -107,13 +123,29 @@ export default function UserTeams() {
             onChange={e => setNewName(e.target.value)}
             className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/20"
           />
-          <input 
-            type="text" 
-            placeholder="image URL (promenicu ovo u dugme)" 
-            value={newAvatar}
-            onChange={e => setNewAvatar(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/20"
-          />
+
+          {/* Avatar file picker */}
+          <div className="flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarFile}
+              className="hidden"
+              id="avatar-upload"
+            />
+            <label
+              htmlFor="avatar-upload"
+              className="cursor-pointer flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white/60 hover:border-white/20 hover:text-white transition-colors flex-1"
+            >
+              <span>📁</span>
+              <span>{avatarPreview ? "Image selected ✓" : "Upload team avatar"}</span>
+            </label>
+            {avatarPreview && (
+              <img src={avatarPreview} alt="preview" className="w-10 h-10 rounded-lg object-cover border border-white/10" />
+            )}
+          </div>
+
           <textarea 
             placeholder="Description" 
             value={newDesc}
@@ -188,7 +220,7 @@ export default function UserTeams() {
                   </div>
                 )}
 
-                {/* Opasne akcije */}
+                {/* Akcije */}
                 <div className="flex gap-4 mt-6 pt-4 border-t border-white/5">
                   <button
                     onClick={() => navigate(`/teams/${team.id}/projects`)}

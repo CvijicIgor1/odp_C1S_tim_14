@@ -5,6 +5,7 @@ export class TeamMemberDto {
     public teamId: number = 0,
     public userId: number = 0,
     public role: TeamMemberRole = TeamMemberRole.MEMBER,
-    public joinedAt: Date | null = null
+    public joinedAt: Date | null = null,
+    public username: string = ""
   ) {}
 }

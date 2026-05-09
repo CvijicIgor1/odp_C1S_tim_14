@@ -44,6 +44,10 @@ export const teamsApi: ITeamAPIService = {
     return axios.patch<ApiResponse<void>>(`${BASE}/${teamId}/members/${userId}/role`, { role }, { headers: authHeader() })
       .then(r => r.data).catch(e => err(e, "Failed to update role"));
   },
+  async getMembers(teamId) {
+    return axios.get(`${BASE}/${teamId}/members`, { headers: authHeader() })
+      .then(r => r.data).catch(e => err(e, "Failed to load members"));
+  },
   async removeMember(teamId, userId) {
     return axios.delete<ApiResponse<void>>(`${BASE}/${teamId}/members/${userId}`, { headers: authHeader() })
       .then(r => r.data).catch(e => err(e, "Failed to remove member"));

@@ -79,8 +79,8 @@ export class ProjectRepository implements IProjectRepository
             const totalNumber = countRows[0].cnt ?? 0;
 
             const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT * FROM projects ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-                [...values, safeLimit, offset]
+                `SELECT * FROM projects ${where} ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${offset}`,
+                values
             );
 
             const projects = rows.map((r) => this.map(r));
@@ -429,8 +429,8 @@ export class ProjectRepository implements IProjectRepository
 
             const [rows] = await res.conn.execute<RowDataPacket[]>
             (
-                `SELECT * FROM projects WHERE id IN (SELECT project_id FROM project_watchers WHERE user_id = ?) ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-                [userId, safeLimit, offset],
+                `SELECT * FROM projects WHERE id IN (SELECT project_id FROM project_watchers WHERE user_id = ?) ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${offset}`,
+                [userId],
             );
 
             const projects = rows.map((r) => this.map(r));

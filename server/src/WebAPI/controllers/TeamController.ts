@@ -20,6 +20,7 @@ export class TeamController {
         this.router.get("/teams/:id", authenticate, this.getById.bind(this));
         this.router.put("/teams/:id", authenticate, this.update.bind(this));
         this.router.delete("/teams/:id", authenticate, this.delete.bind(this));
+        this.router.get("/teams/:id/members", authenticate, this.getMembers.bind(this));
         this.router.post("/teams/:id/members", authenticate, this.addMember.bind(this));
         this.router.patch("/teams/:id/members/:userId/role", authenticate, this.updateMemberRole.bind(this));
         this.router.delete("/teams/:id/members/:userId", authenticate, this.removeMember.bind(this));
@@ -77,6 +78,13 @@ export class TeamController {
         if (!ok) { res.status(404).json({ success: false, message: "Team not found" }); return; }
         await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team", id, undefined, req.ip);
         res.status(200).json({ success: true, message: "Team deleted successfully" });
+    }
+
+    private async getMembers(req: Request, res: Response): Promise<void> {
+        const id = parseInt(req.params.id as string, 10);
+        if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid ID" }); return; }
+        const result = await this.teamService.getTeamMembers(id, 1, 200, req.user!.user_id);
+        res.status(200).json({ success: true, data: result });
     }
 
     private async addMember(req: Request, res: Response): Promise<void> {

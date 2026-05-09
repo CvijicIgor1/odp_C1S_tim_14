@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { PageHeader, Empty, ErrorBox, SuccessBox, Spinner } from "../../components/ui/UI";
+import { PageHeader, Empty, ErrorBox, SuccessBox, Spinner, Combobox } from "../../components/ui/UI";
+import { usersApi } from "../../api_services/users/UsersAPIService";
 import { tasksApi } from "../../api_services/task/TaskAPIService";
+import { projectsApi } from "../../api_services/project/ProjectAPIService";
+import { teamsApi } from "../../api_services/team/TeamAPIService";
 import type { TaskDetailDto, CommentDto, TaskAssigneeDto } from "../../models/project/ProjectTypes";
+import type { TeamMemberDto } from "../../models/team/TeamTypes";
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +20,8 @@ export default function TaskDetailPage() {
   const [comment, setComment] = useState("");
   const [addingComment, setAdding] = useState(false);
 
+  const [teamMembers, setTeamMembers] = useState<TeamMemberDto[]>([]);
+  const [userMap, setUserMap] = useState<Map<number, string>>(new Map());
   const [assigneeId, setAssigneeId] = useState("");
   const [addingAssignee, setAddingAss] = useState(false);
 
@@ -24,8 +30,35 @@ export default function TaskDetailPage() {
     setError("");
     try {
       const res = await tasksApi.getById(tid);
-      if (res.success && res.data) setDetail(res.data);
-      else setError(res.message);
+      if (res.success && res.data) {
+        setDetail(res.data);
+
+        let members: TeamMemberDto[] = [];
+        const projectRes = await projectsApi.getById(res.data.task.projectId);
+        if (projectRes.success && projectRes.data) {
+          const membersRes = await teamsApi.getMembers(projectRes.data.teamId);
+          if (membersRes.success && membersRes.data) {
+            members = membersRes.data.items;
+            setTeamMembers(members);
+          }
+        }
+
+        const ids = new Set<number>();
+        for (const a of res.data.assignees) ids.add(a.userId);
+        for (const c of res.data.comments) ids.add(c.userId);
+        for (const m of members) ids.add(m.userId);
+
+        const map = new Map<number, string>();
+        await Promise.all(
+          Array.from(ids).map(async (uid) => {
+            const r = await usersApi.getById(uid);
+            if (r.success && r.data) map.set(uid, r.data.username);
+          })
+        );
+        setUserMap(map);
+      } else {
+        setError(res.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -90,6 +123,9 @@ export default function TaskDetailPage() {
 
   const task = detail?.task;
 
+  const assignedUserIds = new Set(detail?.assignees.map((a) => a.userId) ?? []);
+  const availableMembers = teamMembers.filter((m) => !assignedUserIds.has(m.userId));
+
   return (
     <div className="space-y-8 max-w-3xl">
       <PageHeader eyebrow="TASK" title={task?.title ?? `Task ${tid}`} />
@@ -121,7 +157,9 @@ export default function TaskDetailPage() {
               <div className="space-y-2">
                 {detail.assignees.map((a: TaskAssigneeDto) => (
                   <div key={a.userId} className="flex items-center justify-between bg-[#0d0d0d] border border-white/5 rounded-xl px-4 py-3">
-                    <span className="text-white/60 text-sm font-mono">User #{a.userId}</span>
+                    <span className="text-white/60 text-sm font-mono">
+                      {userMap.get(a.userId) ?? `User #${a.userId}`}
+                    </span>
                     <button
                       onClick={() => handleRemoveAssignee(a.userId)}
                       className="text-[11px] text-red-500/40 hover:text-red-500 transition-colors"
@@ -133,23 +171,23 @@ export default function TaskDetailPage() {
               </div>
             )}
 
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min={1}
-                placeholder="User ID"
-                value={assigneeId}
-                onChange={e => setAssigneeId(e.target.value)}
-                className="w-32 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-white/20"
-              />
-              <button
-                onClick={handleAddAssignee}
-                disabled={addingAssignee || !assigneeId}
-                className="text-xs px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 disabled:opacity-40 transition-colors"
-              >
-                {addingAssignee ? <Spinner size={12} /> : "Add"}
-              </button>
-            </div>
+            {availableMembers.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Combobox
+                  options={availableMembers.map((m) => ({ value: String(m.userId), label: userMap.get(m.userId) ?? `User #${m.userId}` }))}
+                  value={assigneeId}
+                  onChange={setAssigneeId}
+                  placeholder="Search member..."
+                />
+                <button
+                  onClick={handleAddAssignee}
+                  disabled={addingAssignee || !assigneeId}
+                  className="text-xs px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 disabled:opacity-40 transition-colors"
+                >
+                  {addingAssignee ? <Spinner size={12} /> : "Add"}
+                </button>
+              </div>
+            )}
           </section>
 
           {/* Comments */}
@@ -162,7 +200,7 @@ export default function TaskDetailPage() {
                 {detail.comments.map((c: CommentDto) => (
                   <div key={c.id} className="bg-[#0d0d0d] border border-white/5 rounded-xl px-4 py-3 space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-mono text-white/25">User #{c.userId} · {c.createdAt?.slice(0, 10)}</span>
+                      <span className="text-[11px] font-mono text-white/25">{userMap.get(c.userId) ?? `User #${c.userId}`} · {c.createdAt?.slice(0, 10)}</span>
                       <button
                         onClick={() => handleDeleteComment(c.id)}
                         className="text-[11px] text-red-500/30 hover:text-red-500 transition-colors"
