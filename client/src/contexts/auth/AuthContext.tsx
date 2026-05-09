@@ -33,7 +33,7 @@ const getInitialAuth = () => {
     if (claims) {
       return {
         token: saved,
-        user: { id: claims.user_id, username: claims.username, role: claims.role, } as AuthUser,
+        user: { id: claims.user_id, username: claims.username, role: claims.role, avatar: claims.avatar ?? "" } as AuthUser,
       };
     }
   }
@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!claims || expired(t)) return;
 
     setToken(t);
-    setUser({ id: claims.user_id, username: claims.username, role: claims.role });
+    setUser({ id: claims.user_id, username: claims.username, role: claims.role ,avatar: claims.avatar ?? "" } as AuthUser);
     localStorage.setItem(KEY, t);
   };
 

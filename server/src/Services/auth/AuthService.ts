@@ -15,7 +15,7 @@ export class AuthService implements IAuthService {
     if (user.id === 0 || user.isActive === 0) return new AuthUserDto();
     const match = await bcrypt.compare(password, user.passwordHash).catch(() => false);
     if (!match) return new AuthUserDto();
-    return new AuthUserDto(user.id, user.username, user.role);
+    return new AuthUserDto(user.id, user.username, user.role , user.avatar);
   }
 
   async register(username: string, email: string, password: string, full_name: string = "", avatar: string = ""): Promise<AuthUserDto> {
@@ -27,6 +27,6 @@ export class AuthService implements IAuthService {
     if (!hash) return new AuthUserDto();
     const created = await this.userRepo.create(new User(0, username, email, UserRole.USER, hash, full_name, avatar));
     if (created.id === 0) return new AuthUserDto();
-    return new AuthUserDto(created.id, created.username, created.role);
+    return new AuthUserDto(created.id, created.username, created.role,created.avatar);
   }
 }
