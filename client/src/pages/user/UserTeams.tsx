@@ -228,12 +228,6 @@ export default function UserTeams() {
                   >
                     View projects
                   </button>
-                  <button
-                    onClick={() => handleDelete(team.id)}
-                    className="text-[11px] text-red-500/40 hover:text-red-500 transition-colors"
-                  >
-                    View projects
-                  </button>
                   {isOwner(team) && (
                     <button
                       onClick={() => handleDelete(team.id)}
