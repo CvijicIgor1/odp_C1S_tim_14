@@ -10,6 +10,10 @@ import { UpdateTaskStatusDto } from "../../Domain/DTOs/tasks/UpdateTaskStatusDto
 import { AddTaskAssigneeDto } from "../../Domain/DTOs/tasks/AddTaskAssigneeDto";
 import { AddCommentDto } from "../../Domain/DTOs/tasks/AddCommentDto";
 
+const ESTIMATED_HOURS_MIN = 0.5;
+const ESTIMATED_HOURS_MAX = 500;
+const COMMENT_MAX_LENGTH  = 2000;
+
 export class TaskController {
     private readonly router = Router();
 
@@ -74,7 +78,12 @@ export class TaskController {
             return;
         }
 
-        const dto = new CreateTaskDto(projectId, title, description, status, priority, deadline, estimatedHours ?? 0);
+        const hours = Number(estimatedHours ?? 0);
+        if (isNaN(hours) || hours < ESTIMATED_HOURS_MIN || hours > ESTIMATED_HOURS_MAX) {
+            res.status(400).json({ success: false, message: `estimated_hours must be between ${ESTIMATED_HOURS_MIN} and ${ESTIMATED_HOURS_MAX}` }); return;
+        }
+
+        const dto = new CreateTaskDto(projectId, title, description, status, priority, deadline, hours);
         const task = await this.taskService.createTask(dto, req.user!.user_id);
 
         if (task.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
@@ -89,6 +98,13 @@ export class TaskController {
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid task ID" }); return; }
 
         const dto = req.body as UpdateTaskDto;
+
+        if (dto.estimatedHours !== undefined) {
+            const hours = Number(dto.estimatedHours);
+            if (isNaN(hours) || hours < ESTIMATED_HOURS_MIN || hours > ESTIMATED_HOURS_MAX) {
+                res.status(400).json({ success: false, message: `estimated_hours must be between ${ESTIMATED_HOURS_MIN} and ${ESTIMATED_HOURS_MAX}` }); return;
+            }
+        }
 
         const ok = await this.taskService.updateTask(id, dto, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Task not found or forbidden" }); return; }
@@ -157,7 +173,12 @@ export class TaskController {
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid task ID" }); return; }
 
         const dto = req.body as AddCommentDto;
-        if (!dto.content) { res.status(400).json({ success: false, message: "content is required" }); return; }
+        if (!dto.content || dto.content.trim().length === 0) {
+            res.status(400).json({ success: false, message: "content is required" }); return;
+        }
+        if (dto.content.length > COMMENT_MAX_LENGTH) {
+            res.status(400).json({ success: false, message: `Comment cannot exceed ${COMMENT_MAX_LENGTH} characters` }); return;
+        }
 
         const comment = await this.taskService.addComment(id, dto, req.user!.user_id);
         if (comment === null) { res.status(404).json({ success: false, message: "Task not found" }); return; }

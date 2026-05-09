@@ -6,6 +6,8 @@ const cards = [
   { label: "Tags",      path: "/admin/tags",       icon: "🏷️", desc: "Create and delete task tags" },
   { label: "Audit Log", path: "/admin/audit-log",  icon: "📋", desc: "View system activity history" },
   { label: "Health",    path: "/admin/health",     icon: "📈 ", desc: "Monitor database node status" },
+  { label: "Teams",     path: "/admin/teams",     icon: "◎",  desc: "View all registered teams" },
+  { label: "Projects",  path: "/admin/projects",  icon: "◫",  desc: "View all registered projects" },
 ];
 
 export default function AdminDashboard() {
@@ -13,7 +15,7 @@ export default function AdminDashboard() {
   return (
     <div className="flex flex-col justify-center min-h-[32vh]">
       <PageHeader eyebrow="Admin" title="Dashboard" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
         {cards.map((c) => (
           <button
             key={c.path}

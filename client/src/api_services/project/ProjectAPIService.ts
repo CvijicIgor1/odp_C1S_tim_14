@@ -26,6 +26,15 @@ export const projectsApi: IProjectAPIService = {
       .catch(e => err(e, "Failed to load projects"));
   },
 
+  async getAllAsAdmin(page = 1, limit = 100) {
+    return axios
+      .get<ApiResponse<PaginatedList<ProjectDto>>>(`${BASE}projects/all`, {
+        headers: auth(),
+        params: { page, limit },
+      })
+      .then(r => r.data)
+      .catch(e => err(e, "Failed to load all projects"));
+  },
   async getWatched(page = 1, limit = 20) {
     return axios
       .get<ApiResponse<PaginatedList<ProjectDto>>>(`${BASE}projects/watched`, {

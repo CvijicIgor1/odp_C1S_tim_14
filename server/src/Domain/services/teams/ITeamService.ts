@@ -14,7 +14,8 @@ export interface ITeamService {
     createNewTeam(dto: CreateTeamDto, userId: number): Promise<TeamDto>;
     updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<boolean>;
     deleteTeam(teamId: number, userId: number): Promise<boolean>;
-    getTeamMembers(teamId: number, page:number, limit:number, userId: number): Promise<PaginatedListDto<TeamMemberDto>>
+    getTeamMembers(teamId: number, page:number, limit:number, userId: number): Promise<PaginatedListDto<TeamMemberDto>>;
+    countOwners(teamId: number): Promise<number>;
     addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean>;
     removeTeamMember(teamId: number, memberId: number, userId: number): Promise<boolean>;
     updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<boolean>;

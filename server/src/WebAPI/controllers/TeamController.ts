@@ -102,10 +102,19 @@ export class TeamController {
         const id = parseInt(req.params.id as string, 10);
         const memberId = parseInt(req.params.userId as string, 10);
         if (isNaN(id) || isNaN(memberId)) { res.status(400).json({ success: false, message: "Invalid IDs" }); return; }
+
         const { role } = req.body as UpdateMemberRoleDto;
         if (!role || (role !== "owner" && role !== "member")) {
             res.status(400).json({ success: false, message: "Role must be 'owner' or 'member'" }); return;
         }
+
+        if (role === "member") {
+            const ownerCount = await this.teamService.countOwners(id);
+            if (ownerCount <= 1) {
+                res.status(400).json({ success: false, message: "Tim mora imati tačno jednog vlasnika" }); return;
+            }
+        }
+
         const ok = await this.teamService.updateMemberRole(id, memberId, new UpdateMemberRoleDto(role), req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
         await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team_member", memberId, `role=${role}`, req.ip);

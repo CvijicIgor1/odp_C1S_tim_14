@@ -4,6 +4,7 @@ export type ApiResponse<T> = { success: boolean; message: string; data?: T };
 
 export interface ITeamAPIService {
   getAll(page?: number, limit?: number): Promise<ApiResponse<PaginatedList<TeamDto>>>;
+  getAllAsAdmin(page?: number, limit?: number): Promise<ApiResponse<PaginatedList<TeamDto>>>;
   getById(id: number): Promise<ApiResponse<TeamDto>>;
   create(name: string, description: string, avatar: string): Promise<ApiResponse<TeamDto>>;
   update(id: number, name?: string, description?: string, avatar?: string): Promise<ApiResponse<void>>;

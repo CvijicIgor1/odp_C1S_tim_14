@@ -6,6 +6,7 @@ import { ProjectFilters } from '../../types/ProjectFilters';
 
 export interface IProjectRepository {
     findAllByTeam(teamId:number, page: number, limit: number, filters?: ProjectFilters): Promise<{ projects: Project[]; totalNumber: number }>;
+    findAllAsAdmin(page: number, limit: number): Promise<{ projects: Project[]; totalNumber: number }>;
     findById(id: number): Promise<Project | null>;
     create(teamId: number, dto: CreateProjectDto): Promise<Project>;
     update(id: number, dto: UpdateProjectDto): Promise<boolean>;

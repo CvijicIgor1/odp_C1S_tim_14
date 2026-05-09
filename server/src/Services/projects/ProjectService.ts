@@ -61,6 +61,26 @@ export class ProjectService implements IProjectService
         return new PaginatedListDto<ProjectDto>(dtos, totalNumber, page, limit);
     }
 
+    async getAllProjectsAsAdmin(page: number, limit: number): Promise<PaginatedListDto<ProjectDto>>
+    {
+        const { projects, totalNumber } = await this.projectRepository.findAllAsAdmin(page, limit);
+
+        const ids = projects.map((p) => p.id);
+        const [tagsMap, countsMap] = await Promise.all([
+            this.projectRepository.getTagsForProjects(ids),
+            this.projectRepository.getWatcherCounts(ids),
+        ]);
+
+        const dtos = projects.map((project) =>
+            this.toDto(
+                project,
+                tagsMap.get(project.id) ?? [],
+                countsMap.get(project.id) ?? 0,
+            )
+        );
+
+        return new PaginatedListDto<ProjectDto>(dtos, totalNumber, page, limit);
+    }
     async getProjectById(id: number, userId: number, isAdmin: boolean = false): Promise<ProjectDto> 
     {
         const project = await this.projectRepository.findById(id);

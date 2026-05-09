@@ -14,6 +14,8 @@ const adminNav = [
   { to: "/admin",       label: "Dashboard"},
   { to: "/admin/users", label: "Users"},
   // add more admin routes here
+  { to: "/admin/teams", label: "Teams", icon: "◎" },
+  { to: "/admin/projects", label: "Projects", icon: "◫" },
   { to: "/admin/health", label: "DB Health", icon: "◈" },
   { to: "/admin/tags",   label: "Tags",      icon: "◦" },
   { to: "/admin/audit-log",  label: "Audit Log", icon: "📋" },

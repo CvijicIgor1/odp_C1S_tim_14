@@ -202,13 +202,29 @@ export class TeamRepository implements ITeamRepository {
             );
             return {members: rows.map((r) => this.mapMember(r)), totalNumber: rows.length};
         } catch (err) {
-            this.logger.error("TeamsRepository", "findAll failed", err);
+            this.logger.error("TeamsRepository", "getMembers failed", err);
             return {members: [], totalNumber: 0};
         } finally {
             res.conn.release();
         }
     }
-
+    
+    async countOwners(teamId: number): Promise<number> {
+        const res = await this.db.getReadConnection();
+        if (!res) return 0;
+        try {
+            const [rows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT COUNT(*) AS cnt FROM team_members WHERE team_id = ? AND role = 'owner'`,
+                [teamId]
+            );
+            return Number(rows[0].cnt);
+        } catch (err) {
+            this.logger.error("TeamsRepository", "countOwners failed", err);
+            return 0;
+        } finally {
+            res.conn.release();
+        }
+    }
     async addMember(teamId: number, dto: AddMemberDto): Promise<boolean> {
         const readRes = await this.db.getReadConnection();
         if (!readRes) return false;
@@ -245,6 +261,7 @@ export class TeamRepository implements ITeamRepository {
             writeRes.conn.release();
         }
     }
+
     async removeMember(teamId: number, memberId: number): Promise<boolean> {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
@@ -255,14 +272,40 @@ export class TeamRepository implements ITeamRepository {
                 WHERE team_id = ? AND user_id = ?`,
                 [teamId, memberId],
             );
-            return result.affectedRows > 0;
+            if (result.affectedRows === 0) return false;
         } catch (err) {
             this.logger.error("TeamsRepository", "removeMember failed", err);
             return false;
         } finally {
             res.conn.release();
         }
+
+        const cascadeRes = await this.db.getWriteConnection();
+        if (!cascadeRes) return true;
+
+        try {
+            await cascadeRes.conn.execute<ResultSetHeader>(
+                `DELETE pw FROM project_watchers pw
+                 INNER JOIN projects p ON pw.project_id = p.id
+                 WHERE p.team_id = ? AND pw.user_id = ?`,
+                [teamId, memberId]
+            );
+            await cascadeRes.conn.execute<ResultSetHeader>(
+                `DELETE ta FROM task_assignees ta
+                 INNER JOIN tasks t ON ta.task_id = t.id
+                 INNER JOIN projects p ON t.project_id = p.id
+                 WHERE p.team_id = ? AND ta.user_id = ?`,
+                [teamId, memberId]
+            );
+            return true;
+        } catch (err) {
+            this.logger.error("TeamsRepository", "removeMember cascade failed", err);
+            return true;
+        } finally {
+            cascadeRes.conn.release();
+        }
     }
+
     async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto): Promise<boolean> {
         const res = await this.db.getWriteConnection();
         if (!res) return false;

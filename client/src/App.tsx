@@ -14,6 +14,8 @@ import MyTasksPage from "./pages/user/MyTasksPage";
 import ProfilePage from "./pages/user/ProfilePage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersPage from "./pages/admin/UsersPage";
+import AllTeamsPage from "./pages/admin/AllTeamsPage";
+import AllProjectsPage from "./pages/admin/AllProjectsPage";
 import HealthDashboard from "./pages/admin/HealthDashboard";
 import TagsPage from "./pages/admin/TagsPage";
 import AuditLogPage from "./pages/admin/AuditLogPage";
@@ -36,6 +38,8 @@ export default function App() {
       {/* Admin routes */}
       <Route path="/admin"       element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><UsersPage /></ProtectedRoute>} />
+      <Route path="/admin/teams" element={<ProtectedRoute requiredRole="admin"><AllTeamsPage /></ProtectedRoute>} />
+      <Route path="/admin/projects" element={<ProtectedRoute requiredRole="admin"><AllProjectsPage /></ProtectedRoute>} />
       <Route path="/admin/health" element={<ProtectedRoute requiredRole="admin"><HealthDashboard /></ProtectedRoute>} />
       <Route path="/admin/tags" element={<ProtectedRoute requiredRole="admin"><TagsPage /></ProtectedRoute>} />
       <Route path="/admin/audit-log"  element={<ProtectedRoute requiredRole="admin"><AuditLogPage /></ProtectedRoute>} />

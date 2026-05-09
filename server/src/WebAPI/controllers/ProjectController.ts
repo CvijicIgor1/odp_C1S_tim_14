@@ -1,6 +1,7 @@
 import { Request, Response, Router } from "express";
 import { IProjectService } from "../../Domain/services/projects/IProjectService";
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
+import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { AuditAction } from "../../Domain/enums/AuditLog";
@@ -15,6 +16,7 @@ export class ProjectController {
     public constructor(private readonly projectService: IProjectService, private readonly auditService: IAuditService) {
         this.router.get("/teams/:teamId/projects",      authenticate, this.getTeamProjects.bind(this));
         this.router.post("/teams/:teamId/projects",     authenticate, this.create.bind(this));
+        this.router.get("/projects/all",          authenticate, authorize(UserRole.ADMIN), this.getAllAsAdmin.bind(this));
         this.router.get("/projects/watched",            authenticate, this.getWatched.bind(this)); // mora biti PRIJE /:id
         this.router.get("/projects/:id",                authenticate, this.getById.bind(this));
         this.router.put("/projects/:id",                authenticate, this.update.bind(this));
@@ -47,6 +49,14 @@ export class ProjectController {
     }
 
     
+    private async getAllAsAdmin(req: Request, res: Response): Promise<void> 
+    {
+        const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),  10));
+        const limit = Math.min(parseInt(String(req.query.limit ?? "100"), 10), 200);
+
+        const result = await this.projectService.getAllProjectsAsAdmin(page, limit);
+        res.status(200).json({ success: true, data: result });
+    }
     private async getWatched(req: Request, res: Response): Promise<void> 
     {
         const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),  10));
@@ -81,6 +91,9 @@ export class ProjectController {
             res.status(400).json({ success: false, message: "name, description and deadline are required" });
             return;
         }
+        if (new Date(deadline) <= new Date()) {
+            res.status(400).json({ success: false, message: "Deadline must be a future date" }); return;
+        }
 
         const dto = new CreateProjectDto(name, description, status, priority, deadline, tagIds ?? []);
         const project = await this.projectService.createProject(teamId, dto, req.user!.user_id);
@@ -97,6 +110,9 @@ export class ProjectController {
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid project ID" }); return; }
 
         const dto = req.body as UpdateProjectDto;
+        if (dto.deadline && new Date(dto.deadline) <= new Date()) {
+            res.status(400).json({ success: false, message: "Deadline must be a future date" }); return;
+        }
         const isAdmin = req.user?.role === UserRole.ADMIN;
 
         const ok = await this.projectService.updateProject(id, dto, req.user!.user_id, isAdmin);

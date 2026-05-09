@@ -91,6 +91,10 @@ export class TeamService implements ITeamService {
         return new PaginatedListDto(paginated.map((o) => this.toMemberDto(o)), totalNumber, page, limit);
     }
 
+    async countOwners(teamId: number): Promise<number> {
+        return this.teamRepo.countOwners(teamId);
+    }
+
     async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean> {
         return await this.teamRepo.addMember(teamId, dto);
     }
@@ -98,6 +102,7 @@ export class TeamService implements ITeamService {
     async removeTeamMember(teamId: number, memberId: number, userId: number): Promise<boolean> {
         return await this.teamRepo.removeMember(teamId, memberId);
     }
+
     async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<boolean> {
         return await this.teamRepo.updateMemberRole(teamId, memberId, dto);
     }
