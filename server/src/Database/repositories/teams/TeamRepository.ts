@@ -134,7 +134,7 @@ export class TeamRepository implements ITeamRepository {
             // moram da pazim koja polja se zapravo menjaju
             //updatedAt bi trebao sam od sebe u bazi da se promeni na trenutni datum
             const fields: string[] = [];
-            const values: any[] = [];
+            const values: (string | number)[] = [];
 
             if (dto.name !== undefined) {
                 fields.push("name = ?");

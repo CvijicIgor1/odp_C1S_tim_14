@@ -43,7 +43,7 @@ export default function HealthDashboard() {
 
   const healthy = nodes.filter(n => n.status === "healthy").length;
   const degraded = nodes.filter(n => n.status === "degraded").length;
-  const offline  = nodes.filter(n => n.status === "unreachable").length;
+  const offline  = nodes.filter(n => n.status === "offline").length;
 
   return (
     <div className="space-y-8">
@@ -113,11 +113,11 @@ export default function HealthDashboard() {
             </div>
             <div>
               <p className="text-white/15 uppercase tracking-widest text-[10px] mb-1">Successful</p>
-              <p className="text-emerald-400/70">{node.successfulWrites}</p>
+              <p className="text-emerald-400/70">{node.successfulConnections}</p>
             </div>
             <div>
               <p className="text-white/15 uppercase tracking-widest text-[10px] mb-1">Failed</p>
-              <p className="text-red-400/70">{node.failedWrites}</p>
+              <p className="text-red-400/70">{node.failedConnections}</p>
             </div>
           </div>
         </section>

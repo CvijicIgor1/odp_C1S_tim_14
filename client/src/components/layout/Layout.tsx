@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+﻿import { type ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 
@@ -7,6 +7,7 @@ const userNav = [
   { to: "/dashboard", label: "Dashboard", icon: "⬡" },
   // add more user routes here
   { to: "/teams",     label: "Teams",     icon: "◎" },
+  { to: "/my-tasks", label: "My Tasks", icon: "✓" },
 ];
 const adminNav = [
   { to: "/admin",       label: "Dashboard", icon: "⬡" },
@@ -14,6 +15,7 @@ const adminNav = [
   // add more admin routes here
   { to: "/admin/health", label: "DB Health", icon: "◈" },
   { to: "/admin/tags",   label: "Tags",      icon: "◦" },
+  { to: "/admin/audit-log", label: "Audit Log", icon: "⊡" },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {

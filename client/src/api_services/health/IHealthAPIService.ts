@@ -6,8 +6,8 @@ export type DbNodeInfo = {
   port: number;
   status: string;
   lastCheck: string | null;
-  successfulWrites: number;
-  failedWrites: number;
+  successfulConnections: number;
+  failedConnections: number;
 };
 
 export interface IHealthAPIService {
