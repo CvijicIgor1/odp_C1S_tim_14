@@ -8,10 +8,7 @@ export type { ApiResponse };
 
 export interface IProjectAPIService {
   getTeamProjects(
-    teamId: number,
-    page?: number,
-    limit?: number,
-    filters?: { status?: ProjectStatus; priority?: Priority; tagId?: number }
+    teamId: number
   ): Promise<ApiResponse<PaginatedList<ProjectDto>>>;
 
   getWatched(page?: number, limit?: number): Promise<ApiResponse<PaginatedList<ProjectDto>>>;

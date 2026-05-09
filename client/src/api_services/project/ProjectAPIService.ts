@@ -16,11 +16,11 @@ const err = <T>(e: unknown, fallback: string): ApiResponse<T> => ({
 });
 
 export const projectsApi: IProjectAPIService = {
-  async getTeamProjects(teamId, page = 1, limit = 20, filters = {}) {
+  async getTeamProjects(teamId) {
     return axios
       .get<ApiResponse<PaginatedList<ProjectDto>>>(`${BASE}teams/${teamId}/projects`, {
         headers: auth(),
-        params: { page, limit, ...filters },
+        params: { page: 1, limit: 1000 },
       })
       .then(r => r.data)
       .catch(e => err(e, "Failed to load projects"));

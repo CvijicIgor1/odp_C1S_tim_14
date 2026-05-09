@@ -16,6 +16,7 @@ const adminNav = [
   // add more admin routes here
   { to: "/admin/health", label: "DB Health", icon: "◈" },
   { to: "/admin/tags",   label: "Tags",      icon: "◦" },
+  { to: "/admin/audit-log",  label: "Audit Log", icon: "📋" },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {

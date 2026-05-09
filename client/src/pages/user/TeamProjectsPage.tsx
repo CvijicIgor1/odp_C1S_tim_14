@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PageHeader, Empty, ErrorBox, SuccessBox, Spinner, StatusBadge, Pagination } from "../../components/ui/UI";
 import { projectsApi } from "../../api_services/project/ProjectAPIService";
@@ -15,8 +15,7 @@ export default function TeamProjectsPage() {
   const tid = Number(teamId);
   const navigate = useNavigate();
 
-  const [projects, setProjects] = useState<ProjectDto[]>([]);
-  const [total, setTotal] = useState(0);
+  const [allProjects, setAllProjects] = useState<ProjectDto[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -25,6 +24,7 @@ export default function TeamProjectsPage() {
   // Filters
   const [filterStatus, setFilterStatus] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
+  const [filterTagId, setFilterTagId] = useState<number | "">("");
 
   // Create form
   const [showCreate, setShowCreate] = useState(false);
@@ -41,20 +41,17 @@ export default function TeamProjectsPage() {
     setLoading(true);
     setError("");
     try {
-      const filters: Record<string, string> = {};
-      if (filterStatus) filters.status = filterStatus;
-      if (filterPriority) filters.priority = filterPriority;
-      const res = await projectsApi.getTeamProjects(tid, page, PAGE_SIZE, filters);
+      // Fetch all projects — filtering is frontend-only (spec II.3)
+      const res = await projectsApi.getTeamProjects(tid);
       if (res.success) {
-        setProjects(res.data?.items ?? []);
-        setTotal(res.data?.total ?? 0);
+        setAllProjects(res.data?.items ?? []);
       } else {
         setError(res.message);
       }
     } finally {
       setLoading(false);
     }
-  }, [tid, page, filterStatus, filterPriority]);
+  }, [tid]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -63,6 +60,28 @@ export default function TeamProjectsPage() {
       if (res.success) setAllTags(res.data?.items ?? []);
     });
   }, []);
+
+  // Frontend filtering (spec II.3: "frontend logika bez poziva ka serveru")
+  const filtered = useMemo(() => {
+    return allProjects.filter(p => {
+      if (filterStatus && p.status !== filterStatus) return false;
+      if (filterPriority && p.priority !== filterPriority) return false;
+      if (filterTagId !== "" && !p.tags.some(t => t.id === filterTagId)) return false;
+      return true;
+    });
+  }, [allProjects, filterStatus, filterPriority, filterTagId]);
+
+  const paginated = useMemo(() => {
+    const offset = (page - 1) * PAGE_SIZE;
+    return filtered.slice(offset, offset + PAGE_SIZE);
+  }, [filtered, page]);
+
+  const applyFilter = (s: string, p: string, t: number | "") => {
+    setFilterStatus(s);
+    setFilterPriority(p);
+    setFilterTagId(t);
+    setPage(1);
+  };
 
   const handleCreate = async () => {
     if (!name.trim() || !desc.trim()) return;
@@ -96,11 +115,7 @@ export default function TeamProjectsPage() {
   const toggleTag = (id: number) =>
     setSelectedTags(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
-  const applyFilter = (s: string, p: string) => {
-    setFilterStatus(s);
-    setFilterPriority(p);
-    setPage(1);
-  };
+  const hasFilters = filterStatus !== "" || filterPriority !== "" || filterTagId !== "";
 
   return (
     <div className="space-y-8">
@@ -124,7 +139,7 @@ export default function TeamProjectsPage() {
       <div className="flex gap-3 flex-wrap">
         <select
           value={filterStatus}
-          onChange={e => applyFilter(e.target.value, filterPriority)}
+          onChange={e => applyFilter(e.target.value, filterPriority, filterTagId)}
           className="bg-white/5 border border-white/10 text-white/60 text-xs rounded-xl px-3 py-2 focus:outline-none"
         >
           <option value="">All statuses</option>
@@ -132,15 +147,25 @@ export default function TeamProjectsPage() {
         </select>
         <select
           value={filterPriority}
-          onChange={e => applyFilter(filterStatus, e.target.value)}
+          onChange={e => applyFilter(filterStatus, e.target.value, filterTagId)}
           className="bg-white/5 border border-white/10 text-white/60 text-xs rounded-xl px-3 py-2 focus:outline-none"
         >
           <option value="">All priorities</option>
           {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
-        {(filterStatus || filterPriority) && (
+        {allTags.length > 0 && (
+          <select
+            value={filterTagId}
+            onChange={e => applyFilter(filterStatus, filterPriority, e.target.value === "" ? "" : Number(e.target.value))}
+            className="bg-white/5 border border-white/10 text-white/60 text-xs rounded-xl px-3 py-2 focus:outline-none"
+          >
+            <option value="">All tags</option>
+            {allTags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        )}
+        {hasFilters && (
           <button
-            onClick={() => applyFilter("", "")}
+            onClick={() => applyFilter("", "", "")}
             className="text-xs text-white/30 hover:text-white/60 transition-colors"
           >
             Clear filters
@@ -217,13 +242,13 @@ export default function TeamProjectsPage() {
       {/* Project list */}
       {loading && <div className="flex justify-center py-12"><Spinner size={24} /></div>}
 
-      {!loading && projects.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <Empty message="No projects found" />
       )}
 
-      {!loading && projects.length > 0 && (
+      {!loading && paginated.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {projects.map(p => (
+          {paginated.map(p => (
             <button
               key={p.id}
               onClick={() => navigate(`/projects/${p.id}`)}
@@ -253,7 +278,7 @@ export default function TeamProjectsPage() {
         </div>
       )}
 
-      <Pagination page={page} total={total} pageSize={PAGE_SIZE} onChange={setPage} />
+      <Pagination page={page} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
     </div>
   );
 }
