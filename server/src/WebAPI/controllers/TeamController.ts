@@ -77,7 +77,7 @@ export class TeamController {
         try {
             const ok = await this.teamService.updateTeam(id, dto, req.user!.user_id);
             if (!ok) { res.status(404).json({ success: false, message: "Team not found"}); return; }
-            await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team", id, undefined, req.ip);
+            await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team", id, undefined, req.ip, req.user!.username);
             res.status(200).json({ success: true, message: "Team updated successfully" });
         } catch (err) {
             next(err);
@@ -90,7 +90,7 @@ export class TeamController {
         try {
             const ok = await this.teamService.deleteTeam(id, req.user!.user_id);
             if (!ok) { res.status(404).json({ success: false, message: "Team not found" }); return; }
-            await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team", id, undefined, req.ip);
+            await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team", id, undefined, req.ip, req.user!.username);
             res.status(200).json({ success: true, message: "Team deleted successfully" });
         } catch (err) {
             next(err);
@@ -111,7 +111,7 @@ export class TeamController {
         if (!username) { res.status(400).json({ success: false, message: "Username is required" }); return; }
         const ok = await this.teamService.addTeamMember(id, new AddMemberDto(username, role ?? TeamMemberRole.MEMBER), req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "User not found" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "team_member", id, `username=${username}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "team_member", id, `username=${username}`, req.ip, req.user!.username);
         res.status(201).json({ success: true, message: "Member added successfully" });
     }
 
@@ -134,7 +134,7 @@ export class TeamController {
 
         const ok = await this.teamService.updateMemberRole(id, memberId, new UpdateMemberRoleDto(role), req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team_member", memberId, `role=${role}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team_member", memberId, `role=${role}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Role changed successfully" });
     }
 
@@ -145,7 +145,7 @@ export class TeamController {
         try {
             const ok = await this.teamService.removeTeamMember(id, memberId, req.user!.user_id);
             if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
-            await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team_member", memberId, undefined, req.ip);
+            await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team_member", memberId, undefined, req.ip, req.user!.username);
             res.status(200).json({ success: true, message: "Member removed successfully" });
         } catch (err) {
             next(err);

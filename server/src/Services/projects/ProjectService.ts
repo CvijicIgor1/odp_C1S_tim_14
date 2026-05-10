@@ -8,6 +8,7 @@ import { ProjectFilters } from "../../Domain/types/ProjectFilters";
 import { Project } from "../../Domain/models/Project";
 import { Tag } from "../../Domain/models/Tag";
 import { TagDto } from "../../Domain/DTOs/tags/TagDto";
+import { AddTagResult } from "../../Domain/enums/AddTagResult";
 
 export class ProjectService implements IProjectService
 {
@@ -126,11 +127,14 @@ export class ProjectService implements IProjectService
         return this.projectRepository.delete(id);
     }
 
-    async addTag(projectId: number, tagId: number, userId: number, isAdmin: boolean = false): Promise<boolean> 
+    async addTag(projectId: number, tagId: number, userId: number, isAdmin: boolean = false): Promise<AddTagResult> 
     {
         const canEdit = await this.checkOwnerOrAdmin(projectId, userId, isAdmin);
-        if (!canEdit) return false;
-        return this.projectRepository.addTag(projectId, tagId);
+        if (!canEdit) return AddTagResult.FORBIDDEN;
+        const existing = await this.projectRepository.getTagsForProject(projectId);
+        if (existing.some((t) => t.id === tagId)) return AddTagResult.DUPLICATE;
+        await this.projectRepository.addTag(projectId, tagId);
+        return AddTagResult.OK;
     }
  
     async removeTag(projectId: number, tagId: number, userId: number, isAdmin: boolean = false): Promise<boolean> 

@@ -5,6 +5,7 @@ import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { AuditAction } from "../../Domain/enums/AuditLog";
+import { AddTagResult } from "../../Domain/enums/AddTagResult";
 import { CreateProjectDto } from "../../Domain/DTOs/projects/CreateProjectDto";
 import { UpdateProjectDto } from "../../Domain/DTOs/projects/UpdateProjectDto";
 import { ProjectStatus } from "../../Domain/enums/ProjectStatus";
@@ -104,7 +105,7 @@ export class ProjectController {
         const project = await this.projectService.createProject(teamId, dto, req.user!.user_id);
 
         if (project.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "project", project.id, undefined, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "project", project.id, undefined, req.ip, req.user!.username);
         res.status(201).json({ success: true, message: "Project created successfully", data: project });
     }
 
@@ -126,7 +127,7 @@ export class ProjectController {
 
         const ok = await this.projectService.updateProject(id, dto, req.user!.user_id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Project not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "project", id, undefined, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "project", id, undefined, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Project updated successfully" });
     }
 
@@ -140,7 +141,7 @@ export class ProjectController {
 
         const ok = await this.projectService.deleteProject(id, req.user!.user_id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Project not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "project", id, undefined, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "project", id, undefined, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Project deleted successfully" });
     }
 
@@ -153,9 +154,10 @@ export class ProjectController {
 
         const isAdmin = req.user?.role === UserRole.ADMIN;
 
-        const ok = await this.projectService.addTag(id, tagId, req.user!.user_id, isAdmin);
-        if (!ok) { res.status(404).json({ success: false, message: "Not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "project", id, `tag:${tagId}`, req.ip);
+        const result = await this.projectService.addTag(id, tagId, req.user!.user_id, isAdmin);
+        if (result === AddTagResult.FORBIDDEN)  { res.status(403).json({ success: false, message: "Not found or forbidden" }); return; }
+        if (result === AddTagResult.DUPLICATE)  { res.status(409).json({ success: false, message: "Tag already added to this project" }); return; }
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "project", id, `tag:${tagId}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Tag added successfully" });
     }
 
@@ -170,7 +172,7 @@ export class ProjectController {
 
         const ok = await this.projectService.removeTag(id, tagId, req.user!.user_id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "project", id, `tag:${tagId}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "project", id, `tag:${tagId}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Tag removed successfully" });
     }
 

@@ -40,7 +40,7 @@ export class UserController {
     }
     const ok = await this.userService.updateRole(id, role);
     if (!ok) { res.status(404).json({ success: false, message: "User not found" }); return; }
-    await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "user", id, `role=${role}`, req.ip);
+    await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "user", id, `role=${role}`, req.ip, req.user!.username);
     res.status(200).json({ success: true, message: "User role updated" });
   }
 
@@ -53,7 +53,7 @@ export class UserController {
     }
     const ok = await this.userService.updateStatus(id, isActive);
     if (!ok) { res.status(404).json({ success: false, message: "User not found" }); return; }
-    await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "user", id, `isActive=${isActive}`, req.ip);
+    await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "user", id, `isActive=${isActive}`, req.ip, req.user!.username);
     res.status(200).json({ success: true, message: "User status updated" });
   }
 
@@ -62,7 +62,7 @@ export class UserController {
     if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
     const ok = await this.userService.deactivate(id);
     if (!ok) { res.status(404).json({ success: false, message: "User not found" }); return; }
-    await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "user", id, "deactivated", req.ip);
+    await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "user", id, "deactivated", req.ip, req.user!.username);
     res.status(200).json({ success: true, message: "User deactivated" });
   }
 
@@ -79,7 +79,7 @@ export class UserController {
     }
     const ok = await this.userService.updateProfile(id, username, email, avatar ?? "", newPassword);
     if (!ok) { res.status(404).json({ success: false, message: "User not found or update failed" }); return; }
-    await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "user", id, "profile", req.ip);
+    await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "user", id, "profile", req.ip, req.user!.username);
     res.status(200).json({ success: true, message: "Profile updated" });
   }
 

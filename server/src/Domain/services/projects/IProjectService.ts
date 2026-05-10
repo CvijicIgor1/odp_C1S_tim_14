@@ -3,6 +3,7 @@ import { CreateProjectDto } from '../../DTOs/projects/CreateProjectDto';
 import { ProjectDto } from '../../DTOs/projects/ProjectDto';
 import { UpdateProjectDto } from '../../DTOs/projects/UpdateProjectDto';
 import { ProjectFilters } from '../../types/ProjectFilters';
+import { AddTagResult } from '../../enums/AddTagResult';
  
 export interface IProjectService {
   getTeamProjects(
@@ -18,7 +19,7 @@ export interface IProjectService {
   createProject(teamId: number,dto: CreateProjectDto,userId: number): Promise<ProjectDto>;
   updateProject(id: number, dto: UpdateProjectDto, userId: number, isAdmin?: boolean): Promise<boolean>;
   deleteProject(id: number, userId: number, isAdmin?: boolean): Promise<boolean>;
-  addTag(projectId: number, tagId: number, userId: number, isAdmin?: boolean): Promise<boolean>;
+  addTag(projectId: number, tagId: number, userId: number, isAdmin?: boolean): Promise<AddTagResult>;
   removeTag(projectId: number, tagId: number, userId: number, isAdmin?: boolean): Promise<boolean>;
   getWatchedProjects(userId: number, page: number, limit: number): Promise<PaginatedListDto<ProjectDto>>;
   watchProject(projectId: number, userId: number): Promise<boolean>;

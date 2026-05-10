@@ -47,7 +47,7 @@ export default function AuditLogPage() {
             {logs.map(log => (
               <tr key={log.id} className="border-t border-white/4 hover:bg-white/2 transition-colors">
                 <td className="px-5 py-3.5 text-white/30 font-mono text-xs">{log.id}</td>
-                <td className="px-5 py-3.5 text-white/50 font-mono text-xs">{log.user_id ?? "—"}</td>
+                <td className="px-5 py-3.5 text-white/50 font-mono text-xs">{log.username ?? log.user_id ?? "—"}</td>
                 <td className="px-5 py-3.5 text-white/80 text-sm">{log.action}</td>
                 <td className="px-5 py-3.5 text-white/40 text-xs">{log.entity_type ?? "—"}</td>
                 <td className="px-5 py-3.5 text-white/30 font-mono text-xs">{log.entity_id ?? "—"}</td>

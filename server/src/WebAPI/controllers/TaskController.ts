@@ -88,7 +88,7 @@ export class TaskController {
         const task = await this.taskService.createTask(dto, req.user!.user_id);
 
         if (task.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "task", task.id, undefined, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "task", task.id, undefined, req.ip, req.user!.username);
         res.status(201).json({ success: true, message: "Task created successfully", data: task });
     }
 
@@ -112,7 +112,7 @@ export class TaskController {
 
         const ok = await this.taskService.updateTask(id, dto, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Task not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, undefined, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, undefined, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Task updated successfully" });
     }
 
@@ -126,7 +126,7 @@ export class TaskController {
 
         const ok = await this.taskService.updateTaskStatus(id, dto, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Task not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `status:${dto.status}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `status:${dto.status}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Task status updated successfully" });
     }
 
@@ -138,7 +138,7 @@ export class TaskController {
 
         const ok = await this.taskService.deleteTask(id, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Task not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "task", id, undefined, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "task", id, undefined, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Task deleted successfully" });
     }
 
@@ -153,7 +153,7 @@ export class TaskController {
 
         const ok = await this.taskService.addAssignee(id, dto, req.user!.user_id);
         if (!ok) { res.status(400).json({ success: false, message: "Cannot assign user: not a team member or already assigned" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `assignee:${dto.userId}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `assignee:${dto.userId}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Assignee added successfully" });
     }
 
@@ -166,7 +166,7 @@ export class TaskController {
 
         const ok = await this.taskService.removeAssignee(id, userId, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Assignee not found" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `assignee_removed:${userId}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `assignee_removed:${userId}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Assignee removed successfully" });
     }
 

@@ -12,4 +12,5 @@ export interface IUserRepository {
   updateStatus(id: number, isActive: boolean): Promise<boolean>;
   deactivate(id: number): Promise<boolean>;
   updateProfile(id: number, username: string, email: string, avatar: string, passwordHash?: string): Promise<boolean>;
+  exists(id: number): Promise<boolean>;
 }

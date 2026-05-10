@@ -60,7 +60,7 @@ export default function UserTeams() {
       return;
     }
     setExpandedTeam(teamId);
-    await loadMembers(teamId);
+    if (!members[teamId]) await loadMembers(teamId);
   };
 
   const handleAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {

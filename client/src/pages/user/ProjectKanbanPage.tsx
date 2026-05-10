@@ -4,6 +4,7 @@ import { PageHeader, Empty, ErrorBox, SuccessBox, Spinner } from "../../componen
 import { projectsApi } from "../../api_services/project/ProjectAPIService";
 import { tasksApi } from "../../api_services/task/TaskAPIService";
 import { tagsApi } from "../../api_services/tag/TagAPIService";
+import { teamsApi } from "../../api_services/team/TeamAPIService";
 import type { ProjectDto, TaskDto, TaskStatus, Priority, TagDto } from "../../models/project/ProjectTypes";
 
 const COLUMNS: { key: TaskStatus; label: string }[] = [
@@ -36,6 +37,7 @@ export default function ProjectKanbanPage() {
 
   const [isWatching, setIsWatching] = useState(false);
   const [watchLoading, setWatchLoading] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
 
   const [showEdit, setShowEdit] = useState(false);
   const [editName, setEditName] = useState("");
@@ -69,6 +71,10 @@ export default function ProjectKanbanPage() {
       ]);
       if (pRes.success && pRes.data) {
         setProject(pRes.data);
+        const teamRes = await teamsApi.getById(pRes.data.teamId);
+        if (teamRes.success && teamRes.data) {
+          setIsOwner(teamRes.data.currentUserRole === "owner");
+        }
         const watchedRes = await projectsApi.getWatched(1, 1000);
         if (watchedRes.success && watchedRes.data) {
           setIsWatching(watchedRes.data.items.some(p => p.id === pid));
@@ -118,6 +124,10 @@ export default function ProjectKanbanPage() {
   };
 
   const handleSaveEdit = async () => {
+    if (editDeadline && new Date(editDeadline) <= new Date()) {
+      setError("Deadline must be a future date");
+      return;
+    }
     setSaving(true);
     setError("");
     setSuccess("");
@@ -143,6 +153,10 @@ export default function ProjectKanbanPage() {
 
   const handleCreate = async () => {
     if (!newTitle.trim()) return;
+    if (newDeadline && new Date(newDeadline) <= new Date()) {
+      setError("Deadline must be a future date");
+      return;
+    }
     setCreating(true);
     setError("");
     setSuccess("");
@@ -250,6 +264,21 @@ export default function ProjectKanbanPage() {
             >
               {watchLoading ? <Spinner size={12} /> : isWatching ? "👀… Watching" : "👀 Watch"}
             </button>
+            {isOwner && (
+              <button
+                onClick={() => {
+                  setEditName(project?.name ?? "");
+                  setEditDesc(project?.description ?? "");
+                  setEditStatus(project?.status ?? "");
+                  setEditPriority(project?.priority ?? "");
+                  setEditDeadline(project?.deadline?.slice(0, 10) ?? "");
+                  setShowEdit(v => !v);
+                }}
+                className="text-xs px-4 py-2 border border-white/10 text-white/50 hover:border-white/20 hover:text-white/80 rounded-xl transition-colors"
+              >
+                {showEdit ? "Cancel edit" : "Edit project"}
+              </button>
+            )}
             <button
               onClick={() => setShowCreate(v => !v)}
               className="text-xs px-4 py-2 bg-white text-black font-bold rounded-xl hover:bg-white/90 transition-colors"
