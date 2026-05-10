@@ -36,7 +36,7 @@ export class TeamRepository implements ITeamRepository {
     }
 
     async findAll(userId: number): Promise<{ teams: Array<{team: Team; role: string}>, totalNumber: number }> {
-        const res = await this.db.getReadConnection();
+        const res = await this.db.getMasterReadConnection();
         if (!res) return { teams: [], totalNumber: 0 };
 
         try {
@@ -58,7 +58,7 @@ export class TeamRepository implements ITeamRepository {
     }
 
     async findAllAsAdmin(): Promise<{ teams: Team[], totalNumber: number }> {
-        const res = await this.db.getReadConnection();
+        const res = await this.db.getMasterReadConnection();
         if (!res) return { teams: [], totalNumber: 0 };
 
         try {

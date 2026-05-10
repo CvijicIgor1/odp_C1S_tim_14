@@ -68,7 +68,7 @@ export class UserRepository implements IUserRepository {
   }
 
   async findAll(): Promise<User[]> {
-    const res = await this.db.getReadConnection();
+    const res = await this.db.getMasterReadConnection();
     if (!res) return [];
     try {
       const [rows] = await res.conn.execute<RowDataPacket[]>(`SELECT * FROM users ORDER BY id ASC`);
