@@ -63,7 +63,6 @@ export class TagRepository implements ITagRepository {
         const safePage  = Math.max(1, Math.floor(page));
         const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 100);
         const offset    = (safePage - 1) * safeLimit;
-
         const res = await this.db.getReadConnection();
         if (!res) return { tags: [], totalNumber: 0 };
             try 

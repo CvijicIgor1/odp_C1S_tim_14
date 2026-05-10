@@ -45,7 +45,7 @@ export class ProjectRepository implements IProjectRepository
     
     async findAllByTeam(teamId: number, page: number, limit: number, filters?: ProjectFilters): Promise<{ projects: Project[]; totalNumber: number }>
     {
-        const res = await this.db.getMasterReadConnection();
+        const res = await this.db.getReadConnection();
         if (!res) return { projects: [], totalNumber: 0 };
 
         const safePage = this.safeInt(page,  1);
@@ -120,37 +120,7 @@ export class ProjectRepository implements IProjectRepository
         }
     }
 
-    async findAllAsAdmin(page: number, limit: number): Promise<{ projects: Project[]; totalNumber: number }>
-    {
-        const res = await this.db.getReadConnection();
-        if (!res) return { projects: [], totalNumber: 0 };
-        try
-        {
-            const safePage = this.safeInt(page, 1);
-            const safeLimit = this.safeInt(limit, 20);
-            const offset = (safePage - 1) * safeLimit;
-
-            const [[countRow]] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT COUNT(*) AS total FROM projects`
-            );
-            const totalNumber = Number(countRow.total);
-
-            const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT * FROM projects ORDER BY name ASC LIMIT ${safeLimit} OFFSET ${offset}`
-            );
-            return { projects: rows.map((r) => this.map(r)), totalNumber };
-        }
-        catch (err)
-        {
-            this.logger.error("ProjectRepository", "findAllAsAdmin failed", err);
-            return { projects: [], totalNumber: 0 };
-        }
-        finally
-        {
-            res.conn.release();
-        }
-    }
-    async create(teamId: number, dto: CreateProjectDto): Promise<Project>
+    async create(teamId:number ,dto: CreateProjectDto): Promise<Project>
     {
         const res = await this.db.getWriteConnection();
         if (!res) return new Project();

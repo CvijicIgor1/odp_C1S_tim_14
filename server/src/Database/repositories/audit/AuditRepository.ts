@@ -34,7 +34,7 @@ export class AuditRepository implements IAuditRepository{
   }
 
   async findAll(page: number, limit: number): Promise<PaginatedListDto<AuditLogDto>> {
-    const res = await this.db.getMasterReadConnection();
+    const res = await this.db.getReadConnection();
     if (!res) return new PaginatedListDto([], 0, page, limit);
     const lim    = safeInt(Math.max(1, limit));
     const offset = safeInt(Math.max(0, (page - 1) * lim));

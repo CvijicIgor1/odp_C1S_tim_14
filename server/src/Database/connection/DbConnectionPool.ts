@@ -124,23 +124,6 @@ export class DbManager {
     }
   }
 
-  public async getMasterReadConnection(): Promise<{ conn: PoolConnection; nodeName: string } | null> {
-    if (this.master.node.status === NodeStatus.OFFLINE) {
-      this.logger.error("DB", "Master is OFFLINE — consistent read not possible");
-      return null;
-    }
-    try {
-      const conn = await this.master.pool.getConnection();
-      this.master.node.successfulConnections++;
-      return { conn, nodeName: this.master.name };
-    } catch (err) {
-      this.master.node.status = NodeStatus.OFFLINE;
-      this.master.node.failedConnections++;
-      this.logger.error("DB", "Failed to connect to master for consistent read", err);
-      return null;
-    }
-  }
-
   /** All reads (SELECT) → Round-Robin slaves, fallback to Master */
   public async getReadConnection(): Promise<{ conn: PoolConnection; nodeName: string } | null> {
     const n = this.slaves.length;
