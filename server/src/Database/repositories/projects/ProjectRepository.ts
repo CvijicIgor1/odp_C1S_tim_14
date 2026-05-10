@@ -136,8 +136,7 @@ export class ProjectRepository implements IProjectRepository
             const totalNumber = Number(countRow.total);
 
             const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT * FROM projects ORDER BY name ASC LIMIT ? OFFSET ?`,
-                [safeLimit, offset]
+                `SELECT * FROM projects ORDER BY name ASC LIMIT ${safeLimit} OFFSET ${offset}`
             );
             return { projects: rows.map((r) => this.map(r)), totalNumber };
         }

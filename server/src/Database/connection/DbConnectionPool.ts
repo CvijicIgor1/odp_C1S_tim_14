@@ -86,12 +86,15 @@ export class DbManager {
       this.logger.error("DB", "Master OFFLINE and no healthy slave available — system degraded");
       return;
     }
-    const prevName = this.master.name;
+    const prevMaster = this.master;
     const candidateIdx = this.slaves.indexOf(candidate);
     this.master = { name: "master", pool: candidate.pool, node: candidate.node };
-    this.slaves = this.slaves.filter((_, i) => i !== candidateIdx);
+    this.slaves = [
+      ...this.slaves.filter((_, i) => i !== candidateIdx),
+      { name: prevMaster.name, pool: prevMaster.pool, node: prevMaster.node },
+    ];
     this.slaveRrIndex = 0;
-    this.logger.warn("DB", `[AUTO-FAILOVER] ${candidate.name} promoted to master (was: ${prevName})`);
+    this.logger.warn("DB", `[AUTO-FAILOVER] ${candidate.name} promoted to master (was: ${prevMaster.name})`);
   }
 
   public async runHealthCheck(): Promise<void> {
@@ -105,7 +108,6 @@ export class DbManager {
     this.healthTimer = setInterval(() => void this.runHealthCheck(), HEALTH_CHECK_INTERVAL_MS);
   }
 
-  // Ако је master офлајн, промовиши slave
   public async promoteSlaveToMaster(slaveIndex: 0 | 1): Promise<{ success: boolean; message: string }> {
     if (slaveIndex < 0 || slaveIndex >= this.slaves.length) {
       return { success: false, message: `Invalid slave index: ${slaveIndex}` };
@@ -114,11 +116,14 @@ export class DbManager {
     if (candidate.node.status === NodeStatus.OFFLINE) {
       return { success: false, message: `Cannot promote ${candidate.name} — node is OFFLINE` };
     }
-    const prevName = this.master.name;
+    const prevMaster = this.master;
     this.master = { name: "master", pool: candidate.pool, node: candidate.node };
-    this.slaves = this.slaves.filter((_, i) => i !== slaveIndex);
+    this.slaves = [
+      ...this.slaves.filter((_, i) => i !== slaveIndex),
+      { name: prevMaster.name, pool: prevMaster.pool, node: prevMaster.node },
+    ];
     this.slaveRrIndex = 0;
-    this.logger.warn("DB", `Failover: ${candidate.name} promoted to master (replaced: ${prevName})`);
+    this.logger.warn("DB", `Failover: ${candidate.name} promoted to master (replaced: ${prevMaster.name})`);
     return { success: true, message: `${candidate.name} promoted to master` };
   }
 

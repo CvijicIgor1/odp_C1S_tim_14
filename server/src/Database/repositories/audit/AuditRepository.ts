@@ -8,6 +8,17 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 const safeInt = (n: number): number => Math.max(0, Math.floor(n));
 
+const parseDetail = (raw: unknown): Record<string, unknown> | null => {
+    if (raw === null || raw === undefined) return null;
+    if (typeof raw === "object") return raw as Record<string, unknown>;
+    if (typeof raw !== "string" || raw.trim() === "") return null;
+    try {
+        return JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+        return { value: raw };
+    }
+};
+
 export class AuditRepository implements IAuditRepository{
     public constructor(
         private readonly db: DbManager,
@@ -49,7 +60,7 @@ export class AuditRepository implements IAuditRepository{
         (l) => new AuditLogDto(
           l.id, l.user_id ?? null,
           l.action, l.entity_type ?? null, l.entity_id ?? null,
-          l.detail ? (JSON.parse(l.detail as string) as Record<string, unknown>) : null,
+          parseDetail(l.detail),
           l.ip_address ?? null,
           new Date(l.created_at as string)
         )
