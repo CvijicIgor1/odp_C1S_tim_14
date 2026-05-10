@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { PageHeader, Empty, ErrorBox, SuccessBox, Spinner } from "../../components/ui/UI";
 import { projectsApi } from "../../api_services/project/ProjectAPIService";
 import { tasksApi } from "../../api_services/task/TaskAPIService";
-import type { ProjectDto, TaskDto, TaskStatus, Priority } from "../../models/project/ProjectTypes";
+import { tagsApi } from "../../api_services/tag/TagAPIService";
+import type { ProjectDto, TaskDto, TaskStatus, Priority, TagDto } from "../../models/project/ProjectTypes";
 
 const COLUMNS: { key: TaskStatus; label: string }[] = [
   { key: "todo", label: "To Do" },
@@ -42,6 +43,9 @@ export default function ProjectKanbanPage() {
   const [newHours, setNewHours] = useState("0");
   const [creating, setCreating] = useState(false);
 
+  const [allTags, setAllTags] = useState<TagDto[]>([]);
+  const [tagLoading, setTagLoading] = useState(false);
+
   const dragTask = useRef<TaskDto | null>(null);
   const [dragging, setDragging] = useState<number | null>(null);
 
@@ -75,6 +79,12 @@ export default function ProjectKanbanPage() {
   }, [pid]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    tagsApi.getAll(1, 100).then(res => {
+      if (res.success) setAllTags(res.data?.items ?? []);
+    });
+  }, []);
 
   const handleWatch = async () => {
     setWatchLoading(true);
@@ -125,6 +135,39 @@ export default function ProjectKanbanPage() {
     }
   };
 
+  const handleAddTag = async (tagId: number) => {
+    if (!project) return;
+    setTagLoading(true);
+    setError("");
+    try {
+      const res = await projectsApi.addTag(pid, tagId);
+      if (res.success) {
+        const tag = allTags.find(t => t.id === tagId);
+        if (tag) setProject(prev => prev ? { ...prev, tags: [...prev.tags, tag] } : prev);
+      } else {
+        setError(res.message);
+      }
+    } finally {
+      setTagLoading(false);
+    }
+  };
+
+  const handleRemoveTag = async (tagId: number) => {
+    if (!project) return;
+    setTagLoading(true);
+    setError("");
+    try {
+      const res = await projectsApi.removeTag(pid, tagId);
+      if (res.success) {
+        setProject(prev => prev ? { ...prev, tags: prev.tags.filter(t => t.id !== tagId) } : prev);
+      } else {
+        setError(res.message);
+      }
+    } finally {
+      setTagLoading(false);
+    }
+  };
+
   const onDragStart = (task: TaskDto) => {
     dragTask.current = task;
     setDragging(task.id);
@@ -151,6 +194,9 @@ export default function ProjectKanbanPage() {
       await load();
     }
   };
+
+  const assignedTagIds = new Set(project?.tags.map(t => t.id) ?? []);
+  const availableTags = allTags.filter(t => !assignedTagIds.has(t.id));
 
   return (
     <div className="space-y-8">
@@ -186,6 +232,44 @@ export default function ProjectKanbanPage() {
           <span>Priority: {project.priority}</span>
           {project.deadline && <span>Deadline: {project.deadline.slice(0, 10)}</span>}
           <span>{project.watcherCount} watchers</span>
+        </div>
+      )}
+
+      {/* Tag management */}
+      {project && (
+        <div className="space-y-2">
+          <p className="text-[10px] uppercase tracking-widest text-white/25 font-mono">Tags</p>
+          <div className="flex flex-wrap gap-2 items-center">
+            {project.tags.map(t => (
+              <span
+                key={t.id}
+                className="flex items-center gap-1.5 text-xs px-3 py-1 bg-white/5 border border-white/10 text-white/50 rounded-lg group"
+              >
+                {t.name}
+                <button
+                  onClick={() => handleRemoveTag(t.id)}
+                  disabled={tagLoading}
+                  className="text-white/20 hover:text-red-400 transition-colors disabled:opacity-40 leading-none"
+                  title="Remove tag"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {availableTags.length > 0 && (
+              <select
+                value=""
+                onChange={e => { if (e.target.value) handleAddTag(Number(e.target.value)); }}
+                disabled={tagLoading}
+                className="bg-white/5 border border-white/10 text-white/40 text-xs rounded-lg px-3 py-1 focus:outline-none disabled:opacity-40"
+              >
+                <option value="">+ Add tag</option>
+                {availableTags.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
         </div>
       )}
 
