@@ -173,6 +173,7 @@ export class DbManager {
       const idx = (this.slaveRrIndex + i) % n;
       const info = this.slaves[idx];
       if (info.node.status === NodeStatus.OFFLINE) continue;
+      if (info.node.replicationLagMs !== null && info.node.replicationLagMs > DEGRADED_THRESHOLD_MS) continue;
       try {
         const conn = await info.pool.getConnection();
         this.slaveRrIndex = (idx + 1) % n;
@@ -185,7 +186,7 @@ export class DbManager {
       }
     }
     // Fallback to master
-    this.logger.warn("DB", "All slaves offline — falling back to master for read");
+    this.logger.warn("DB", "All slaves offline or lagging — falling back to master for read");
     if (this.master.node.status === NodeStatus.OFFLINE) {
       this.logger.error("DB", "Master also offline — read not possible");
       return null;
