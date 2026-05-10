@@ -1,4 +1,4 @@
-import type { ApiResponse } from "../team/ITeamAPIService";
+﻿import type { ApiResponse } from "../team/ITeamAPIService";
 
 export type DbNodeInfo = {
   name: string;
@@ -8,6 +8,7 @@ export type DbNodeInfo = {
   lastCheck: string | null;
   successfulConnections: number;
   failedConnections: number;
+  replicationLagMs: number | null;
 };
 
 export interface IHealthAPIService {

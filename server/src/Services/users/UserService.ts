@@ -1,3 +1,4 @@
+﻿import bcrypt from "bcryptjs";
 import { IUserService } from "../../Domain/services/users/IUserService";
 import { IUserRepository } from "../../Domain/repositories/users/IUserRepository";
 import { UserDto } from "../../Domain/DTOs/users/UserDto";
@@ -27,5 +28,15 @@ export class UserService implements IUserService {
 
   async deactivate(id: number): Promise<boolean> {
     return this.userRepo.deactivate(id);
+  }
+
+  async updateProfile(id: number, username: string, email: string, avatar: string, newPassword?: string): Promise<boolean> {
+    let passwordHash: string | undefined;
+    if (newPassword) {
+      const saltRounds = parseInt(process.env.SALT_ROUNDS ?? "10", 10);
+      passwordHash = await bcrypt.hash(newPassword, saltRounds).catch(() => undefined);
+      if (!passwordHash) return false;
+    }
+    return this.userRepo.updateProfile(id, username, email, avatar, passwordHash);
   }
 }

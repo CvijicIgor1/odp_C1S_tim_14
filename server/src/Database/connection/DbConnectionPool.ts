@@ -97,8 +97,29 @@ export class DbManager {
     this.logger.warn("DB", `[AUTO-FAILOVER] ${candidate.name} promoted to master (was: ${prevMaster.name})`);
   }
 
+
+  private async measureReplicationLag(info: NodeInfo): Promise<void> {
+    if (info.node.status === NodeStatus.OFFLINE) { info.node.replicationLagMs = null; return; }
+    let conn: import("mysql2/promise").PoolConnection | null = null;
+    try {
+      conn = await info.pool.getConnection();
+      const [rows] = await conn.query("SHOW SLAVE STATUS") as [Record<string, unknown>[], unknown];
+      if (Array.isArray(rows) && rows.length > 0) {
+        const lag = rows[0].Seconds_Behind_Master;
+        info.node.replicationLagMs = typeof lag === "number" ? lag * 1000 : null;
+      } else {
+        info.node.replicationLagMs = null;
+      }
+    } catch {
+      info.node.replicationLagMs = null;
+    } finally {
+      if (conn) conn.release();
+    }
+  }
+
   public async runHealthCheck(): Promise<void> {
     await Promise.all([this.master, ...this.slaves].map((n) => this.checkNode(n)));
+    await Promise.all(this.slaves.map((s) => this.measureReplicationLag(s)));
     this.logger.info("DB", [this.master, ...this.slaves].map((n) => `${n.name}=${n.node.status}`).join(" | "));
     this.autoPromoteIfMasterOffline();
   }

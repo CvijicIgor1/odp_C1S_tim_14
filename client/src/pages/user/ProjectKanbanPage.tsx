@@ -12,6 +12,8 @@ const COLUMNS: { key: TaskStatus; label: string }[] = [
   { key: "done", label: "Done" },
 ];
 
+const STATUSES: import("../../models/project/ProjectTypes").ProjectStatus[] = ["planning", "active", "on_hold", "completed"];
+
 const PRIORITIES: Priority[] = ["low", "medium", "high", "critical"];
 
 const priorityColor: Record<Priority, string> = {
@@ -34,6 +36,14 @@ export default function ProjectKanbanPage() {
 
   const [isWatching, setIsWatching] = useState(false);
   const [watchLoading, setWatchLoading] = useState(false);
+
+  const [showEdit, setShowEdit] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editStatus, setEditStatus] = useState("");
+  const [editPriority, setEditPriority] = useState("");
+  const [editDeadline, setEditDeadline] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -104,6 +114,30 @@ export default function ProjectKanbanPage() {
       }
     } finally {
       setWatchLoading(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await projectsApi.update(pid, {
+        name: editName.trim() || undefined,
+        description: editDesc.trim() || undefined,
+        status: editStatus as import("../../models/project/ProjectTypes").ProjectStatus || undefined,
+        priority: editPriority as import("../../models/project/ProjectTypes").Priority || undefined,
+        deadline: editDeadline || undefined,
+      });
+      if (res.success) {
+        setSuccess("Project updated");
+        setShowEdit(false);
+        await load();
+      } else {
+        setError(res.message);
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -214,7 +248,7 @@ export default function ProjectKanbanPage() {
                   : "border-white/10 text-white/50 hover:border-white/20 hover:text-white/80"
               }`}
             >
-              {watchLoading ? <Spinner size={12} /> : isWatching ? "★ Watching" : "☆ Watch"}
+              {watchLoading ? <Spinner size={12} /> : isWatching ? "â˜… Watching" : "â˜† Watch"}
             </button>
             <button
               onClick={() => setShowCreate(v => !v)}
@@ -252,7 +286,7 @@ export default function ProjectKanbanPage() {
                   className="text-white/20 hover:text-red-400 transition-colors disabled:opacity-40 leading-none"
                   title="Remove tag"
                 >
-                  ×
+                  Ã—
                 </button>
               </span>
             ))}
@@ -271,6 +305,54 @@ export default function ProjectKanbanPage() {
             )}
           </div>
         </div>
+      )}
+
+      {showEdit && (
+        <section className="bg-[#0d0d0d] border border-white/5 rounded-2xl p-6 space-y-4">
+          <h2 className="text-white font-semibold text-sm">Edit project</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              type="text"
+              placeholder="Project name"
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/20"
+            />
+            <input
+              type="date"
+              value={editDeadline}
+              onChange={e => setEditDeadline(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/20"
+            />
+            <select
+              value={editStatus}
+              onChange={e => setEditStatus(e.target.value)}
+              className="bg-white/5 border border-white/10 text-white text-sm rounded-xl px-4 py-3 focus:outline-none"
+            >
+              {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select
+              value={editPriority}
+              onChange={e => setEditPriority(e.target.value)}
+              className="bg-white/5 border border-white/10 text-white text-sm rounded-xl px-4 py-3 focus:outline-none"
+            >
+              {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <textarea
+              placeholder="Description"
+              value={editDesc}
+              onChange={e => setEditDesc(e.target.value)}
+              className="md:col-span-2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white h-20 focus:outline-none focus:border-white/20"
+            />
+          </div>
+          <button
+            onClick={handleSaveEdit}
+            disabled={saving || !editName.trim()}
+            className="px-8 py-3 bg-white text-black text-sm font-bold rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40"
+          >
+            {saving ? <Spinner size={14} /> : "Save changes"}
+          </button>
+        </section>
       )}
 
       {error && <ErrorBox message={error} />}

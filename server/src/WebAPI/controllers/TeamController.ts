@@ -104,7 +104,7 @@ export class TeamController {
         res.status(200).json({ success: true, data: result });
     }
 
-    private async addMember(req: Request, res: Response): Promise<void> {
+    private async addMember(req: Request, res: Response, next: NextFunction): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid member ID" }); return; }
         const { username, role } = req.body as { username?: string; role?: TeamMemberRole };
@@ -115,7 +115,7 @@ export class TeamController {
         res.status(201).json({ success: true, message: "Member added successfully" });
     }
 
-    private async updateMemberRole(req: Request, res: Response): Promise<void> {
+    private async updateMemberRole(req: Request, res: Response, next: NextFunction): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         const memberId = parseInt(req.params.userId as string, 10);
         if (isNaN(id) || isNaN(memberId)) { res.status(400).json({ success: false, message: "Invalid IDs" }); return; }

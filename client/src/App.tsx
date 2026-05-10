@@ -1,3 +1,4 @@
+﻿import LandingPage from "./pages/LandingPage";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./components/protected_route/ProtectedRoute";
 
@@ -44,7 +45,7 @@ export default function App() {
       <Route path="/admin/tags" element={<ProtectedRoute requiredRole="admin"><TagsPage /></ProtectedRoute>} />
       <Route path="/admin/audit-log"  element={<ProtectedRoute requiredRole="admin"><AuditLogPage /></ProtectedRoute>} />
 
-      <Route path="/"    element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="/404" element={<NotFoundPage />} />
       <Route path="*"    element={<Navigate to="/404" replace />} />
     </Routes>

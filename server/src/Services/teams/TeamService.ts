@@ -114,6 +114,8 @@ export class TeamService implements ITeamService {
     }
 
     async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean> {
+        const isOwner = await this.teamRepo.isOwner(teamId, userId);
+        if (!isOwner) throw new AppError(403, "Only the team owner can add members");
         const noviClan = new TeamMember(0, 0, dto.role, new Date(), dto.username);
         return await this.teamRepo.addMember(teamId, noviClan);
     }
@@ -128,6 +130,8 @@ export class TeamService implements ITeamService {
     }
 
     async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<boolean> {
+        const isOwner = await this.teamRepo.isOwner(teamId, callerId);
+        if (!isOwner) throw new AppError(403, "Only the team owner can change member roles");
         return await this.teamRepo.updateMemberRole(teamId, memberId, dto.role);
 
     }
