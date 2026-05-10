@@ -41,14 +41,29 @@ export class TeamRepository implements ITeamRepository {
         if (!res) return { teams: [], totalNumber: 0 };
 
         try {
-            const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT t.*, tm.role AS member_role FROM teams t INNER JOIN team_members tm ON tm.team_id = t.id
-                WHERE tm.user_id = ?
-                ORDER BY t.name ASC`,
+            const [memberRows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT team_id, role FROM team_members WHERE user_id = ? ORDER BY team_id ASC`,
                 [userId]
             );
 
-            const teams = rows.map((r) => ({ team: this.map(r), role: r.member_role as string }));
+            if (memberRows.length === 0) return { teams: [], totalNumber: 0 };
+
+            const roleByTeamId = new Map<number, string>(
+                memberRows.map((r) => [r.team_id as number, r.role as string])
+            );
+            const teamIds = memberRows.map((r) => r.team_id as number);
+            const placeholders = teamIds.map(() => "?").join(", ");
+
+            const [teamRows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT * FROM teams WHERE id IN (${placeholders}) ORDER BY name ASC`,
+                teamIds
+            );
+
+            const teams = teamRows.map((r) => ({
+                team: this.map(r),
+                role: roleByTeamId.get(r.id as number) ?? "member",
+            }));
+
             return { teams, totalNumber: teams.length };
         } catch (err) {
             this.logger.error("TeamsRepository", "findAll failed", err);
@@ -95,19 +110,14 @@ export class TeamRepository implements ITeamRepository {
             res.conn.release();
         }
     }
+
     async create(newTeam: Team, ownerId: number): Promise<Team> {
         const res = await this.db.getWriteConnection();
         if (!res) return new Team();
         try {
             const [result] = await res.conn.execute<ResultSetHeader>(
-                `INSERT INTO teams
-                (name, description, avatar)
-                VALUES (?, ?, ?)`,
-                [
-                    newTeam.name,
-                    newTeam.description,
-                    newTeam.avatar
-                ],
+                `INSERT INTO teams (name, description, avatar) VALUES (?, ?, ?)`,
+                [newTeam.name, newTeam.description, newTeam.avatar],
             );
             if (result.insertId === 0) return new Team();
             await res.conn.execute<ResultSetHeader>(
@@ -127,6 +137,7 @@ export class TeamRepository implements ITeamRepository {
             res.conn.release();
         }
     }
+
     async update(teamId: number, inputTeam: Team): Promise<boolean> {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
@@ -159,9 +170,7 @@ export class TeamRepository implements ITeamRepository {
                 values
             );
 
-            if (result.affectedRows === 0) return false;
-
-            return true;
+            return result.affectedRows > 0;
         } catch (err) {
             this.logger.error("TeamsRepository", "update failed", err);
             return false;
@@ -195,10 +204,7 @@ export class TeamRepository implements ITeamRepository {
 
         try {
             const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT tm.*
-                FROM team_members tm
-                WHERE tm.team_id = ?
-                ORDER BY tm.role ASC`,
+                `SELECT * FROM team_members WHERE team_id = ? ORDER BY role ASC`,
                 [teamId]
             );
             return {members: rows.map((r) => this.mapMember(r)), totalNumber: rows.length};
@@ -264,8 +270,8 @@ export class TeamRepository implements ITeamRepository {
     }
 
     async removeMember(teamId: number, memberId: number): Promise<boolean> {
-        const res = await this.db.getWriteConnection();
-        if (!res) return false;
+        const writeRes = await this.db.getWriteConnection();
+        if (!writeRes) return false;
 
         try {
             const [result] = await res.conn.execute<ResultSetHeader>(
@@ -278,32 +284,79 @@ export class TeamRepository implements ITeamRepository {
             this.logger.error("TeamsRepository", "removeMember failed", err);
             return false;
         } finally {
-            res.conn.release();
+            writeRes.conn.release();
         }
 
-        const cascadeRes = await this.db.getWriteConnection();
-        if (!cascadeRes) return true;
+        const readRes = await this.db.getReadConnection();
+        if (!readRes) return true;
+
+        let projectIds: number[] = [];
+        try {
+            const [projectRows] = await readRes.conn.execute<RowDataPacket[]>(
+                `SELECT id FROM projects WHERE team_id = ?`,
+                [teamId]
+            );
+            projectIds = projectRows.map((r) => r.id as number);
+        } catch (err) {
+            this.logger.error("TeamsRepository", "removeMember project lookup failed", err);
+            return true;
+        } finally {
+            readRes.conn.release();
+        }
+
+        if (projectIds.length === 0) return true;
+
+        const projectPlaceholders = projectIds.map(() => "?").join(", ");
+
+        const cascadeWriteRes = await this.db.getWriteConnection();
+        if (!cascadeWriteRes) return true;
 
         try {
-            await cascadeRes.conn.execute<ResultSetHeader>(
-                `DELETE pw FROM project_watchers pw
-                 INNER JOIN projects p ON pw.project_id = p.id
-                 WHERE p.team_id = ? AND pw.user_id = ?`,
-                [teamId, memberId]
+            await cascadeWriteRes.conn.execute<ResultSetHeader>(
+                `DELETE FROM project_watchers WHERE project_id IN (${projectPlaceholders}) AND user_id = ?`,
+                [...projectIds, memberId]
             );
-            await cascadeRes.conn.execute<ResultSetHeader>(
-                `DELETE ta FROM task_assignees ta
-                 INNER JOIN tasks t ON ta.task_id = t.id
-                 INNER JOIN projects p ON t.project_id = p.id
-                 WHERE p.team_id = ? AND ta.user_id = ?`,
-                [teamId, memberId]
+        } catch (err) {
+            this.logger.error("TeamsRepository", "removeMember watcher cascade failed", err);
+        } finally {
+            cascadeWriteRes.conn.release();
+        }
+
+        const taskReadRes = await this.db.getReadConnection();
+        if (!taskReadRes) return true;
+
+        let taskIds: number[] = [];
+        try {
+            const [taskRows] = await taskReadRes.conn.execute<RowDataPacket[]>(
+                `SELECT id FROM tasks WHERE project_id IN (${projectPlaceholders})`,
+                projectIds
+            );
+            taskIds = taskRows.map((r) => r.id as number);
+        } catch (err) {
+            this.logger.error("TeamsRepository", "removeMember task lookup failed", err);
+            return true;
+        } finally {
+            taskReadRes.conn.release();
+        }
+
+        if (taskIds.length === 0) return true;
+
+        const taskPlaceholders = taskIds.map(() => "?").join(", ");
+
+        const assigneeWriteRes = await this.db.getWriteConnection();
+        if (!assigneeWriteRes) return true;
+
+        try {
+            await assigneeWriteRes.conn.execute<ResultSetHeader>(
+                `DELETE FROM task_assignees WHERE task_id IN (${taskPlaceholders}) AND user_id = ?`,
+                [...taskIds, memberId]
             );
             return true;
         } catch (err) {
-            this.logger.error("TeamsRepository", "removeMember cascade failed", err);
+            this.logger.error("TeamsRepository", "removeMember assignee cascade failed", err);
             return true;
         } finally {
-            cascadeRes.conn.release();
+            assigneeWriteRes.conn.release();
         }
     }
 
