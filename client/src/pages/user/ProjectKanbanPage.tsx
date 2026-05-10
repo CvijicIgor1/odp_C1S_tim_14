@@ -248,7 +248,7 @@ export default function ProjectKanbanPage() {
                   : "border-white/10 text-white/50 hover:border-white/20 hover:text-white/80"
               }`}
             >
-              {watchLoading ? <Spinner size={12} /> : isWatching ? "â˜… Watching" : "â˜† Watch"}
+              {watchLoading ? <Spinner size={12} /> : isWatching ? "👀… Watching" : "👀 Watch"}
             </button>
             <button
               onClick={() => setShowCreate(v => !v)}
