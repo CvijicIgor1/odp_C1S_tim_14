@@ -31,6 +31,9 @@ export default function ProjectKanbanPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [isWatching, setIsWatching] = useState(false);
+  const [watchLoading, setWatchLoading] = useState(false);
+
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -50,8 +53,15 @@ export default function ProjectKanbanPage() {
         projectsApi.getById(pid),
         tasksApi.getByProject(pid),
       ]);
-      if (pRes.success && pRes.data) setProject(pRes.data);
-      else setError(pRes.message);
+      if (pRes.success && pRes.data) {
+        setProject(pRes.data);
+        const watchedRes = await projectsApi.getWatched(1, 1000);
+        if (watchedRes.success && watchedRes.data) {
+          setIsWatching(watchedRes.data.items.some(p => p.id === pid));
+        }
+      } else {
+        setError(pRes.message);
+      }
       if (tRes.success && tRes.data) {
         setGrouped({
           todo: tRes.data.todo ?? [],
@@ -65,6 +75,27 @@ export default function ProjectKanbanPage() {
   }, [pid]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleWatch = async () => {
+    setWatchLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = isWatching
+        ? await projectsApi.unwatch(pid)
+        : await projectsApi.watch(pid);
+      if (res.success) {
+        setIsWatching(!isWatching);
+        setSuccess(isWatching ? "Stopped watching project" : "Now watching project");
+        const pRes = await projectsApi.getById(pid);
+        if (pRes.success && pRes.data) setProject(pRes.data);
+      } else {
+        setError(res.message);
+      }
+    } finally {
+      setWatchLoading(false);
+    }
+  };
 
   const handleCreate = async () => {
     if (!newTitle.trim()) return;
@@ -128,6 +159,17 @@ export default function ProjectKanbanPage() {
         title={project?.name ?? `Project ${pid}`}
         action={
           <div className="flex gap-3">
+            <button
+              onClick={handleWatch}
+              disabled={watchLoading}
+              className={`text-xs px-4 py-2 border rounded-xl transition-colors disabled:opacity-40 ${
+                isWatching
+                  ? "border-sky-500/40 text-sky-400 bg-sky-500/10 hover:bg-sky-500/20"
+                  : "border-white/10 text-white/50 hover:border-white/20 hover:text-white/80"
+              }`}
+            >
+              {watchLoading ? <Spinner size={12} /> : isWatching ? "★ Watching" : "☆ Watch"}
+            </button>
             <button
               onClick={() => setShowCreate(v => !v)}
               className="text-xs px-4 py-2 bg-white text-black font-bold rounded-xl hover:bg-white/90 transition-colors"

@@ -274,7 +274,7 @@ export class TeamRepository implements ITeamRepository {
         if (!writeRes) return false;
 
         try {
-            const [result] = await res.conn.execute<ResultSetHeader>(
+            const [result] = await writeRes.conn.execute<ResultSetHeader>(
                 `DELETE FROM team_members
                 WHERE team_id = ? AND user_id = ?`,
                 [teamId, memberId],

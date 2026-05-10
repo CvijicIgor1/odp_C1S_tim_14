@@ -79,9 +79,25 @@ export class DbManager {
     }
   }
 
+  private autoPromoteIfMasterOffline(): void {
+    if (this.master.node.status !== NodeStatus.OFFLINE) return;
+    const candidate = this.slaves.find(s => s.node.status !== NodeStatus.OFFLINE);
+    if (!candidate) {
+      this.logger.error("DB", "Master OFFLINE and no healthy slave available — system degraded");
+      return;
+    }
+    const prevName = this.master.name;
+    const candidateIdx = this.slaves.indexOf(candidate);
+    this.master = { name: "master", pool: candidate.pool, node: candidate.node };
+    this.slaves = this.slaves.filter((_, i) => i !== candidateIdx);
+    this.slaveRrIndex = 0;
+    this.logger.warn("DB", `[AUTO-FAILOVER] ${candidate.name} promoted to master (was: ${prevName})`);
+  }
+
   public async runHealthCheck(): Promise<void> {
     await Promise.all([this.master, ...this.slaves].map((n) => this.checkNode(n)));
     this.logger.info("DB", [this.master, ...this.slaves].map((n) => `${n.name}=${n.node.status}`).join(" | "));
+    this.autoPromoteIfMasterOffline();
   }
 
   public async init(): Promise<void> {
