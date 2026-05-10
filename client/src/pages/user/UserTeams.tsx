@@ -254,7 +254,7 @@ export default function UserTeams() {
                     {membersLoading !== team.id && (members[team.id] ?? []).map(m => (
                       <div key={m.userId} className="flex items-center justify-between bg-white/3 rounded-lg px-3 py-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-white/60 font-mono">#{m.userId}</span>
+                          <span className="text-xs text-white/60 font-mono">{m.username}</span>
                           <span className={`text-[10px] px-2 py-0.5 rounded border ${
                             m.role === "owner"
                               ? "bg-amber-500/10 text-amber-400 border-amber-500/20"

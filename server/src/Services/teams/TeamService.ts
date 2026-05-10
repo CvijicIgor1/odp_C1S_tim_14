@@ -1,5 +1,6 @@
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
 import { ITeamRepository } from '../../Domain/repositories/teams/ITeamRepository';
+import { IUserRepository } from '../../Domain/repositories/users/IUserRepository';
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { AuditAction } from "../../Domain/enums/AuditLog";
 import { AddMemberDto } from "../../Domain/DTOs/teams/AddMemberDto";
@@ -16,7 +17,8 @@ import { TeamMemberDto } from "../../Domain/DTOs/teams/TeamMemberDto";
 export class TeamService implements ITeamService {
     public constructor(
         private readonly teamRepo: ITeamRepository,
-        private readonly auditService: IAuditService
+        private readonly auditService: IAuditService,
+        private readonly userRepo: IUserRepository
     ) { }
 
     private toDto(team: Team, role: TeamMemberRole = TeamMemberRole.MEMBER): TeamDto {
@@ -31,12 +33,13 @@ export class TeamService implements ITeamService {
         );
     }
 
-    private toMemberDto(member: TeamMember): TeamMemberDto {
+    private toMemberDto(member: TeamMember, username: string): TeamMemberDto {
         return new TeamMemberDto(
             member.teamId,
             member.userId,
             member.role,
-            member.joinedAt
+            member.joinedAt,
+            username
         );
     }
 
@@ -90,7 +93,15 @@ export class TeamService implements ITeamService {
         const { members, totalNumber } = await this.teamRepo.getMembers(teamId);
         const offset = (page - 1) * limit;
         const paginated = members.slice(offset, offset + limit);
-        return new PaginatedListDto(paginated.map((o) => this.toMemberDto(o)), totalNumber, page, limit);
+
+        const memberDtos = await Promise.all(
+            paginated.map(async (m) => {
+                const user = await this.userRepo.findById(m.userId);
+                return this.toMemberDto(m, user?.username ?? "");
+            })
+        );
+
+        return new PaginatedListDto(memberDtos, totalNumber, page, limit);
     }
 
     async countOwners(teamId: number): Promise<number> {
