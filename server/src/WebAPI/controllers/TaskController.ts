@@ -9,6 +9,7 @@ import { UpdateTaskDto } from "../../Domain/DTOs/tasks/UpdateTaskDto";
 import { UpdateTaskStatusDto } from "../../Domain/DTOs/tasks/UpdateTaskStatusDto";
 import { AddTaskAssigneeDto } from "../../Domain/DTOs/tasks/AddTaskAssigneeDto";
 import { AddCommentDto } from "../../Domain/DTOs/tasks/AddCommentDto";
+import { TASK_TITLE_MIN, TASK_TITLE_MAX } from "../../Domain/constants/Constants";
 
 const ESTIMATED_HOURS_MIN = 0.5;
 const ESTIMATED_HOURS_MAX = 500;
@@ -98,6 +99,9 @@ export class TaskController {
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid task ID" }); return; }
 
         const dto = req.body as UpdateTaskDto;
+        if (dto.title !== undefined && (dto.title.length < TASK_TITLE_MIN || dto.title.length > TASK_TITLE_MAX)) {
+            res.status(400).json({ success: false, message: `Task title must be between ${TASK_TITLE_MIN} and ${TASK_TITLE_MAX} characters` }); return;
+        }
 
         if (dto.estimatedHours !== undefined) {
             const hours = Number(dto.estimatedHours);

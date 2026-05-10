@@ -9,6 +9,7 @@ import { CreateProjectDto } from "../../Domain/DTOs/projects/CreateProjectDto";
 import { UpdateProjectDto } from "../../Domain/DTOs/projects/UpdateProjectDto";
 import { ProjectStatus } from "../../Domain/enums/ProjectStatus";
 import { Priority } from "../../Domain/enums/Priority";
+import { PROJECT_NAME_MIN, PROJECT_NAME_MAX } from "../../Domain/constants/Constants";
 
 export class ProjectController {
     private readonly router = Router();
@@ -91,6 +92,10 @@ export class ProjectController {
             res.status(400).json({ success: false, message: "name, description and deadline are required" });
             return;
         }
+        if (name.length < PROJECT_NAME_MIN || name.length > PROJECT_NAME_MAX) {
+            res.status(400).json({ success: false, message: `Project name must be between ${PROJECT_NAME_MIN} and ${PROJECT_NAME_MAX} characters` });
+            return;
+        }
         if (new Date(deadline) <= new Date()) {
             res.status(400).json({ success: false, message: "Deadline must be a future date" }); return;
         }
@@ -110,6 +115,10 @@ export class ProjectController {
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid project ID" }); return; }
 
         const dto = req.body as UpdateProjectDto;
+        if (dto.name !== undefined && (dto.name.length < PROJECT_NAME_MIN || dto.name.length > PROJECT_NAME_MAX)) {
+            res.status(400).json({ success: false, message: `Project name must be between ${PROJECT_NAME_MIN} and ${PROJECT_NAME_MAX} characters` });
+            return;
+        }
         if (dto.deadline && new Date(dto.deadline) <= new Date()) {
             res.status(400).json({ success: false, message: "Deadline must be a future date" }); return;
         }

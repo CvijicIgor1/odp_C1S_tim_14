@@ -16,6 +16,7 @@ export interface ITeamRepository {
   delete(teamId: number): Promise<boolean>;
   getMembers(teamId: number): Promise<{members: TeamMember[], totalNumber: number}>;
   countOwners(teamId: number): Promise<number>;
+  isOwner(teamId: number, userId: number): Promise<boolean>;
   addMember(teamId: number, noviClan: TeamMember): Promise<boolean>;
   removeMember(teamId: number, memberId: number): Promise<boolean>;
   updateMemberRole(teamId: number, memberId: number, novaUloga: TeamMemberRole): Promise<boolean>;

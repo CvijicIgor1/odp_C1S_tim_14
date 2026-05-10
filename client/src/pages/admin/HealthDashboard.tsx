@@ -43,7 +43,7 @@ export default function HealthDashboard() {
 
   const healthy = nodes.filter(n => n.status === "healthy").length;
   const degraded = nodes.filter(n => n.status === "degraded").length;
-  const offline  = nodes.filter(n => n.status === "unreachable").length;
+  const offline  = nodes.filter(n => n.status === "offline").length;
 
   return (
     <div className="space-y-8">

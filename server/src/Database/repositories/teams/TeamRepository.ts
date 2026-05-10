@@ -232,6 +232,24 @@ export class TeamRepository implements ITeamRepository {
             res.conn.release();
         }
     }
+
+    async isOwner(teamId: number, userId: number): Promise<boolean> {
+        const res = await this.db.getReadConnection();
+        if (!res) return false;
+        try {
+            const [rows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT 1 FROM team_members WHERE team_id = ? AND user_id = ? AND role = 'owner' LIMIT 1`,
+                [teamId, userId]
+            );
+            return rows.length > 0;
+        } catch (err) {
+            this.logger.error("TeamsRepository", "isOwner failed", err);
+            return false;
+        } finally {
+            res.conn.release();
+        }
+    }
+
     async addMember(teamId: number, noviClan: TeamMember): Promise<boolean> {
         const readRes = await this.db.getReadConnection();
         if (!readRes) return false;
