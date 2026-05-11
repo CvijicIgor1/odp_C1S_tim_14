@@ -48,13 +48,21 @@ export default function ProfilePage() {
   const handleAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      setEditAvatar(base64);
-      setAvatarPreview(base64);
-    };
-    reader.readAsDataURL(file);
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+    const MAX = 256;
+    const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const base64 = canvas.toDataURL("image/jpeg", 0.8);
+    setEditAvatar(base64);
+    setAvatarPreview(base64);
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
   };
 
   const handleSave = async () => {
