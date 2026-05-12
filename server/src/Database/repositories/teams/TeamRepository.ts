@@ -1,10 +1,6 @@
 import { ITeamRepository } from '../../../Domain/repositories/teams/ITeamRepository';
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from '../../../Domain/services/logger/ILoggerService';
-import { AddMemberDto } from '../../../Domain/DTOs/teams/AddMemberDto';
-import { CreateTeamDto } from '../../../Domain/DTOs/teams/CreateTeamDto';
-import { UpdateMemberRoleDto } from '../../../Domain/DTOs/teams/UpdateMemberRoleDto';
-import { UpdateTeamDto } from '../../../Domain/DTOs/teams/UpdateTeamDto';
 import { Team } from '../../../Domain/models/Team';
 import { TeamMember } from '../../../Domain/models/TeamMember';
 import { RowDataPacket, ResultSetHeader } from "mysql2";
@@ -92,9 +88,9 @@ export class TeamRepository implements ITeamRepository {
         }
     }
 
-    async findById(teamId: number): Promise<Team | null> {
+    async findById(teamId: number): Promise<Team> {
         const res = await this.db.getReadConnection();
-        if (!res) return null;
+        if (!res) return new Team();
 
         try {
             const [rows] = await res.conn.execute<RowDataPacket[]>(
