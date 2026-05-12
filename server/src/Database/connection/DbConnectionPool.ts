@@ -42,7 +42,7 @@ const slave2Pool: Pool = mysql.createPool({
   connectTimeout: HEALTH_CHECK_TIMEOUT,
 });
 
-interface NodeInfo { name: string; pool: Pool; node: DbNode; }
+interface NodeInfo { name: string; pool: Pool; node: DbNode; excludedFromReads?: boolean; }
 
 export class DbManager {
   private master: NodeInfo;
@@ -79,19 +79,33 @@ export class DbManager {
     }
   }
 
-  private autoPromoteIfMasterOffline(): void {
+  private async autoPromoteIfMasterOffline(): Promise<void> {
     if (this.master.node.status !== NodeStatus.UNREACHABLE) return;
     const candidate = this.slaves.find(s => s.node.status !== NodeStatus.UNREACHABLE);
     if (!candidate) {
       this.logger.error("DB", "Master UNREACHABLE and no healthy slave available — system degraded");
       return;
     }
+    let conn: PoolConnection | null = null;
+    try {
+      conn = await candidate.pool.getConnection();
+      await conn.query("STOP REPLICA");
+      await conn.query("RESET REPLICA ALL");
+      await conn.query("SET GLOBAL read_only = 0");
+    } catch (err) {
+      this.logger.error("DB", `[AUTO-FAILOVER] Failed to prepare ${candidate.name} for promotion`, err);
+      return;
+    } finally {
+      if (conn) conn.release();
+    }
     const prevMaster = this.master;
     const candidateIdx = this.slaves.indexOf(candidate);
-    this.master = { name: "master", pool: candidate.pool, node: candidate.node };
+    const remainingSlaves = this.slaves.filter((_, i) => i !== candidateIdx);
+    remainingSlaves.forEach(s => { s.node.status = NodeStatus.UNREACHABLE; s.excludedFromReads = true; });
+    this.master = { name: candidate.name, pool: candidate.pool, node: candidate.node };
     this.slaves = [
-      ...this.slaves.filter((_, i) => i !== candidateIdx),
-      { name: prevMaster.name, pool: prevMaster.pool, node: prevMaster.node },
+      ...remainingSlaves,
+      { name: prevMaster.name, pool: prevMaster.pool, node: prevMaster.node, excludedFromReads: true },
     ];
     this.slaveRrIndex = 0;
     this.logger.warn("DB", `[AUTO-FAILOVER] ${candidate.name} promoted to master (was: ${prevMaster.name})`);
@@ -120,7 +134,7 @@ export class DbManager {
     await Promise.all([this.master, ...this.slaves].map((n) => this.checkNode(n)));
     await Promise.all(this.slaves.map((s) => this.measureReplicationLag(s)));
     this.logger.info("DB", [this.master, ...this.slaves].map((n) => `${n.name}=${n.node.status}`).join(" | "));
-    this.autoPromoteIfMasterOffline();
+    await this.autoPromoteIfMasterOffline();
   }
 
   public async init(): Promise<void> {
@@ -136,11 +150,25 @@ export class DbManager {
     if (candidate.node.status === NodeStatus.UNREACHABLE) {
       return { success: false, message: `Cannot promote ${candidate.name} — node is UNREACHABLE` };
     }
+    let conn: PoolConnection | null = null;
+    try {
+      conn = await candidate.pool.getConnection();
+      await conn.query("STOP REPLICA");
+      await conn.query("RESET REPLICA ALL");
+      await conn.query("SET GLOBAL read_only = 0");
+    } catch (err) {
+      this.logger.error("DB", `Failed to prepare ${candidate.name} for promotion`, err);
+      return { success: false, message: `Could not promote ${candidate.name}` };
+    } finally {
+      if (conn) conn.release();
+    }
     const prevMaster = this.master;
-    this.master = { name: "master", pool: candidate.pool, node: candidate.node };
+    const remainingSlaves = this.slaves.filter((_, i) => i !== slaveIndex);
+    remainingSlaves.forEach(s => {s.node.status = NodeStatus.UNREACHABLE; s.excludedFromReads = true; });
+    this.master = { name: candidate.name, pool: candidate.pool, node: candidate.node };
     this.slaves = [
-      ...this.slaves.filter((_, i) => i !== slaveIndex),
-      { name: prevMaster.name, pool: prevMaster.pool, node: prevMaster.node },
+      ...remainingSlaves,
+      { name: prevMaster.name, pool: prevMaster.pool, node: prevMaster.node, excludedFromReads: true },
     ];
     this.slaveRrIndex = 0;
     this.logger.warn("DB", `Failover: ${candidate.name} promoted to master (replaced: ${prevMaster.name})`);
@@ -171,7 +199,7 @@ export class DbManager {
     for (let i = 0; i < n; i++) {
       const idx = (this.slaveRrIndex + i) % n;
       const info = this.slaves[idx];
-      if (info.node.status === NodeStatus.UNREACHABLE) continue;
+      if (info.excludedFromReads || info.node.status === NodeStatus.UNREACHABLE) continue;
       try {
         const conn = await info.pool.getConnection();
         this.slaveRrIndex = (idx + 1) % n;
