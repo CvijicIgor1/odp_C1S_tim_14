@@ -47,7 +47,7 @@ const userService   = new UserService(userRepo);
 const teamService = new TeamService(teamRepo, auditService, userRepo);
 const projectService = new ProjectService(projectRepo);
 const tagService = new TagService(tagRepo);
-const taskService = new TaskService(taskRepo);
+const taskService = new TaskService(taskRepo,auditService);
 
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL ?? "*" }));

@@ -1,6 +1,6 @@
 import type { ApiResponse } from "../team/ITeamAPIService";
 import type {
-  ProjectDto, TagDto, PaginatedList,
+  ProjectDto, PaginatedList,
   ProjectStatus, Priority,
 } from "../../models/project/ProjectTypes";
 

@@ -16,7 +16,7 @@ export interface ITaskService
 
     getMyTasks(userId: number): Promise<TaskDto[]>;
 
-    createTask(dto: CreateTaskDto, userId: number): Promise<TaskDto>;
+    createTask(projectId: number,dto: CreateTaskDto, userId: number): Promise<TaskDto>;
 
     updateTask(taskId: number, dto: UpdateTaskDto, userId: number): Promise<boolean>;
 

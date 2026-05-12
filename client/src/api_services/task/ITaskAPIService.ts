@@ -12,10 +12,9 @@ export interface ITaskAPIService {
     projectId: number,
     title: string,
     description: string,
-    status: TaskStatus,
     priority: Priority,
     deadline: string,
-    estimatedHours?: number
+    estimatedHours: number
   ): Promise<ApiResponse<TaskDto>>;
 
   update(
