@@ -1,47 +1,52 @@
-﻿import { type ReactNode } from "react";
+﻿import { type ReactNode, useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/auth/useAuthHook";
+import { usersApi } from "../../api_services/users/UsersAPIService";
 
-// TODO: Update nav items to match your routes and roles
 const userNav = [
-  { to: "/dashboard", label: "Dashboard"},
-  // add more user routes here
-  { to: "/teams",     label: "Teams",     icon: "◎" },
-  { to: "/my-tasks", label: "My Tasks", icon: "✓" },
-  { to: "/profile",   label: "Profile",   icon: "◉" },
+  { to: "/dashboard", label: "Dashboard" },
+  { to: "/teams",     label: "Teams" },
+  { to: "/my-tasks",  label: "My Tasks" },
+  { to: "/profile",   label: "Profile" },
 ];
 const adminNav = [
-  { to: "/admin",       label: "Dashboard"},
-  { to: "/admin/users", label: "Users"},
-  // add more admin routes here
-  { to: "/admin/teams", label: "Teams", icon: "◎" },
-  { to: "/admin/projects", label: "Projects", icon: "◫" },
-  { to: "/admin/health", label: "DB Health", icon: "◈" },
-  { to: "/admin/tags",   label: "Tags",      icon: "◦" },
-  { to: "/admin/audit-log",  label: "Audit Log", icon: "📋" },
+  { to: "/admin",           label: "Dashboard" },
+  { to: "/admin/users",     label: "Users" },
+  { to: "/admin/teams",     label: "Teams" },
+  { to: "/admin/projects",  label: "Projects" },
+  { to: "/admin/health",    label: "DB Health" },
+  { to: "/admin/tags",      label: "Tags" },
+  { to: "/admin/audit-log", label: "Audit Log" },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const nav = user?.role === "admin" ? adminNav : userNav;
+  const [avatar, setAvatar] = useState<string>("");
+
+  useEffect(() => {
+    if (!user) return;
+    usersApi.getById(user.id).then(res => {
+      if (res.success && res.data?.avatar) {
+        setAvatar(res.data.avatar);
+      }
+    });
+  }, [user]);
 
   return (
     <div className="flex min-h-screen bg-[#0d1f3c]">
       <aside className="w-56 shrink-0 border-r border-white/5 flex flex-col bg-[#1c1c1c]">
-        {/* Logo */}
         <div className="px-7 h-18 flex items-center border-b border-white/5 gap-3">
           <div className="w-7 h-7 rounded-lg bg-white/10 text-white border border-white/20 flex items-center justify-center">
             <span className="text-white/50 text-xs"><i><b>NX</b></i></span>
           </div>
           <div>
-            {/* TODO: Replace with your app name */}
             <p className="text-sm font-semibold text-white tracking-tight">NexusHub</p>
             <p className="text-[10px] text-white/25 uppercase tracking-widest">{user?.role}</p>
           </div>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 py-4 px-3 flex flex-col gap-0.5">
           {nav.map((item) => (
             <NavLink key={item.to} to={item.to} end
@@ -58,13 +63,13 @@ export function Layout({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        {/* User */}
         <div className="border-t border-white/5 px-4 py-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-7 h-7 rounded-full bg-white/6 border border-white/15 flex items-center justify-center overflow-hidden">
-                {
-                user?.avatar ? <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" /> : <span className="text-xs text-white/40 font-medium">{user?.username?.[0]?.toUpperCase()}</span>
-                }
+              {avatar
+                ? <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
+                : <span className="text-xs text-white/40 font-medium">{user?.username?.[0]?.toUpperCase()}</span>
+              }
             </div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-white/70 truncate">{user?.username}</p>

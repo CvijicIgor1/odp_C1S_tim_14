@@ -27,7 +27,7 @@ export class AuthController {
     const result = await this.authService.login(username!, password!);
     if (result.id === 0) { res.status(401).json({ success: false, message: "Invalid username or password" }); return; }
     const token = jwt.sign(
-      { user_id: result.id, username: result.username, role: result.role , avatar: result.avatar},
+      { user_id: result.id, username: result.username, role: result.role},
       process.env.JWT_SECRET ?? "",
       { expiresIn: "24h" }
     );
@@ -42,7 +42,7 @@ export class AuthController {
     const result = await this.authService.register(username!, email!, password!, full_name ?? "", image ?? "");
     if (result.id === 0) { res.status(409).json({ success: false, message: "Username or email already taken" }); return; }
     const token = jwt.sign(
-      { user_id: result.id, username: result.username, role: result.role , avatar: result.avatar},
+      { user_id: result.id, username: result.username, role: result.role},
       process.env.JWT_SECRET ?? "",
       { expiresIn: "24h" }
     );
