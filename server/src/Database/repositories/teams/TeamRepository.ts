@@ -88,9 +88,9 @@ export class TeamRepository implements ITeamRepository {
         }
     }
 
-    async findById(teamId: number): Promise<Team | null> {
+    async findById(teamId: number): Promise<Team> {
         const res = await this.db.getReadConnection();
-        if (!res) return null;
+        if (!res) return new Team();
 
         try {
             const [rows] = await res.conn.execute<RowDataPacket[]>(

@@ -95,22 +95,22 @@ export class ProjectRepository implements IProjectRepository
         }
     }
 
-    async findById(id: number): Promise<Project | null>
+    async findById(id: number): Promise<Project>
     {
         const res = await this.db.getReadConnection();
-        if (!res) return null;
+        if (!res) return new Project;
         try 
         {
             const [rows] = await res.conn.execute<RowDataPacket[]>(
                 `SELECT * FROM projects WHERE id = ?`,
                 [id]
             );
-            return rows.length > 0 ? this.map(rows[0]) : null;
+            return rows.length > 0 ? this.map(rows[0]) : new Project();
         }
         catch(err)
         {
             this.logger.error("ProjectRepository", "findById failed", err);
-            return null;
+            return new Project();
         }
         finally
         {
