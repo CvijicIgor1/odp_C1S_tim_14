@@ -10,6 +10,9 @@ export interface ITaskRepository {
 
     findById(id: number): Promise<Task>;
 
+    findByAssignee(userId: number): Promise<Task[]>;
+
+
     create(newTask: Task,ownerId: number): Promise<Task>;
 
     update(taskId: number, inputTask: Task): Promise<boolean>;

@@ -15,6 +15,7 @@ import { Comment } from "../../Domain/models/Comment";
 import { TaskAssignee } from "../../Domain/models/TaskAssignee";
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { AuditAction } from "../../Domain/enums/AuditLog";
+import { TaskStatus } from "../../Domain/enums/TaskStatus";
 
 
 export class TaskService implements ITaskService {
@@ -108,7 +109,7 @@ export class TaskService implements ITaskService {
     }
 
     async createTask(dto: CreateTaskDto, userId: number): Promise<TaskDto> {
-        const noviTask = new Task(0, 0, dto.title ,dto.description, dto.status,dto.priority,dto.deadline, new Date(),dto.estimatedHours, new Date(), new Date());
+        const noviTask = new Task(0, dto.projectId, 0, dto.title ,dto.description, dto.status,dto.priority,dto.deadline,dto.estimatedHours, new Date(), new Date());
           const created = await this.taskRepo.create(noviTask,userId);
               if (created.id === 0) return new TaskDto();
               await this.auditService.log(userId, AuditAction.TASK_CREATED, "task", created.id);
@@ -116,7 +117,7 @@ export class TaskService implements ITaskService {
           }
 
     async updateTask( taskId: number, dto: UpdateTaskDto, userId: number): Promise<boolean> {
-        const input = new Task(0, 0, dto.title ,dto.description, dto.status,dto.priority,dto.deadline, new Date(),dto.estimatedHours, new Date(), new Date());
+        const input = new Task(0, 0, 0, dto.title ,dto.description, TaskStatus.IN_PROGRESS ,dto.priority,dto.deadline,dto.estimatedHours, new Date(), new Date());
         return this.taskRepo.update(taskId, input);
     }
 

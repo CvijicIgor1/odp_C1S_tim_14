@@ -112,6 +112,36 @@ export class TaskRepository implements ITaskRepository
         }
     }
 
+       async findByAssignee(userId: number): Promise<Task[]>
+    {
+        const res = await this.db.getReadConnection();
+        if (!res) return [];
+        try
+        {
+            const [rows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT t.*
+                FROM tasks t
+                WHERE t.id IN (
+                    SELECT ta.task_id
+                    FROM task_assignees ta
+                    WHERE ta.user_id = ?
+                )
+                ORDER BY t.priority DESC, t.deadline ASC;`,
+                [userId],
+            );
+            return rows.map((r) => this.mapTask(r));
+        }
+        catch (err)
+        {
+            this.logger.error("TaskRepository", "findByAssignee failed", err);
+            return [];
+        }
+        finally
+        {
+            res.conn.release();
+        }
+    }
+    
     async create(task: Task, ownerId: number): Promise<Task>
     {
         const res = await this.db.getWriteConnection();
@@ -122,7 +152,7 @@ export class TaskRepository implements ITaskRepository
                 `INSERT INTO tasks
                  (project_id, created_by_user_id, title, description, status, priority, deadline, estimated_hours)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [task.projectId, ownerId, task.title, task.description, task.status, task.priority, task.deadline, task.estimatedHours],
+                [task.projectId, task.createdByUserId, task.title, task.description, task.status, task.priority, task.deadline, task.estimatedHours],
             );
             if (result.insertId === 0) return new Task();
             return new Task(
@@ -148,7 +178,7 @@ export class TaskRepository implements ITaskRepository
         }
     }
 
-    async update(TaskId: number, dto: UpdateTaskDto ): Promise<boolean>
+    async update(TaskId: number, inputTask: Task ): Promise<boolean>
     {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
@@ -157,32 +187,32 @@ export class TaskRepository implements ITaskRepository
             const fields: string[] = [];
             const values: (string | number | Date)[] = [];
 
-            if(dto.title !== undefined)
+            if(inputTask.title !== undefined)
             {
                 fields.push("title = ?");
-                values.push(dto.title);
+                values.push(inputTask.title);
             }
-             if(dto.priority !== undefined)
+             if(inputTask.priority !== undefined)
             {
                 fields.push("priority = ?");
-                values.push(dto.priority);
+                values.push(inputTask.priority);
             }
 
-             if(dto.estimatedHours !== undefined)
+             if(inputTask.estimatedHours !== undefined)
             {
                 fields.push("estimatedHours = ?");
-                values.push(dto.estimatedHours);
+                values.push(inputTask.estimatedHours);
             }
 
-             if(dto.description !== undefined)
+             if(inputTask.description !== undefined)
             {
                 fields.push("description = ?");
-                values.push(dto.description);
+                values.push(inputTask.description);
             }
-            if(dto.deadline !== undefined)
+            if(inputTask.deadline !== undefined)
             {
                 fields.push("deadline = ?");
-                values.push(dto.deadline);
+                values.push(inputTask.deadline);
             }
     
             if (fields.length === 0) return false;
