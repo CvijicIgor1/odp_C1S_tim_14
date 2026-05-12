@@ -19,17 +19,17 @@ export class TagService implements ITagService {
     }
 
     async getAll(page: number, limit: number): Promise<PaginatedListDto<TagDto>> {
-        const { tags, totalNumber } = await this.tagRepo.findAllTags();
+        const { tags, totalNumber } = await this.tagRepo.findAllTags(page, limit);
         return new PaginatedListDto(tags.map((o) => this.tagToDto(o)), totalNumber, page, limit);
     }
 
-    async create(dto: CreateTagDto, isAdmin: boolean): Promise<TagDto> {
+    async create(dto: CreateTagDto): Promise<TagDto> {
         const createdTag = await this.tagRepo.createNewTag(dto);
         if (createdTag.id === 0) return new TagDto();
         return this.tagToDto(createdTag);
     }
 
-    async delete(tagId: number, isAdmin: boolean): Promise<boolean> {
-        return await this.tagRepo.deleteTag(tagId);
+    async delete(tagId: number): Promise<boolean> {
+        return this.tagRepo.deleteTag(tagId);
     }
 }

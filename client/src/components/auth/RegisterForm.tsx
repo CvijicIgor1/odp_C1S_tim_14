@@ -9,14 +9,24 @@ export function RegisterForm({ authApi }: { authApi: IAuthAPIService }) {
   const [loading, setLoading] = useState(false);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
 
-  const onImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onImageChange = (e: React.ChangeEvent<HTMLInputElement>) => 
+    {
       const file = e.target.files?.[0];
-      if (!file) 
-        return;
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm(f => ({ ...f, image: reader.result as string }));};
-      reader.readAsDataURL(file);
+      if (!file) return;
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+      const MAX = 256;
+      const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const base64 = canvas.toDataURL("image/jpeg", 0.8);
+      setForm(f => ({ ...f, image: base64 }));
+      URL.revokeObjectURL(url);
+  };
+  img.src = url;
   };
 
 

@@ -37,10 +37,20 @@ export class ProjectRepository implements IProjectRepository
         return new Tag(r.id,r.name);
     }
 
-    async findAllByTeam(teamId: number, filters?: ProjectFilters): Promise<{ projects: Project[]; totalNumber: number }>
+    private safeInt(value: number, fallback: number): number
+    {
+        const n = Math.floor(value);
+        return Number.isFinite(n) && n > 0 ? n : fallback;
+    }
+    
+    async findAllByTeam(teamId: number, page: number, limit: number, filters?: ProjectFilters): Promise<{ projects: Project[]; totalNumber: number }>
     {
         const res = await this.db.getReadConnection();
         if (!res) return { projects: [], totalNumber: 0 };
+
+        const safePage = this.safeInt(page,  1);
+        const safeLimit = this.safeInt(limit, 20);
+        const offset = (safePage - 1) * safeLimit;
 
         try{
             const conditions: string[] = ["team_id = ?"];
@@ -60,13 +70,21 @@ export class ProjectRepository implements IProjectRepository
                 values.push(filters.tagId);
             }
 
+            const where = `WHERE ${conditions.join(" AND ")}`;
+
+            const [countRows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT COUNT(*) AS cnt FROM projects ${where}`,
+                values
+            );
+            const totalNumber = countRows[0].cnt ?? 0;
+
             const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT * FROM projects WHERE ${conditions.join(" AND ")} ORDER BY created_at DESC`,
+                `SELECT * FROM projects ${where} ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${offset}`,
                 values
             );
 
             const projects = rows.map((r) => this.map(r));
-            return { projects, totalNumber: projects.length };
+            return { projects, totalNumber };
         }
         catch(err)
         {
@@ -102,7 +120,37 @@ export class ProjectRepository implements IProjectRepository
         }
     }
 
-    async create(teamId:number ,dto: CreateProjectDto): Promise<Project>
+    async findAllAsAdmin(page: number, limit: number): Promise<{ projects: Project[]; totalNumber: number }>
+    {
+        const res = await this.db.getReadConnection();
+        if (!res) return { projects: [], totalNumber: 0 };
+        try
+        {
+            const safePage = this.safeInt(page, 1);
+            const safeLimit = this.safeInt(limit, 20);
+            const offset = (safePage - 1) * safeLimit;
+
+            const [[countRow]] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT COUNT(*) AS total FROM projects`
+            );
+            const totalNumber = Number(countRow.total);
+
+            const [rows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT * FROM projects ORDER BY name ASC LIMIT ${safeLimit} OFFSET ${offset}`
+            );
+            return { projects: rows.map((r) => this.map(r)), totalNumber };
+        }
+        catch (err)
+        {
+            this.logger.error("ProjectRepository", "findAllAsAdmin failed", err);
+            return { projects: [], totalNumber: 0 };
+        }
+        finally
+        {
+            res.conn.release();
+        }
+    }
+    async create(teamId: number, dto: CreateProjectDto): Promise<Project>
     {
         const res = await this.db.getWriteConnection();
         if (!res) return new Project();
@@ -291,6 +339,57 @@ export class ProjectRepository implements IProjectRepository
         }
     }
 
+    async getTagsForProjects(projectIds: number[]): Promise<Map<number, Tag[]>>
+    {
+        const result = new Map<number, Tag[]>();
+        if (projectIds.length === 0) return result;
+
+        const res = await this.db.getReadConnection();
+        if (!res) return result;
+
+        try
+        {
+            const placeholders = projectIds.map(() => "?").join(", ");
+
+            const [bridgeRows] = await res.conn.execute<RowDataPacket[]>
+            (
+                `SELECT project_id, tag_id FROM project_tags WHERE project_id IN (${placeholders})`,
+                projectIds,
+            );
+
+            if (bridgeRows.length === 0) return result;
+
+            const tagIds = [...new Set(bridgeRows.map((r) => r.tag_id as number))];
+            const tagPlaceholders = tagIds.map(() => "?").join(", ");
+
+            const [tagRows] = await res.conn.execute<RowDataPacket[]>
+            (
+                `SELECT id, name FROM tags WHERE id IN (${tagPlaceholders}) ORDER BY name ASC`,
+                tagIds,
+            );
+
+            const tagMap = new Map<number, Tag>(tagRows.map((r) => [r.id as number, new Tag(r.id, r.name)]));
+
+            for (const b of bridgeRows)
+            {
+                const tag = tagMap.get(b.tag_id);
+                if (!tag) continue;
+                if (!result.has(b.project_id)) result.set(b.project_id, []);
+                result.get(b.project_id)!.push(tag);
+            }
+            return result;
+        }
+        catch(err)
+        {
+            this.logger.error("ProjectRepository", "getTagsForProjects failed", err);
+            return result;
+        }
+        finally
+        {
+            res.conn.release();
+        }
+    }
+
     async addWatcher(projectId: number, userId: number): Promise<boolean> 
     {
           const res = await this.db.getWriteConnection();
@@ -341,20 +440,31 @@ export class ProjectRepository implements IProjectRepository
         }
     }
 
-     async findWatchedByUser(userId: number,): Promise<{ projects: Project[]; totalNumber: number }>
+    async findWatchedByUser(userId: number, page: number, limit: number): Promise<{ projects: Project[]; totalNumber: number }>
     {
         const res = await this.db.getReadConnection(); 
         if (!res) return { projects: [], totalNumber: 0 };
 
+        const safePage  = this.safeInt(page,  1);
+        const safeLimit = this.safeInt(limit, 20);
+        const offset    = (safePage - 1) * safeLimit;
+
         try{
+            const [countRows] = await res.conn.execute<RowDataPacket[]>
+            (
+                `SELECT COUNT(*) AS cnt FROM projects WHERE id IN (SELECT project_id FROM project_watchers WHERE user_id = ?)`,
+                [userId],
+            );
+            const totalNumber = countRows[0].cnt ?? 0;
+
             const [rows] = await res.conn.execute<RowDataPacket[]>
             (
-                `SELECT * FROM projects WHERE id IN (SELECT project_id FROM project_watchers WHERE user_id = ?) ORDER BY created_at DESC`,
+                `SELECT * FROM projects WHERE id IN (SELECT project_id FROM project_watchers WHERE user_id = ?) ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${offset}`,
                 [userId],
             );
 
             const projects = rows.map((r) => this.map(r));
-            return { projects, totalNumber: projects.length };
+            return { projects, totalNumber };
         }
         catch(err)
         {
@@ -460,27 +570,64 @@ export class ProjectRepository implements IProjectRepository
     }
     }
 
-   async getWatcherCount(projectId: number): Promise<number>
-   {
-    const res = await this.db.getReadConnection();
-    if (!res) return 0;
-    try
+    async getWatcherCount(projectId: number): Promise<number>
     {
-        const [rows] = await res.conn.execute<RowDataPacket[]>
-        (
-            `SELECT COUNT(*) as cnt FROM project_watchers WHERE project_id = ?`,
-            [projectId]
-        );
-        return rows[0].cnt ?? 0;
+        const res = await this.db.getReadConnection();
+        if (!res) return 0;
+        try
+        {
+            const [rows] = await res.conn.execute<RowDataPacket[]>
+                (
+                    `SELECT COUNT(*) as cnt FROM project_watchers WHERE project_id = ?`,
+                    [projectId]
+                );
+            return rows[0].cnt ?? 0;
+        }
+        catch (err)
+        {
+            this.logger.error("ProjectRepository", "getWatcherCount failed", err);
+            return 0;
+        }
+        finally
+        {
+            res.conn.release();
+        }
     }
-    catch(err)
+
+    async getWatcherCounts(projectIds: number[]): Promise<Map<number, number>>
     {
-        this.logger.error("ProjectRepository", "getWatcherCount failed", err);
-        return 0;
+        const result = new Map<number, number>();
+        if (projectIds.length === 0) return result;
+
+        const res = await this.db.getReadConnection();
+        if (!res) return result;
+
+        try
+        {
+            const placeholders = projectIds.map(() => "?").join(", ");
+            const [rows] = await res.conn.execute<RowDataPacket[]>
+            (
+                `SELECT project_id, COUNT(*) AS cnt
+                 FROM project_watchers
+                 WHERE project_id IN (${placeholders})
+                 GROUP BY project_id`,
+                projectIds,
+            );
+
+            for (const r of rows)
+            {
+                result.set(r.project_id, r.cnt ?? 0);
+            }
+            return result;
+        }
+        catch(err)
+        {
+            this.logger.error("ProjectRepository", "getWatcherCounts failed", err);
+            return result;
+        }
+        finally
+        {
+            res.conn.release();
+        }
     }
-    finally
-    {
-        res.conn.release();
-    }
-  }
 }

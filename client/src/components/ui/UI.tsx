@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useRef, useState } from "react";
 
 export function Spinner({ size = 16 }: { size?: number }) {
   return (
@@ -38,13 +38,29 @@ export function SuccessBox({ message }: { message: string }) {
 // TODO: Add StatusBadge variants for your domain entity statuses
 export function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    pending:   "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-    active:    "bg-sky-500/10 text-sky-400 border-sky-500/20",
-    completed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    cancelled: "bg-red-500/10 text-red-400 border-red-500/20",
+    // order statuses
+    pending:    "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+    active:     "bg-sky-500/10 text-sky-400 border-sky-500/20",
+    completed:  "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    cancelled:  "bg-red-500/10 text-red-400 border-red-500/20",
+    // project statuses
+    planning:   "bg-violet-500/10 text-violet-400 border-violet-500/20",
+    on_hold:    "bg-orange-500/10 text-orange-400 border-orange-500/20",
+    // task statuses
+    todo:        "bg-slate-500/10 text-slate-400 border-slate-500/20",
+    in_progress: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+    done:        "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   };
   const dotStyles: Record<string, string> = {
-    pending: "bg-yellow-400", active: "bg-sky-400 animate-pulse", completed: "bg-emerald-400", cancelled: "bg-red-400",
+    pending:     "bg-yellow-400",
+    active:      "bg-sky-400 animate-pulse",
+    completed:   "bg-emerald-400",
+    cancelled:   "bg-red-400",
+    planning:    "bg-violet-400",
+    on_hold:     "bg-orange-400",
+    todo:        "bg-slate-400",
+    in_progress: "bg-sky-400 animate-pulse",
+    done:        "bg-emerald-400",
   };
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${styles[status] ?? "bg-white/5 text-white/40 border-white/10"}`}>
@@ -58,7 +74,7 @@ export function NodeBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     healthy:  "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     degraded: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-    offline:  "bg-red-500/10 text-red-400 border-red-500/20",
+    unreachable: "bg-red-500/10 text-red-400 border-red-500/20",
   };
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${styles[status] ?? "bg-white/5 text-white/40 border-white/10"}`}>
@@ -102,7 +118,7 @@ export function StatCard({ label, value, sub, color }: { label: string; value: s
 
 export function Table({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-white/2 border border-white/6 rounded-2xl overflow-hidden">
+    <div className="bg-[#2b2626] border border-white/8 rounded-2xl overflow-hidden">
       <table className="w-full text-sm">{children}</table>
     </div>
   );
@@ -111,9 +127,9 @@ export function Table({ children }: { children: ReactNode }) {
 export function TableHead({ columns }: { columns: string[] }) {
   return (
     <thead>
-      <tr className="border-b border-white/6">
+      <tr className="border-b border-white/12">
         {columns.map((c) => (
-          <th key={c} className="text-left px-5 py-3.5 text-xs text-white/25 font-mono uppercase tracking-wider">{c}</th>
+          <th key={c} className="text-left px-5 py-3.5 text-xs text-white/60 font-mono uppercase tracking-wider">{c}</th>
         ))}
       </tr>
     </thead>
@@ -128,6 +144,87 @@ export function PageHeader({ eyebrow, title, action }: { eyebrow: string; title:
         <h1 className="text-xl font-semibold text-white tracking-tight">{title}</h1>
       </div>
       {action && <div>{action}</div>}
+    </div>
+  );
+}
+
+export interface ComboboxOption {
+  value: string;
+  label: string;
+}
+
+export function Combobox({
+  options,
+  value,
+  onChange,
+  placeholder = "Search...",
+}: {
+  options: ComboboxOption[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const selected = options.find((o) => o.value === value) ?? null;
+
+  const filtered = query.trim() === ""
+    ? options
+    : options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()));
+
+  const handleSelect = (opt: ComboboxOption) => {
+    onChange(opt.value);
+    setQuery("");
+    setOpen(false);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    onChange("");
+    setOpen(true);
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (!containerRef.current?.contains(e.relatedTarget as Node)) {
+      setOpen(false);
+      setQuery("");
+    }
+  };
+
+  const displayValue = open ? query : (selected?.label ?? "");
+
+  return (
+    <div ref={containerRef} className="relative" onBlur={handleBlur}>
+      <input
+        type="text"
+        value={displayValue}
+        onChange={handleInputChange}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-white/20 w-48"
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-50 mt-1 w-full bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-xl max-h-48 overflow-y-auto">
+          {filtered.map((opt) => (
+            <li key={opt.value}>
+              <button
+                type="button"
+                onMouseDown={() => handleSelect(opt)}
+                className="w-full text-left px-3 py-2 text-sm text-white/70 hover:bg-white/8 hover:text-white transition-colors"
+              >
+                {opt.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {open && filtered.length === 0 && (
+        <div className="absolute z-50 mt-1 w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2 text-sm text-white/30">
+          No members found
+        </div>
+      )}
     </div>
   );
 }

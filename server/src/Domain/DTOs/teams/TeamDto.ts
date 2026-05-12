@@ -1,3 +1,5 @@
+import { TeamMemberRole } from "../../enums/TeamMemberRole";
+
 export class TeamDto {
   public constructor(
     public id: number = 0,
@@ -5,7 +7,8 @@ export class TeamDto {
     public description: string = "",
     public avatar: string = "",
     public updatedAt: Date | null= null,
-    public createdAt: Date | null = null
+    public createdAt: Date | null = null,
+    public currentUserRole: TeamMemberRole = TeamMemberRole.MEMBER
   ) {}
 }
 

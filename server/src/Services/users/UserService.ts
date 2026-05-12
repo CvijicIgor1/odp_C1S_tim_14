@@ -1,6 +1,8 @@
+﻿import bcrypt from "bcryptjs";
 import { IUserService } from "../../Domain/services/users/IUserService";
 import { IUserRepository } from "../../Domain/repositories/users/IUserRepository";
 import { UserDto } from "../../Domain/DTOs/users/UserDto";
+import { UserRole } from "../../Domain/enums/UserRole";
 
 export class UserService implements IUserService {
   public constructor(private readonly userRepo: IUserRepository) {}
@@ -16,7 +18,25 @@ export class UserService implements IUserService {
     return new UserDto(u.id, u.username, u.email, u.role, u.fullName, u.avatar, Boolean(u.isActive), u.createdAt, u.updatedAt);
   }
 
+  async updateRole(id: number, role: UserRole): Promise<boolean> {
+    return this.userRepo.updateRole(id, role);
+  }
+
+  async updateStatus(id: number, isActive: boolean): Promise<boolean> {
+    return this.userRepo.updateStatus(id, isActive);
+  }
+
   async deactivate(id: number): Promise<boolean> {
     return this.userRepo.deactivate(id);
+  }
+
+  async updateProfile(id: number, username: string, email: string, avatar: string, newPassword?: string): Promise<boolean> {
+    let passwordHash: string | undefined;
+    if (newPassword) {
+      const saltRounds = parseInt(process.env.SALT_ROUNDS ?? "10", 10);
+      passwordHash = await bcrypt.hash(newPassword, saltRounds).catch(() => undefined);
+      if (!passwordHash) return false;
+    }
+    return this.userRepo.updateProfile(id, username, email, avatar, passwordHash);
   }
 }

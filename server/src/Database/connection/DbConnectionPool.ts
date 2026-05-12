@@ -70,8 +70,8 @@ export class DbManager {
       const ms = Date.now() - start;
       info.node.status = ms > DEGRADED_THRESHOLD_MS ? NodeStatus.DEGRADED : NodeStatus.HEALTHY;
     } catch {
-      info.node.status = NodeStatus.OFFLINE;
-      info.node.failedWrites++;
+      info.node.status = NodeStatus.UNREACHABLE;
+      info.node.failedConnections++;
       this.logger.warn("DB", `Node ${info.name} failed health check`);
     } finally {
       if (conn) conn.release();
@@ -79,9 +79,48 @@ export class DbManager {
     }
   }
 
+  private autoPromoteIfMasterOffline(): void {
+    if (this.master.node.status !== NodeStatus.UNREACHABLE) return;
+    const candidate = this.slaves.find(s => s.node.status !== NodeStatus.UNREACHABLE);
+    if (!candidate) {
+      this.logger.error("DB", "Master UNREACHABLE and no healthy slave available — system degraded");
+      return;
+    }
+    const prevMaster = this.master;
+    const candidateIdx = this.slaves.indexOf(candidate);
+    this.master = { name: "master", pool: candidate.pool, node: candidate.node };
+    this.slaves = [
+      ...this.slaves.filter((_, i) => i !== candidateIdx),
+      { name: prevMaster.name, pool: prevMaster.pool, node: prevMaster.node },
+    ];
+    this.slaveRrIndex = 0;
+    this.logger.warn("DB", `[AUTO-FAILOVER] ${candidate.name} promoted to master (was: ${prevMaster.name})`);
+  }
+
+  private async measureReplicationLag(info: NodeInfo): Promise<void> {
+    if (info.node.status === NodeStatus.UNREACHABLE) { info.node.replicationLagMs = null; return; }
+    let conn: import("mysql2/promise").PoolConnection | null = null;
+    try {
+      conn = await info.pool.getConnection();
+      const [rows] = await conn.query("SHOW SLAVE STATUS") as [Record<string, unknown>[], unknown];
+      if (Array.isArray(rows) && rows.length > 0) {
+        const lag = rows[0].Seconds_Behind_Master;
+        info.node.replicationLagMs = typeof lag === "number" ? lag * 1000 : null;
+      } else {
+        info.node.replicationLagMs = null;
+      }
+    } catch {
+      info.node.replicationLagMs = null;
+    } finally {
+      if (conn) conn.release();
+    }
+  }
+
   public async runHealthCheck(): Promise<void> {
     await Promise.all([this.master, ...this.slaves].map((n) => this.checkNode(n)));
+    await Promise.all(this.slaves.map((s) => this.measureReplicationLag(s)));
     this.logger.info("DB", [this.master, ...this.slaves].map((n) => `${n.name}=${n.node.status}`).join(" | "));
+    this.autoPromoteIfMasterOffline();
   }
 
   public async init(): Promise<void> {
@@ -89,36 +128,38 @@ export class DbManager {
     this.healthTimer = setInterval(() => void this.runHealthCheck(), HEALTH_CHECK_INTERVAL_MS);
   }
 
-  // Ако је master офлајн, промовиши slave
   public async promoteSlaveToMaster(slaveIndex: 0 | 1): Promise<{ success: boolean; message: string }> {
     if (slaveIndex < 0 || slaveIndex >= this.slaves.length) {
       return { success: false, message: `Invalid slave index: ${slaveIndex}` };
     }
     const candidate = this.slaves[slaveIndex];
-    if (candidate.node.status === NodeStatus.OFFLINE) {
-      return { success: false, message: `Cannot promote ${candidate.name} — node is OFFLINE` };
+    if (candidate.node.status === NodeStatus.UNREACHABLE) {
+      return { success: false, message: `Cannot promote ${candidate.name} — node is UNREACHABLE` };
     }
-    const prevName = this.master.name;
+    const prevMaster = this.master;
     this.master = { name: "master", pool: candidate.pool, node: candidate.node };
-    this.slaves = this.slaves.filter((_, i) => i !== slaveIndex);
+    this.slaves = [
+      ...this.slaves.filter((_, i) => i !== slaveIndex),
+      { name: prevMaster.name, pool: prevMaster.pool, node: prevMaster.node },
+    ];
     this.slaveRrIndex = 0;
-    this.logger.warn("DB", `Failover: ${candidate.name} promoted to master (replaced: ${prevName})`);
+    this.logger.warn("DB", `Failover: ${candidate.name} promoted to master (replaced: ${prevMaster.name})`);
     return { success: true, message: `${candidate.name} promoted to master` };
   }
 
   /** All writes (INSERT/UPDATE/DELETE) → Master only */
   public async getWriteConnection(): Promise<{ conn: PoolConnection; nodeName: string } | null> {
-    if (this.master.node.status === NodeStatus.OFFLINE) {
-      this.logger.error("DB", "Master is OFFLINE — write not possible");
+    if (this.master.node.status === NodeStatus.UNREACHABLE) {
+      this.logger.error("DB", "Master is UNREACHABLE — write not possible");
       return null;
     }
     try {
       const conn = await this.master.pool.getConnection();
-      this.master.node.successfulWrites++;
+      this.master.node.successfulConnections++;
       return { conn, nodeName: this.master.name };
     } catch (err) {
-      this.master.node.status = NodeStatus.OFFLINE;
-      this.master.node.failedWrites++;
+      this.master.node.status = NodeStatus.UNREACHABLE;
+      this.master.node.failedConnections++;
       this.logger.error("DB", "Failed to connect to master", err);
       return null;
     }
@@ -130,30 +171,30 @@ export class DbManager {
     for (let i = 0; i < n; i++) {
       const idx = (this.slaveRrIndex + i) % n;
       const info = this.slaves[idx];
-      if (info.node.status === NodeStatus.OFFLINE) continue;
+      if (info.node.status === NodeStatus.UNREACHABLE) continue;
       try {
         const conn = await info.pool.getConnection();
         this.slaveRrIndex = (idx + 1) % n;
-        info.node.successfulWrites++;
+        info.node.successfulConnections++;
         return { conn, nodeName: info.name };
       } catch (err) {
-        info.node.status = NodeStatus.OFFLINE;
-        info.node.failedWrites++;
+        info.node.status = NodeStatus.UNREACHABLE;
+        info.node.failedConnections++;
         this.logger.warn("DB", `Slave ${info.name} unreachable, trying next`);
       }
     }
     // Fallback to master
-    this.logger.warn("DB", "All slaves offline — falling back to master for read");
-    if (this.master.node.status === NodeStatus.OFFLINE) {
-      this.logger.error("DB", "Master also offline — read not possible");
+    this.logger.warn("DB", "All slaves unreachable — falling back to master for read");
+    if (this.master.node.status === NodeStatus.UNREACHABLE) {
+      this.logger.error("DB", "Master also unreachable — read not possible");
       return null;
     }
     try {
       const conn = await this.master.pool.getConnection();
-      this.master.node.successfulWrites++;
+      this.master.node.successfulConnections++;
       return { conn, nodeName: this.master.name };
     } catch (err) {
-      this.master.node.status = NodeStatus.OFFLINE;
+      this.master.node.status = NodeStatus.UNREACHABLE;
       this.logger.error("DB", "Failed to connect to master for fallback read", err);
       return null;
     }

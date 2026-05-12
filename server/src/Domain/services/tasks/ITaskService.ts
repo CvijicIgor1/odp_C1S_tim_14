@@ -14,6 +14,8 @@ export interface ITaskService
 
     getById(taskId: number, userId: number, isAdmin: boolean): Promise<TaskDetailDto>;
 
+    getMyTasks(userId: number): Promise<TaskDto[]>;
+
     createTask(dto: CreateTaskDto, userId: number): Promise<TaskDto>;
 
     updateTask(taskId: number, dto: UpdateTaskDto, userId: number): Promise<boolean>;
@@ -26,7 +28,7 @@ export interface ITaskService
 
     removeAssignee(taskId: number, assigneeUserId: number, callerId: number): Promise<boolean>;
 
-    addComment(taskId: number, dto: AddCommentDto, userId: number): Promise<CommentDto>;
+    addComment(taskId: number, dto: AddCommentDto, userId: number): Promise<CommentDto | null>;
 
     deleteComment(commentId: number, userId: number): Promise<boolean>;
 }

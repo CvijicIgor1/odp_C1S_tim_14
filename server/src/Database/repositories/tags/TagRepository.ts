@@ -5,6 +5,11 @@ import { ITagRepository } from "../../../Domain/repositories/tags/ITagsRepositor
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 import { DbManager } from "../../connection/DbConnectionPool";
 
+const safeInt = (n: number, fallback: number): number => {
+    const v = Math.floor(n);
+    return Number.isFinite(v) && v > 0 ? v : fallback;
+};
+
 export class TagRepository implements ITagRepository {
     public constructor(
         private readonly db: DbManager,
@@ -58,23 +63,36 @@ export class TagRepository implements ITagRepository {
         }
     }
 
-    async findAllTags(): Promise<{ tags: Tag[]; totalNumber: number; }> {
+    async findAllTags(page: number, limit: number): Promise<{ tags: Tag[]; totalNumber: number; }> 
+    {
+        const safePage  = safeInt(page, 1);
+        const safeLimit = Math.min(safeInt(limit, 20), 100);
+        const offset    = (safePage - 1) * safeLimit;
+
         const res = await this.db.getReadConnection();
         if (!res) return { tags: [], totalNumber: 0 };
 
-        try {
+        try 
+        {
+            const [[countRow]] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT COUNT(*) AS total FROM tags`
+            );
+            const totalNumber = (countRow as RowDataPacket).total as number;
+
             const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT * FROM tags ORDER BY name ASC`
+                `SELECT * FROM tags ORDER BY name ASC LIMIT ${safeLimit} OFFSET ${offset}`
             );
 
-            const tags = rows.map((r) => this.map(r));
-            return { tags, totalNumber: tags.length };
-        } catch (err) {
+            return { tags: rows.map((r) => this.map(r)), totalNumber };
+        } 
+        catch (err) 
+        {
             this.logger.error("TagRepository", "findAllTags failed", err);
             return { tags: [], totalNumber: 0 };
-        } finally {
+        } 
+        finally 
+        {
             res.conn.release();
         }
     }
-
 }
