@@ -10,25 +10,9 @@ export interface ITaskRepository {
 
     findById(id: number): Promise<Task>;
 
-    create(
-        projectId: number,
-        createdByUserId: number,
-        title: string,
-        description: string,
-        status: TaskStatus,
-        priority: Priority,
-        deadline: Date,
-        estimatedHours: number,
-    ): Promise<Task>;
+    create(newTask: Task,ownerId: number): Promise<Task>;
 
-    update(
-        taskId: number,
-        title?: string,
-        description?: string,
-        priority?: Priority,
-        deadline?: Date,
-        estimatedHours?: number,
-    ): Promise<boolean>;
+    update(taskId: number, inputTask: Task): Promise<boolean>;
 
     updateStatus(taskId: number, status: TaskStatus): Promise<boolean>;
 

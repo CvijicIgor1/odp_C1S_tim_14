@@ -8,6 +8,7 @@ import { TaskStatus } from "../../../Domain/enums/TaskStatus";
 import { Priority } from "../../../Domain/enums/Priority";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
+import { UpdateTaskDto } from "../../../Domain/DTOs/tasks/UpdateTaskDto";
 
 export class TaskRepository implements ITaskRepository
 {
@@ -111,16 +112,7 @@ export class TaskRepository implements ITaskRepository
         }
     }
 
-    async create(
-        projectId: number,
-        createdByUserId: number,
-        title: string,
-        description: string,
-        status: TaskStatus,
-        priority: Priority,
-        deadline: Date,
-        estimatedHours: number,
-    ): Promise<Task>
+    async create(task: Task, ownerId: number): Promise<Task>
     {
         const res = await this.db.getWriteConnection();
         if (!res) return new Task();
@@ -130,19 +122,19 @@ export class TaskRepository implements ITaskRepository
                 `INSERT INTO tasks
                  (project_id, created_by_user_id, title, description, status, priority, deadline, estimated_hours)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [projectId, createdByUserId, title, description, status, priority, deadline, estimatedHours],
+                [task.projectId, ownerId, task.title, task.description, task.status, task.priority, task.deadline, task.estimatedHours],
             );
             if (result.insertId === 0) return new Task();
             return new Task(
                 result.insertId,
-                projectId,
-                createdByUserId,
-                title,
-                description,
-                status,
-                priority,
-                new Date(deadline),
-                estimatedHours,
+                task.projectId,
+                task.createdByUserId,
+                task.title,
+                task.description,
+                task.status,
+                task.priority,
+                new Date(task.deadline),
+                task.estimatedHours,
             );
         }
         catch (err)
@@ -156,14 +148,7 @@ export class TaskRepository implements ITaskRepository
         }
     }
 
-    async update(
-        taskId: number,
-        title?: string,
-        description?: string,
-        priority?: Priority,
-        deadline?: Date,
-        estimatedHours?: number,
-    ): Promise<boolean>
+    async update(TaskId: number, dto: UpdateTaskDto ): Promise<boolean>
     {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
@@ -172,31 +157,52 @@ export class TaskRepository implements ITaskRepository
             const fields: string[] = [];
             const values: (string | number | Date)[] = [];
 
-            if (title !== undefined)         { fields.push("title = ?");           values.push(title); }
-            if (description !== undefined)   { fields.push("description = ?");     values.push(description); }
-            if (priority !== undefined)      { fields.push("priority = ?");        values.push(priority); }
-            if (deadline !== undefined)      { fields.push("deadline = ?");        values.push(new Date(deadline)); }
-            if (estimatedHours !== undefined){ fields.push("estimated_hours = ?"); values.push(estimatedHours); }
+            if(dto.title !== undefined)
+            {
+                fields.push("title = ?");
+                values.push(dto.title);
+            }
+             if(dto.priority !== undefined)
+            {
+                fields.push("priority = ?");
+                values.push(dto.priority);
+            }
 
+             if(dto.estimatedHours !== undefined)
+            {
+                fields.push("estimatedHours = ?");
+                values.push(dto.estimatedHours);
+            }
+
+             if(dto.description !== undefined)
+            {
+                fields.push("description = ?");
+                values.push(dto.description);
+            }
+            if(dto.deadline !== undefined)
+            {
+                fields.push("deadline = ?");
+                values.push(dto.deadline);
+            }
+    
             if (fields.length === 0) return false;
+                  values.push(TaskId);
 
-            values.push(taskId);
             const [result] = await res.conn.execute<ResultSetHeader>(
                 `UPDATE tasks SET ${fields.join(", ")} WHERE id = ?`,
-                values,
+                values
             );
-            return result.affectedRows > 0;
-        }
-        catch (err)
-        {
+
+            if (result.affectedRows === 0) return false;
+
+            return true;
+        } catch (err) {
             this.logger.error("TaskRepository", "update failed", err);
             return false;
-        }
-        finally
-        {
+        } finally {
             res.conn.release();
         }
-    }
+}
 
     async updateStatus(taskId: number, status: TaskStatus): Promise<boolean>
     {
