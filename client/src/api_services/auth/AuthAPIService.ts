@@ -17,4 +17,7 @@ export const authApi: IAuthAPIService = {
     return axios.post<AuthResponse>(`${BASE}/register`, { username, full_name: fullname, email, password, image, role })
       .then(r => r.data).catch(e => err(e, "Registration failed"));
   },
+  async logout(token) {
+    await axios.post(`${BASE}/logout`, {}, { headers: { Authorization: `Bearer ${token}` } });
+  },
 };

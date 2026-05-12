@@ -94,6 +94,34 @@ export class UserRepository implements IUserRepository {
     } finally { res.conn.release(); }
   }
 
+  async updateRole(id: number, role: UserRole): Promise<boolean> {
+    const res = await this.db.getWriteConnection();
+    if (!res) return false;
+    try {
+      const [result] = await res.conn.execute<ResultSetHeader>(
+        `UPDATE users SET role = ? WHERE id = ?`, [role, id]
+      );
+      return result.affectedRows > 0;
+    } catch (err) {
+      this.logger.error("UserRepository", "updateRole failed", err);
+      return false;
+    } finally { res.conn.release(); }
+  }
+
+  async updateStatus(id: number, isActive: boolean): Promise<boolean> {
+    const res = await this.db.getWriteConnection();
+    if (!res) return false;
+    try {
+      const [result] = await res.conn.execute<ResultSetHeader>(
+        `UPDATE users SET is_active = ? WHERE id = ?`, [isActive ? 1 : 0, id]
+      );
+      return result.affectedRows > 0;
+    } catch (err) {
+      this.logger.error("UserRepository", "updateStatus failed", err);
+      return false;
+    } finally { res.conn.release(); }
+  }
+
   async deactivate(id: number): Promise<boolean> {
     const res = await this.db.getWriteConnection();
     if (!res) return false;
@@ -108,6 +136,27 @@ export class UserRepository implements IUserRepository {
     } finally { res.conn.release(); }
   }
 
+  async updateProfile(id: number, username: string, email: string, avatar: string, passwordHash?: string): Promise<boolean> {
+    const res = await this.db.getWriteConnection();
+    if (!res) return false;
+    try {
+      if (passwordHash) {
+        const [result] = await res.conn.execute<ResultSetHeader>(
+          `UPDATE users SET username = ?, email = ?, avatar = ?, password_hash = ? WHERE id = ?`,
+          [username, email, avatar, passwordHash, id]
+        );
+        return result.affectedRows > 0;
+      }
+      const [result] = await res.conn.execute<ResultSetHeader>(
+        `UPDATE users SET username = ?, email = ?, avatar = ? WHERE id = ?`,
+        [username, email, avatar, id]
+      );
+      return result.affectedRows > 0;
+    } catch (err) {
+      this.logger.error("UserRepository", "updateProfile failed", err);
+      return false;
+    } finally { res.conn.release(); }
+  }
   async exists(id: number): Promise<boolean> {
     const res = await this.db.getReadConnection();
     if (!res) return false;

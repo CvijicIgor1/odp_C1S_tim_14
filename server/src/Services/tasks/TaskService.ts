@@ -102,6 +102,11 @@ export class TaskService implements ITaskService {
         );
     }
 
+    async getMyTasks(userId: number): Promise<TaskDto[]> {
+        const tasks = await this.taskRepo.findByAssignee(userId);
+        return tasks.map((t) => this.toDto(t));
+    }
+
     async createTask(dto: CreateTaskDto, userId: number): Promise<TaskDto> {
         const noviTask = new Task(0, 0, dto.title ,dto.description, dto.status,dto.priority,dto.deadline, new Date(),dto.estimatedHours, new Date(), new Date());
           const created = await this.taskRepo.create(noviTask,userId);
@@ -175,9 +180,9 @@ export class TaskService implements ITaskService {
         taskId: number,
         dto: AddCommentDto,
         userId: number
-    ): Promise<CommentDto> {
+    ): Promise<CommentDto | null> {
         const task = await this.taskRepo.findById(taskId);
-        if (task.id === 0) return new CommentDto();
+        if (task.id === 0) return null;
 
         const canComment = await this.taskRepo.isAssignee(taskId, userId)
             || await this.taskRepo.isTeamOwnerOfTask(taskId, userId);

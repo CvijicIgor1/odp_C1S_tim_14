@@ -5,6 +5,7 @@ export class TeamMember {
     public teamId: number = 0,
     public userId: number = 0,
     public role:  TeamMemberRole = TeamMemberRole.MEMBER,
-    public joinedAt: Date = new Date()
+    public joinedAt: Date = new Date(),
+    public username: string = ""
   ) {}
 }

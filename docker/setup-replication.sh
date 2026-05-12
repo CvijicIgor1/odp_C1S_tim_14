@@ -15,7 +15,7 @@ REPL_USER="replicator"
 REPL_PASS="repl1234"
 
 # TODO: Replace "project_db" with your actual database name
-DB_NAME="project_db"
+DB_NAME="nexushub"
 
 M="mysql  -h127.0.0.1    -P3306 -uroot -p${ROOT_PASS} --protocol=TCP --connect-timeout=5"
 S1="mysql -hmysql-slave1 -P3306 -uroot -p${ROOT_PASS} --protocol=TCP --connect-timeout=5"
@@ -144,7 +144,7 @@ CREATE TABLE tasks (
 
 CREATE TABLE task_assignees (
   task_id     INT UNSIGNED NOT NULL,
-  user_id     INT UNSIGNED NULL,
+  user_id     INT UNSIGNED NOT NULL,
   assigned_by INT UNSIGNED NOT NULL,
   assigned_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (task_id, user_id),
@@ -166,6 +166,7 @@ CREATE TABLE comments (
 CREATE TABLE audits (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id     INT UNSIGNED NULL,
+  username    VARCHAR(40)  NULL,
   action      VARCHAR(80)  NOT NULL,
   entity_type VARCHAR(40)  NULL,
   entity_id   INT UNSIGNED NULL,

@@ -25,11 +25,8 @@ export class TagController {
 
     private async createNewTag(req: Request, res: Response): Promise<void> {
         const { name } = req.body as CreateTagDto;
-        if (!name) {
-            res.status(400).json({ success: false, message: "Name is required" });
-            return;
-        }
-        const tag = await this.tagService.create(new CreateTagDto(name), req.user?.role === UserRole.ADMIN);
+        if (!name) { res.status(400).json({ success: false, message: "Name is required" }); return; }
+        const tag = await this.tagService.create(new CreateTagDto(name));
         if (tag.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
         res.status(201).json({ success: true, message: "Tag created successfully", data: tag });
     }
@@ -37,7 +34,7 @@ export class TagController {
     private async deleteTag(req: Request, res: Response): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid ID of the tag" }); return; }
-        const ok = await this.tagService.delete(id, req.user?.role === UserRole.ADMIN);
+        const ok = await this.tagService.delete(id);
         if (!ok) { res.status(404).json({ success: false, message: "Tag not found" }); return; }
         res.status(200).json({ success: true, message: "Tag deleted successfully" });
     }

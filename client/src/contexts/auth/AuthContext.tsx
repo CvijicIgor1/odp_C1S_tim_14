@@ -3,6 +3,7 @@ import { jwtDecode } from "jwt-decode";
 import type { AuthContextType } from "../../types/auth/AuthContext";
 import type { AuthUser } from "../../types/auth/AuthUser";
 import type { JwtTokenClaims } from "../../types/auth/JwtTokenClaims";
+import { authApi } from "../../api_services/auth/AuthAPIService";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const KEY = "authToken";
@@ -33,7 +34,7 @@ const getInitialAuth = () => {
     if (claims) {
       return {
         token: saved,
-        user: { id: claims.user_id, username: claims.username, role: claims.role, } as AuthUser,
+        user: { id: claims.user_id, username: claims.username, role: claims.role, avatar: claims.avatar ?? "" } as AuthUser,
       };
     }
   }
@@ -55,11 +56,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!claims || expired(t)) return;
 
     setToken(t);
-    setUser({ id: claims.user_id, username: claims.username, role: claims.role });
+    setUser({ id: claims.user_id, username: claims.username, role: claims.role ,avatar: claims.avatar ?? "" } as AuthUser);
     localStorage.setItem(KEY, t);
   };
 
   const logout = () => {
+    if (token) authApi.logout(token).catch(() => {});
     setToken(null);
     setUser(null);
     localStorage.removeItem(KEY);

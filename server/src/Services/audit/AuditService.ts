@@ -14,10 +14,11 @@ export class AuditService implements IAuditService {
         entityType?: string,
         entityId?: number,
         detail?: string,
-        ipAddress?: string
+        ipAddress?: string,
+        username?: string
     ): Promise<void> {
         await this.auditRepo.create(
-            new AuditLog(0, userId ?? null, action, entityType ?? null, entityId ?? null, detail ?? null, ipAddress ?? null)
+            new AuditLog(0, userId ?? null, username ?? null, action, entityType ?? null, entityId ?? null, detail ?? null, ipAddress ?? null)
         );
     }
 

@@ -8,6 +8,17 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 const safeInt = (n: number): number => Math.max(0, Math.floor(n));
 
+const parseDetail = (raw: unknown): Record<string, unknown> | null => {
+    if (raw === null || raw === undefined) return null;
+    if (typeof raw === "object") return raw as Record<string, unknown>;
+    if (typeof raw !== "string" || raw.trim() === "") return null;
+    try {
+        return JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+        return { value: raw };
+    }
+};
+
 export class AuditRepository implements IAuditRepository{
     public constructor(
         private readonly db: DbManager,
@@ -19,13 +30,13 @@ export class AuditRepository implements IAuditRepository{
     if (!res) return new AuditLog();
     try {
       const [result] = await res.conn.execute<ResultSetHeader>(
-        `INSERT INTO audits (user_id, action, entity_type, entity_id, detail, ip_address)
-        VALUES (?, ?, ?, ?, ?, ?)`,
-        [log.user_id ?? null, log.action, log.entity_type ?? null,
+        `INSERT INTO audits (user_id, username, action, entity_type, entity_id, detail, ip_address)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [log.user_id ?? null, log.username ?? null, log.action, log.entity_type ?? null,
          log.entity_id ?? null, log.detail ?? null, log.ip_address ?? null]
       );
       if (result.insertId === 0) return new AuditLog();
-      return new AuditLog(result.insertId, log.user_id, log.action,
+      return new AuditLog(result.insertId, log.user_id, log.username, log.action,
         log.entity_type, log.entity_id, log.detail, log.ip_address);
     } catch (err) {
       this.logger.error("AuditRepository", "create failed", err);
@@ -47,9 +58,9 @@ export class AuditRepository implements IAuditRepository{
       );
       const items = rows.map(
         (l) => new AuditLogDto(
-          l.id, l.user_id ?? null,
+          l.id, l.user_id ?? null, l.username ?? null,
           l.action, l.entity_type ?? null, l.entity_id ?? null,
-          l.detail ? (JSON.parse(l.detail as string) as Record<string, unknown>) : null,
+          parseDetail(l.detail),
           l.ip_address ?? null,
           new Date(l.created_at as string)
         )

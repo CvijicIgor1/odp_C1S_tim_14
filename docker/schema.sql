@@ -111,10 +111,12 @@ CREATE TABLE IF NOT EXISTS  comments (
 CREATE TABLE IF NOT EXISTS  audits (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id     INT UNSIGNED NULL,
+  username    VARCHAR(40)  NULL,
   action      VARCHAR(80)  NOT NULL,
   entity_type VARCHAR(40)  NULL,
   entity_id   INT UNSIGNED NULL,
   detail      TEXT         NULL,
+  ip_address  VARCHAR(45)  NULL,
   created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
