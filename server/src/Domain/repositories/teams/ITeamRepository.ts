@@ -1,9 +1,5 @@
-import { CreateTeamDto } from '../../DTOs/teams/CreateTeamDto';
-import { UpdateTeamDto } from '../../DTOs/teams/UpdateTeamDto';
 import { Team } from "../../models/Team";
 import { TeamMember } from '../../models/TeamMember';
-import { AddMemberDto } from '../../DTOs/teams/AddMemberDto';
-import { UpdateMemberRoleDto } from '../../DTOs/teams/UpdateMemberRoleDto';
 import { TeamMemberRole } from '../../enums/TeamMemberRole';
 
 

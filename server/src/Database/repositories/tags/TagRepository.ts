@@ -1,5 +1,4 @@
 import { ResultSetHeader, RowDataPacket } from "mysql2";
-import { CreateTagDto } from "../../../Domain/DTOs/tags/CreateTagDto";
 import { Tag } from "../../../Domain/models/Tag";
 import { ITagRepository } from "../../../Domain/repositories/tags/ITagsRepository";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -23,18 +22,18 @@ export class TagRepository implements ITagRepository {
         );
     }
 
-    async createNewTag(dto: CreateTagDto): Promise<Tag> {
+    async createNewTag(newTag: Tag): Promise<Tag> {
         const res = await this.db.getWriteConnection();
         if (!res) return new Tag();
         try {
             const [result] = await res.conn.execute<ResultSetHeader>(
                 `INSERT INTO tags (name) VALUES (?)`,
-                [dto.name],
+                [newTag.name],
             );
             if (result.insertId === 0) return new Tag();
             return new Tag(
                 result.insertId,
-                dto.name
+                newTag.name
             );
         } catch (err) {
             this.logger.error("TagRepository", "create failed", err);

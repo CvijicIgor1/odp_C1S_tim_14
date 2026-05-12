@@ -1,10 +1,6 @@
 import { ITeamRepository } from '../../../Domain/repositories/teams/ITeamRepository';
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from '../../../Domain/services/logger/ILoggerService';
-import { AddMemberDto } from '../../../Domain/DTOs/teams/AddMemberDto';
-import { CreateTeamDto } from '../../../Domain/DTOs/teams/CreateTeamDto';
-import { UpdateMemberRoleDto } from '../../../Domain/DTOs/teams/UpdateMemberRoleDto';
-import { UpdateTeamDto } from '../../../Domain/DTOs/teams/UpdateTeamDto';
 import { Team } from '../../../Domain/models/Team';
 import { TeamMember } from '../../../Domain/models/TeamMember';
 import { RowDataPacket, ResultSetHeader } from "mysql2";

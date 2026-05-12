@@ -24,7 +24,8 @@ export class TagService implements ITagService {
     }
 
     async create(dto: CreateTagDto): Promise<TagDto> {
-        const createdTag = await this.tagRepo.createNewTag(dto);
+        const newTag = new Tag(0, dto.name);
+        const createdTag = await this.tagRepo.createNewTag(newTag);
         if (createdTag.id === 0) return new TagDto();
         return this.tagToDto(createdTag);
     }
