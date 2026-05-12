@@ -99,8 +99,11 @@ export class ProjectService implements IProjectService
 
     async createProject(teamId: number, dto: CreateProjectDto, userId: number): Promise<ProjectDto> 
     {
-        const created = await this.projectRepository.create(teamId, dto);
+        if(dto.deadline){
+        const newProject = new Project(0, 0, dto.name, dto.description, dto.status, dto.priority, new Date(dto.deadline), new Date(), new Date());
+        const created = await this.projectRepository.create(teamId, newProject);
         if (created.id === 0) return new ProjectDto();
+        
 
         if (dto.tagIds && dto.tagIds.length > 0) {
             await Promise.all(
@@ -111,13 +114,20 @@ export class ProjectService implements IProjectService
         const tags = await this.projectRepository.getTagsForProject(created.id);
         const watcherCount = 0; // novi projekat, nema pratilaca
         return this.toDto(created, tags, watcherCount);
+
+        }
+        else return new ProjectDto();
     }
 
     async updateProject(id: number, dto: UpdateProjectDto, userId: number,isAdmin: boolean = false): Promise<boolean> 
     {
+        if(dto.deadline){
+        const inputProject = new Project(0, 0, dto.name, dto.description, dto.status, dto.priority, new Date(dto.deadline), new Date(), new Date());
         const canEdit = await this.checkOwnerOrAdmin(id, userId, isAdmin); // proverava da li je admin/owner ako jeste poziva repo ako ne vraca false
         if (!canEdit) return false;
-        return this.projectRepository.update(id, dto);
+        return this.projectRepository.update(id, inputProject);
+        }
+        else return false;
     }
 
     async deleteProject(id: number, userId: number, isAdmin: boolean = false): Promise<boolean> 

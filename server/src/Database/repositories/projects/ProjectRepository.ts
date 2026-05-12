@@ -4,8 +4,6 @@ import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from '../../../Domain/services/logger/ILoggerService';
 import { Project } from "../../../Domain/models/Project";
 import { Tag } from "../../../Domain/models/Tag";
-import { CreateProjectDto } from "../../../Domain/DTOs/projects/CreateProjectDto";
-import { UpdateProjectDto } from "../../../Domain/DTOs/projects/UpdateProjectDto";
 import { ProjectFilters } from "../../../Domain/types/ProjectFilters";
 import { ProjectStatus } from "../../../Domain/enums/ProjectStatus";
 import { Priority } from "../../../Domain/enums/Priority";
@@ -150,7 +148,7 @@ export class ProjectRepository implements IProjectRepository
             res.conn.release();
         }
     }
-    async create(teamId: number, dto: CreateProjectDto): Promise<Project>
+    async create(teamId: number, newProject: Project): Promise<Project>
     {
         const res = await this.db.getWriteConnection();
         if (!res) return new Project();
@@ -159,18 +157,18 @@ export class ProjectRepository implements IProjectRepository
             const [result] = await res.conn.execute<ResultSetHeader>
             (
                 `INSERT INTO projects (team_id, name, description, status, priority, deadline) VALUES (?, ?, ?, ?, ?, ?)`,
-                [teamId,dto.name,dto.description,dto.status,dto.priority,dto.deadline],
+                [teamId,newProject.name,newProject.description,newProject.status,newProject.priority,newProject.deadline],
             );
 
             if(result.insertId===0) return new Project();
             return new Project(
                 result.insertId,
                 teamId,
-                dto.name,
-                dto.description,
-                dto.status,
-                dto.priority,
-                new Date(dto.deadline ?? new Date()),
+                newProject.name,
+                newProject.description,
+                newProject.status,
+                newProject.priority,
+                new Date(newProject.deadline ?? new Date()),
             );
         }
         catch(err) {
@@ -183,7 +181,7 @@ export class ProjectRepository implements IProjectRepository
         }
     }
 
-    async update(id: number, dto: UpdateProjectDto): Promise<boolean>
+    async update(id: number, inputProject: Project): Promise<boolean>
     {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
@@ -193,34 +191,34 @@ export class ProjectRepository implements IProjectRepository
             const fields: string[] = [];
             const values: (string | number | Date)[] = [];
 
-            if(dto.name !== undefined)
+            if(inputProject.name !== undefined)
             {
                 fields.push("name = ?");
-                values.push(dto.name);
+                values.push(inputProject.name);
             }
 
-            if(dto.description !== undefined)
+            if(inputProject.description !== undefined)
             {
                 fields.push("description = ?");
-                values.push(dto.description);
+                values.push(inputProject.description);
             }
 
-            if(dto.status !== undefined)
+            if(inputProject.status !== undefined)
             {
                 fields.push("status = ?");
-                values.push(dto.status);
+                values.push(inputProject.status);
             }
 
-            if(dto.priority !== undefined)
+            if(inputProject.priority !== undefined)
             {
                 fields.push("priority = ?");
-                values.push(dto.priority);
+                values.push(inputProject.priority);
             }
 
-            if(dto.deadline !== undefined)
+            if(inputProject.deadline !== undefined)
             {
                 fields.push("deadline = ?");
-                values.push(new Date(dto.deadline));
+                values.push(new Date(inputProject.deadline));
             }
             if(fields.length === 0) return false;
             values.push(id);
