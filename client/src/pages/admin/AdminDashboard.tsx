@@ -5,9 +5,9 @@ const cards = [
   { label: "Users",     path: "/admin/users",      icon: "👥", desc: "Manage user accounts and roles"},
   { label: "Tags",      path: "/admin/tags",       icon: "🏷️", desc: "Create and delete task tags" },
   { label: "Audit Log", path: "/admin/audit-log",  icon: "📋", desc: "View system activity history" },
-  { label: "Health",    path: "/admin/health",     icon: "📈 ", desc: "Monitor database node status" },
-  { label: "Teams",     path: "/admin/teams",     icon: "◎",  desc: "View all registered teams" },
-  { label: "Projects",  path: "/admin/projects",  icon: "◫",  desc: "View all registered projects" },
+  { label: "Health",    path: "/admin/health",     icon: "📈", desc: "Monitor database node status" },
+  { label: "Teams",     path: "/admin/teams",      icon: "🏢",  desc: "View all registered teams" },
+  { label: "Projects",  path: "/admin/projects",   icon: "🗂️",  desc: "View all registered projects" },
 ];
 
 export default function AdminDashboard() {
