@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { IProjectAPIService, ApiResponse } from "./IProjectAPIService";
-import type { ProjectDto, PaginatedList, ProjectStatus, Priority } from "../../models/project/ProjectTypes";
+import type { ProjectDto, PaginatedList } from "../../models/project/ProjectTypes";
 import { readItem } from "../../helpers/local_storage";
 
 const BASE = import.meta.env.VITE_API_URL;

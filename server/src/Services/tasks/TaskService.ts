@@ -108,8 +108,8 @@ export class TaskService implements ITaskService {
         return tasks.map((t) => this.toDto(t));
     }
 
-    async createTask(dto: CreateTaskDto, userId: number): Promise<TaskDto> {
-        const noviTask = new Task(0, dto.projectId, 0, dto.title ,dto.description, dto.status,dto.priority,dto.deadline,dto.estimatedHours, new Date(), new Date());
+    async createTask(projectId: number, dto: CreateTaskDto, userId: number): Promise<TaskDto> {
+        const noviTask = new Task( 0, 0, 0, dto.title ,dto.description, TaskStatus.TODO,dto.priority,dto.deadline,dto.estimatedHours, new Date(), new Date());
           const created = await this.taskRepo.create(noviTask,userId);
               if (created.id === 0) return new TaskDto();
               await this.auditService.log(userId, AuditAction.TASK_CREATED, "task", created.id);

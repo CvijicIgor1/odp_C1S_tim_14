@@ -41,16 +41,14 @@ export class TaskController {
     }
 
     private async create(req: Request, res: Response): Promise<void> {
-        const { projectId, title, description, status, priority, deadline, estimatedHours } =
-            req.body as {
-                projectId?: number; title?: string; description?: string;
-                status?: string; priority?: string; deadline?: string; estimatedHours?: number;
-            };
+       
+        const projectId = parseInt(String(req.params.projectId), 10);
+        if (isNaN(projectId)) { res.status(400).json({ success: false, message: "Invalid project ID" }); return; }
 
-        if (!projectId || isNaN(Number(projectId))) { res.status(400).json({ success: false, message: "Invalid project ID" }); return; }
+
+        const {  title, description, priority, deadline, estimatedHours } = req.body as CreateTaskDto;
+
         if (!title || title.trim().length < MIN_TASK_TITLE_LENGTH || title.trim().length > MAX_TASK_TITLE_LENGTH) { res.status(400).json({ success: false, message: `Naslov zadatka je obavezan (${MIN_TASK_TITLE_LENGTH}–${MAX_TASK_TITLE_LENGTH} karaktera)` }); return; }
-        if (!priority || !Object.values(Priority).includes(priority as Priority)) { res.status(400).json({ success: false, message: "Izaberite validan prioritet" }); return; }
-        if (!status || !Object.values(TaskStatus).includes(status as TaskStatus)) { res.status(400).json({ success: false, message: "Izaberite validan status" }); return; }
 
         const hours = parseFloat(String(estimatedHours));
         if (isNaN(hours) || hours < MIN_ESTIMATED_HOURS || hours > MAX_ESTIMATED_HOURS) {
@@ -62,16 +60,13 @@ export class TaskController {
             res.status(400).json({ success: false, message: "Rok mora biti u budućnosti" }); return;
         }
 
-        const dto = new CreateTaskDto(
-            Number(projectId), title.trim(), description ?? "",
-            status as TaskStatus, priority as Priority, deadlineDate, hours
-        );
+        const dto = new CreateTaskDto(title.trim(), description ?? "", priority, deadlineDate, hours);
+        const task = await this.taskService.createTask(projectId,dto, req.user!.user_id);
+        if (task.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
 
-        const task = await this.taskService.createTask(dto, req.user!.user_id);
-        if (task.id === 0) { res.status(503).json({ success: false, message: "Failed to create task" }); return; }
-
-        await this.auditService.log(req.user!.user_id, AuditAction.TASK_CREATED, "tasks", task.id, `title: ${title}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.TASK_CREATED, "tasks", task.id, `title: ${title}`, req.ip, req.user!.username);
         res.status(201).json({ success: true, message: "Task created successfully", data: task });
+  
     }
 
     private async getById(req: Request, res: Response): Promise<void> {
@@ -94,9 +89,7 @@ export class TaskController {
         if (title !== undefined && (title.trim().length < MIN_TASK_TITLE_LENGTH || title.trim().length > MAX_TASK_TITLE_LENGTH)) {
             res.status(400).json({ success: false, message: `Naslov zadatka je obavezan (${MIN_TASK_TITLE_LENGTH}–${MAX_TASK_TITLE_LENGTH} karaktera)` }); return;
         }
-        if (priority !== undefined && !Object.values(Priority).includes(priority as Priority)) {
-            res.status(400).json({ success: false, message: "Izaberite validan prioritet" }); return;
-        }
+        
         if (estimatedHours !== undefined) {
             const hours = parseFloat(String(estimatedHours));
             if (isNaN(hours) || hours < MIN_ESTIMATED_HOURS || hours > MAX_ESTIMATED_HOURS) {
