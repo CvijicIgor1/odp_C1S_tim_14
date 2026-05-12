@@ -42,7 +42,7 @@ const slave2Pool: Pool = mysql.createPool({
   connectTimeout: HEALTH_CHECK_TIMEOUT,
 });
 
-interface NodeInfo { name: string; pool: Pool; node: DbNode; excludedFromReads?: boolean; }
+interface NodeInfo { name: string; pool: Pool; node: DbNode; excludedFromReads?: boolean; isOriginalMaster?: boolean; }
 
 export class DbManager {
   private master: NodeInfo;
@@ -52,7 +52,7 @@ export class DbManager {
 
   public constructor(private readonly logger: ILoggerService) {
     this.master = {
-      name: "master", pool: masterPool,
+      name: "master", pool: masterPool, isOriginalMaster: true,
       node: new DbNode("master", process.env.DB_MASTER_HOST ?? "localhost", parseInt(process.env.DB_MASTER_PORT ?? "3306", 10)),
     };
     this.slaves = [
@@ -77,6 +77,45 @@ export class DbManager {
       if (conn) conn.release();
       info.node.lastCheck = new Date();
     }
+  }
+
+  private async autoRestoreOriginalMaster(): Promise<void> {
+    if (this.master.isOriginalMaster) return;
+    const original = this.slaves.find(s => s.isOriginalMaster && s.node.status !== NodeStatus.UNREACHABLE);
+    if (!original) return;
+    let connCurrent: PoolConnection | null = null;
+    try {
+      connCurrent = await this.master.pool.getConnection();
+      await connCurrent.query("SET GLOBAL read_only = 1");
+    } catch (err) {
+      this.logger.error("DB", `[AUTO-RESTORE] Failed to set read_only on ${this.master.name}`, err);
+      return;
+    } finally {
+      if (connCurrent) connCurrent.release();
+    }
+    let connOriginal: PoolConnection | null = null;
+    try {
+      connOriginal = await original.pool.getConnection();
+      await connOriginal.query("SET GLOBAL read_only = 0");
+    } catch (err) {
+      this.logger.error("DB", `[AUTO-RESTORE] Failed to disable read_only on original master`, err);
+      try {
+        const rb = await this.master.pool.getConnection();
+        await rb.query("SET GLOBAL read_only = 0");
+        rb.release();
+      } catch { }
+      return;
+    } finally {
+      if (connOriginal) connOriginal.release();
+    }
+    const demoted = this.master;
+    const newSlaves = this.slaves
+      .filter(s => !s.isOriginalMaster)
+      .concat({ name: demoted.name, pool: demoted.pool, node: demoted.node, excludedFromReads: false });
+    this.master = { name: original.name, pool: original.pool, node: original.node, isOriginalMaster: true };
+    this.slaves = newSlaves;
+    this.slaveRrIndex = 0;
+    this.logger.warn("DB", `[AUTO-RESTORE] Original master (${original.name}) restored. Demoted: ${demoted.name}`);
   }
 
   private async autoPromoteIfMasterOffline(): Promise<void> {
@@ -105,7 +144,7 @@ export class DbManager {
     this.master = { name: candidate.name, pool: candidate.pool, node: candidate.node };
     this.slaves = [
       ...remainingSlaves,
-      { name: prevMaster.name, pool: prevMaster.pool, node: prevMaster.node, excludedFromReads: true },
+      { name: prevMaster.name, pool: prevMaster.pool, node: prevMaster.node, excludedFromReads: true, isOriginalMaster: prevMaster.isOriginalMaster },
     ];
     this.slaveRrIndex = 0;
     this.logger.warn("DB", `[AUTO-FAILOVER] ${candidate.name} promoted to master (was: ${prevMaster.name})`);
@@ -135,6 +174,7 @@ export class DbManager {
     await Promise.all(this.slaves.map((s) => this.measureReplicationLag(s)));
     this.logger.info("DB", [this.master, ...this.slaves].map((n) => `${n.name}=${n.node.status}`).join(" | "));
     await this.autoPromoteIfMasterOffline();
+    await this.autoRestoreOriginalMaster();
   }
 
   public async init(): Promise<void> {
@@ -168,7 +208,7 @@ export class DbManager {
     this.master = { name: candidate.name, pool: candidate.pool, node: candidate.node };
     this.slaves = [
       ...remainingSlaves,
-      { name: prevMaster.name, pool: prevMaster.pool, node: prevMaster.node, excludedFromReads: true },
+      { name: prevMaster.name, pool: prevMaster.pool, node: prevMaster.node, excludedFromReads: true, isOriginalMaster: prevMaster.isOriginalMaster },
     ];
     this.slaveRrIndex = 0;
     this.logger.warn("DB", `Failover: ${candidate.name} promoted to master (replaced: ${prevMaster.name})`);
