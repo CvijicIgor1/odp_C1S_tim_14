@@ -56,8 +56,8 @@ export class DbManager {
       node: new DbNode("master", process.env.DB_MASTER_HOST ?? "localhost", parseInt(process.env.DB_MASTER_PORT ?? "3306", 10)),
     };
     this.slaves = [
-      { name: "slave1", pool: slave1Pool, node: new DbNode("slave1", process.env.DB_SLAVE1_HOST ?? "localhost", parseInt(process.env.DB_SLAVE1_PORT ?? "3307", 10)) },
-      { name: "slave2", pool: slave2Pool, node: new DbNode("slave2", process.env.DB_SLAVE2_HOST ?? "localhost", parseInt(process.env.DB_SLAVE2_PORT ?? "3308", 10)) },
+      { name: "slave1", pool: slave1Pool, node: new DbNode("slave1", process.env.DB_SLAVE1_HOST ?? "localhost", parseInt(process.env.DB_SLAVE1_PORT ?? "3307", 10), "", "", "", NodeStatus.UNREACHABLE) },
+      { name: "slave2", pool: slave2Pool, node: new DbNode("slave2", process.env.DB_SLAVE2_HOST ?? "localhost", parseInt(process.env.DB_SLAVE2_PORT ?? "3308", 10), "", "", "", NodeStatus.UNREACHABLE) },
     ];
   }
 
@@ -65,7 +65,12 @@ export class DbManager {
     const start = Date.now();
     let conn: PoolConnection | null = null;
     try {
-      conn = await info.pool.getConnection();
+      conn = await Promise.race([
+        info.pool.getConnection(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Health check connection timeout")), HEALTH_CHECK_TIMEOUT)
+        ),
+      ]);
       await conn.query("SELECT 1");
       const ms = Date.now() - start;
       info.node.status = ms > DEGRADED_THRESHOLD_MS ? NodeStatus.DEGRADED : NodeStatus.HEALTHY;
