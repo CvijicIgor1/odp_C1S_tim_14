@@ -1,5 +1,3 @@
-import { AuditLogDto } from "../../../Domain/DTOs/audit/AuditLogDto";
-import { PaginatedListDto } from "../../../Domain/DTOs/entity/PaginatedListDto";
 import { AuditLog } from "../../../Domain/models/AuditLog";
 import { IAuditRepository } from "../../../Domain/repositories/audit/IAuditRepository";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -7,17 +5,6 @@ import { DbManager } from "../../connection/DbConnectionPool";
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 const safeInt = (n: number): number => Math.max(0, Math.floor(n));
-
-const parseDetail = (raw: unknown): Record<string, unknown> | null => {
-    if (raw === null || raw === undefined) return null;
-    if (typeof raw === "object") return raw as Record<string, unknown>;
-    if (typeof raw !== "string" || raw.trim() === "") return null;
-    try {
-        return JSON.parse(raw) as Record<string, unknown>;
-    } catch {
-        return { value: raw };
-    }
-};
 
 export class AuditRepository implements IAuditRepository{
     public constructor(
@@ -44,9 +31,9 @@ export class AuditRepository implements IAuditRepository{
     } finally { res.conn.release(); }
   }
 
-  async findAll(page: number, limit: number): Promise<PaginatedListDto<AuditLogDto>> {
+  async findAll(page: number, limit: number): Promise<{ logs: AuditLog[]; totalNumber: number }> {
     const res = await this.db.getReadConnection();
-    if (!res) return new PaginatedListDto([], 0, page, limit);
+    if (!res) return { logs: [], totalNumber: 0 };
     const lim    = safeInt(Math.max(1, limit));
     const offset = safeInt(Math.max(0, (page - 1) * lim));
     try {
@@ -56,19 +43,19 @@ export class AuditRepository implements IAuditRepository{
       const [cnt] = await res.conn.execute<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM audits`
       );
-      const items = rows.map(
-        (l) => new AuditLogDto(
+      const logs = rows.map(
+        (l) => new AuditLog(
           l.id, l.user_id ?? null, l.username ?? null,
           l.action, l.entity_type ?? null, l.entity_id ?? null,
-          parseDetail(l.detail),
+          l.detail ?? null,
           l.ip_address ?? null,
           new Date(l.created_at as string)
         )
       );
-      return new PaginatedListDto(items, cnt[0]?.total ?? 0, page, limit);
+      return { logs, totalNumber: cnt[0]?.total ?? 0 };
     } catch (err) {
       this.logger.error("AuditRepository", "findAll failed", err);
-      return new PaginatedListDto([], 0, page, limit);
+      return { logs: [], totalNumber: 0 };
     } finally { res.conn.release(); }
   }
 }
