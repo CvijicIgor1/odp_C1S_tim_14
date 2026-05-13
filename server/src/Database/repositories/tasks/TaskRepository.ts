@@ -141,16 +141,7 @@ export class TaskRepository implements ITaskRepository
         }
     }
 
-    async create(
-        projectId: number,
-        createdByUserId: number,
-        title: string,
-        description: string,
-        status: TaskStatus,
-        priority: Priority,
-        deadline: Date,
-        estimatedHours: number,
-    ): Promise<Task>
+    async create(newTask: Task): Promise<Task>
     {
         const res = await this.db.getWriteConnection();
         if (!res) return new Task();
@@ -160,19 +151,19 @@ export class TaskRepository implements ITaskRepository
                 `INSERT INTO tasks
                  (project_id, created_by_user_id, title, description, status, priority, deadline, estimated_hours)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [projectId, createdByUserId, title, description, status, priority, deadline, estimatedHours],
+                [newTask.projectId, newTask.createdByUserId, newTask.title, newTask.description, newTask.status, newTask.priority, newTask.deadline, newTask.estimatedHours],
             );
             if (result.insertId === 0) return new Task();
             return new Task(
                 result.insertId,
-                projectId,
-                createdByUserId,
-                title,
-                description,
-                status,
-                priority,
-                new Date(deadline),
-                estimatedHours,
+                newTask.projectId,
+                newTask.createdByUserId,
+                newTask.title,
+                newTask.description,
+                newTask.status,
+                newTask.priority,
+                new Date(newTask.deadline),
+                newTask.estimatedHours,
             );
         }
         catch (err)
@@ -186,14 +177,7 @@ export class TaskRepository implements ITaskRepository
         }
     }
 
-    async update(
-        taskId: number,
-        title?: string,
-        description?: string,
-        priority?: Priority,
-        deadline?: Date,
-        estimatedHours?: number,
-    ): Promise<boolean>
+    async update(taskId: number, inputTask: Task): Promise<boolean>
     {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
@@ -202,11 +186,11 @@ export class TaskRepository implements ITaskRepository
             const fields: string[] = [];
             const values: (string | number | Date)[] = [];
 
-            if (title !== undefined)         { fields.push("title = ?");           values.push(title); }
-            if (description !== undefined)   { fields.push("description = ?");     values.push(description); }
-            if (priority !== undefined)      { fields.push("priority = ?");        values.push(priority); }
-            if (deadline !== undefined)      { fields.push("deadline = ?");        values.push(new Date(deadline)); }
-            if (estimatedHours !== undefined){ fields.push("estimated_hours = ?"); values.push(estimatedHours); }
+            if (inputTask.title !== "")           { fields.push("title = ?");           values.push(inputTask.title); }
+            if (inputTask.description !== "")     { fields.push("description = ?");     values.push(inputTask.description); }
+            if (inputTask.priority !== undefined) { fields.push("priority = ?");        values.push(inputTask.priority); }
+            if (inputTask.deadline !== undefined) { fields.push("deadline = ?");        values.push(new Date(inputTask.deadline)); }
+            if (inputTask.estimatedHours !== 0)   { fields.push("estimated_hours = ?"); values.push(inputTask.estimatedHours); }
 
             if (fields.length === 0) return false;
 

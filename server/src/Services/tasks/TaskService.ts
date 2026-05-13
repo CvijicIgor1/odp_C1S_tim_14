@@ -105,7 +105,8 @@ export class TaskService implements ITaskService {
     }
 
     async createTask(dto: CreateTaskDto, userId: number): Promise<TaskDto> {
-        const created = await this.taskRepo.create(
+        const newTask = new Task(
+            0,
             dto.projectId,
             userId,
             dto.title,
@@ -115,6 +116,7 @@ export class TaskService implements ITaskService {
             dto.deadline,
             dto.estimatedHours,
         );
+        const created = await this.taskRepo.create(newTask);
         if (created.id === 0) return new TaskDto();
         return this.toDto(created);
     }
@@ -132,14 +134,18 @@ export class TaskService implements ITaskService {
 
         if (!canEdit) return false;
 
-        return this.taskRepo.update(
-            taskId,
+        const updatedTask = new Task(
+            0,
+            0,
+            0,
             dto.title,
             dto.description,
+            undefined,
             dto.priority,
             dto.deadline,
             dto.estimatedHours,
         );
+        return this.taskRepo.update(taskId, updatedTask);
     }
 
     async updateTaskStatus(

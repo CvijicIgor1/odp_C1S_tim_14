@@ -2,7 +2,6 @@ import { Task } from "../../models/Task";
 import { TaskAssignee } from "../../models/TaskAssignee";
 import { Comment } from "../../models/Comment";
 import { TaskStatus } from "../../enums/TaskStatus";
-import { Priority } from "../../enums/Priority";
 
 export interface ITaskRepository {
 
@@ -12,25 +11,9 @@ export interface ITaskRepository {
 
     findByAssignee(userId: number): Promise<Task[]>;
 
-    create(
-        projectId: number,
-        createdByUserId: number,
-        title: string,
-        description: string,
-        status: TaskStatus,
-        priority: Priority,
-        deadline: Date,
-        estimatedHours: number,
-    ): Promise<Task>;
+    create(newTask: Task): Promise<Task>;
 
-    update(
-        taskId: number,
-        title?: string,
-        description?: string,
-        priority?: Priority,
-        deadline?: Date,
-        estimatedHours?: number,
-    ): Promise<boolean>;
+    update(taskId: number, inputTask: Task): Promise<boolean>;
 
     updateStatus(taskId: number, status: TaskStatus): Promise<boolean>;
 
