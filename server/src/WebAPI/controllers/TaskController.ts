@@ -9,6 +9,11 @@ import { UpdateTaskDto } from "../../Domain/DTOs/tasks/UpdateTaskDto";
 import { UpdateTaskStatusDto } from "../../Domain/DTOs/tasks/UpdateTaskStatusDto";
 import { AddTaskAssigneeDto } from "../../Domain/DTOs/tasks/AddTaskAssigneeDto";
 import { AddCommentDto } from "../../Domain/DTOs/tasks/AddCommentDto";
+import { TASK_TITLE_MIN, TASK_TITLE_MAX } from "../../Domain/constants/Constants";
+
+const ESTIMATED_HOURS_MIN = 0.5;
+const ESTIMATED_HOURS_MAX = 500;
+const COMMENT_MAX_LENGTH  = 2000;
 
 export class TaskController {
     private readonly router = Router();
@@ -74,11 +79,16 @@ export class TaskController {
             return;
         }
 
-        const dto = new CreateTaskDto(projectId, title, description, status, priority, deadline, estimatedHours ?? 0);
+        const hours = Number(estimatedHours ?? 0);
+        if (isNaN(hours) || hours < ESTIMATED_HOURS_MIN || hours > ESTIMATED_HOURS_MAX) {
+            res.status(400).json({ success: false, message: `estimated_hours must be between ${ESTIMATED_HOURS_MIN} and ${ESTIMATED_HOURS_MAX}` }); return;
+        }
+
+        const dto = new CreateTaskDto(projectId, title, description, status, priority, deadline, hours);
         const task = await this.taskService.createTask(dto, req.user!.user_id);
 
         if (task.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "task", task.id, undefined, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "task", task.id, undefined, req.ip, req.user!.username);
         res.status(201).json({ success: true, message: "Task created successfully", data: task });
     }
 
@@ -89,10 +99,20 @@ export class TaskController {
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid task ID" }); return; }
 
         const dto = req.body as UpdateTaskDto;
+        if (dto.title !== undefined && (dto.title.length < TASK_TITLE_MIN || dto.title.length > TASK_TITLE_MAX)) {
+            res.status(400).json({ success: false, message: `Task title must be between ${TASK_TITLE_MIN} and ${TASK_TITLE_MAX} characters` }); return;
+        }
+
+        if (dto.estimatedHours !== undefined) {
+            const hours = Number(dto.estimatedHours);
+            if (isNaN(hours) || hours < ESTIMATED_HOURS_MIN || hours > ESTIMATED_HOURS_MAX) {
+                res.status(400).json({ success: false, message: `estimated_hours must be between ${ESTIMATED_HOURS_MIN} and ${ESTIMATED_HOURS_MAX}` }); return;
+            }
+        }
 
         const ok = await this.taskService.updateTask(id, dto, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Task not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, undefined, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, undefined, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Task updated successfully" });
     }
 
@@ -106,7 +126,7 @@ export class TaskController {
 
         const ok = await this.taskService.updateTaskStatus(id, dto, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Task not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `status:${dto.status}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `status:${dto.status}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Task status updated successfully" });
     }
 
@@ -118,7 +138,7 @@ export class TaskController {
 
         const ok = await this.taskService.deleteTask(id, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Task not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "task", id, undefined, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "task", id, undefined, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Task deleted successfully" });
     }
 
@@ -133,7 +153,7 @@ export class TaskController {
 
         const ok = await this.taskService.addAssignee(id, dto, req.user!.user_id);
         if (!ok) { res.status(400).json({ success: false, message: "Cannot assign user: not a team member or already assigned" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `assignee:${dto.userId}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `assignee:${dto.userId}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Assignee added successfully" });
     }
 
@@ -146,7 +166,7 @@ export class TaskController {
 
         const ok = await this.taskService.removeAssignee(id, userId, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Assignee not found" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `assignee_removed:${userId}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `assignee_removed:${userId}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Assignee removed successfully" });
     }
 
@@ -157,7 +177,12 @@ export class TaskController {
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid task ID" }); return; }
 
         const dto = req.body as AddCommentDto;
-        if (!dto.content) { res.status(400).json({ success: false, message: "content is required" }); return; }
+        if (!dto.content || dto.content.trim().length === 0) {
+            res.status(400).json({ success: false, message: "content is required" }); return;
+        }
+        if (dto.content.length > COMMENT_MAX_LENGTH) {
+            res.status(400).json({ success: false, message: `Comment cannot exceed ${COMMENT_MAX_LENGTH} characters` }); return;
+        }
 
         const comment = await this.taskService.addComment(id, dto, req.user!.user_id);
         if (comment === null) { res.status(404).json({ success: false, message: "Task not found" }); return; }

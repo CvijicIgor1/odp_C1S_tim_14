@@ -1,7 +1,9 @@
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
 import { ITeamRepository } from '../../Domain/repositories/teams/ITeamRepository';
+import { IUserRepository } from '../../Domain/repositories/users/IUserRepository';
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { AuditAction } from "../../Domain/enums/AuditLog";
+import { AppError } from "../../Domain/errors/AppError";
 import { AddMemberDto } from "../../Domain/DTOs/teams/AddMemberDto";
 import { CreateTeamDto } from "../../Domain/DTOs/teams/CreateTeamDto";
 import { UpdateMemberRoleDto } from "../../Domain/DTOs/teams/UpdateMemberRoleDto";
@@ -16,7 +18,8 @@ import { TeamMemberDto } from "../../Domain/DTOs/teams/TeamMemberDto";
 export class TeamService implements ITeamService {
     public constructor(
         private readonly teamRepo: ITeamRepository,
-        private readonly auditService: IAuditService
+        private readonly auditService: IAuditService,
+        private readonly userRepo: IUserRepository
     ) { }
 
     private toDto(team: Team, role: TeamMemberRole = TeamMemberRole.MEMBER): TeamDto {
@@ -31,12 +34,13 @@ export class TeamService implements ITeamService {
         );
     }
 
-    private toMemberDto(member: TeamMember): TeamMemberDto {
+    private toMemberDto(member: TeamMember, username: string): TeamMemberDto {
         return new TeamMemberDto(
             member.teamId,
             member.userId,
             member.role,
-            member.joinedAt
+            member.joinedAt,
+            username
         );
     }
 
@@ -70,17 +74,23 @@ export class TeamService implements ITeamService {
     }
 
     async createNewTeam(dto: CreateTeamDto, userId: number): Promise<TeamDto> {
-        const created = await this.teamRepo.create(dto, userId);
+        const newTeam = new Team(0, dto.name, dto.description, dto.avatar, new Date(), new Date());
+        const created = await this.teamRepo.create(newTeam, userId);
         if (created.id === 0) return new TeamDto();
         await this.auditService.log(userId, AuditAction.CREATE, "team", created.id);
         return this.toDto(created, TeamMemberRole.OWNER);  //ima manje posla nego kod Almondovog CreateOrder, jer ne moramo da rukujemo brojkama
     }
 
     async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<boolean> {
-        return this.teamRepo.update(teamId, dto);
+        const owner = await this.teamRepo.isOwner(teamId, userId);
+        if (!owner) throw new AppError(403, "Only the team owner can update the team");
+        const input = new Team(0, dto.name, dto.description, dto.avatar, new Date(), new Date());
+        return this.teamRepo.update(teamId, input);
     }
 
     async deleteTeam(teamId: number, userId: number): Promise<boolean> {
+        const owner = await this.teamRepo.isOwner(teamId, userId);
+        if (!owner) throw new AppError(403, "Only the team owner can delete the team");
         return await this.teamRepo.delete(teamId);
     }
 
@@ -88,17 +98,41 @@ export class TeamService implements ITeamService {
         const { members, totalNumber } = await this.teamRepo.getMembers(teamId);
         const offset = (page - 1) * limit;
         const paginated = members.slice(offset, offset + limit);
-        return new PaginatedListDto(paginated.map((o) => this.toMemberDto(o)), totalNumber, page, limit);
+
+        const memberDtos = await Promise.all(
+            paginated.map(async (m) => {
+                const user = await this.userRepo.findById(m.userId);
+                return this.toMemberDto(m, user?.username ?? "");
+            })
+        );
+
+        return new PaginatedListDto(memberDtos, totalNumber, page, limit);
+    }
+
+    async countOwners(teamId: number): Promise<number> {
+        return this.teamRepo.countOwners(teamId);
     }
 
     async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean> {
-        return await this.teamRepo.addMember(teamId, dto);
+        const isOwner = await this.teamRepo.isOwner(teamId, userId);
+        if (!isOwner) throw new AppError(403, "Only the team owner can add members");
+        const noviClan = new TeamMember(0, 0, dto.role, new Date(), dto.username);
+        return await this.teamRepo.addMember(teamId, noviClan);
     }
 
     async removeTeamMember(teamId: number, memberId: number, userId: number): Promise<boolean> {
+        const ownerCount = await this.teamRepo.countOwners(teamId);
+        if (ownerCount <= 1) {
+            const memberIsOwner = await this.teamRepo.isOwner(teamId, memberId);
+            if (memberIsOwner) throw new AppError(400, "Cannot remove the last owner of a team");
+        }
         return await this.teamRepo.removeMember(teamId, memberId);
     }
+
     async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<boolean> {
-        return await this.teamRepo.updateMemberRole(teamId, memberId, dto);
+        const isOwner = await this.teamRepo.isOwner(teamId, callerId);
+        if (!isOwner) throw new AppError(403, "Only the team owner can change member roles");
+        return await this.teamRepo.updateMemberRole(teamId, memberId, dto.role);
+
     }
 } 

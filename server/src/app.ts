@@ -28,6 +28,7 @@ import { ProjectController } from "./WebAPI/controllers/ProjectController";
 import { TagController } from "./WebAPI/controllers/TagController";
 import { AuditController }   from "./WebAPI/controllers/AuditController";
 import { TaskController } from "./WebAPI/controllers/TaskController";
+import { errorHandler } from "./Middlewares/error/ErrorHandlerMiddleware";
 
 export const logger = new ConsoleLoggerService();
 export const db     = new DbManager(logger);
@@ -43,7 +44,7 @@ const taskRepo = new TaskRepository(db, logger, teamRepo);
 const auditService = new AuditService(auditRepo);
 const authService   = new AuthService(userRepo);
 const userService   = new UserService(userRepo);
-const teamService = new TeamService(teamRepo, auditService);
+const teamService = new TeamService(teamRepo, auditService, userRepo);
 const projectService = new ProjectService(projectRepo);
 const tagService = new TagService(tagRepo);
 const taskService = new TaskService(taskRepo);
@@ -60,5 +61,7 @@ app.use("/api/v1", new TagController(tagService).getRouter());
 app.use("/api/v1", new HealthController(db, auditService).getRouter());
 app.use("/api/v1", new AuditController(auditService).getRouter());
 app.use("/api/v1", new TaskController(taskService, auditService).getRouter());
+
+app.use(errorHandler);
 
 export default app;

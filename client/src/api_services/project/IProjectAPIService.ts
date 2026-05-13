@@ -11,6 +11,8 @@ export interface IProjectAPIService {
     teamId: number
   ): Promise<ApiResponse<PaginatedList<ProjectDto>>>;
 
+  getAllAsAdmin(page?: number, limit?: number): Promise<ApiResponse<PaginatedList<ProjectDto>>>;
+
   getWatched(page?: number, limit?: number): Promise<ApiResponse<PaginatedList<ProjectDto>>>;
 
   getById(id: number): Promise<ApiResponse<ProjectDto>>;

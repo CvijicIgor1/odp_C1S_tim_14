@@ -3,5 +3,9 @@ export type UserDto = {
   username: string;
   email: string;
   role: string;
+  fullName: string;
+  avatar: string;
   isActive: number;
+  createdAt: string | null;
+  updatedAt: string | null;
 };

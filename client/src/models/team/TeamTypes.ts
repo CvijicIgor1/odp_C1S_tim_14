@@ -13,6 +13,7 @@ export type TeamMemberDto = {
   userId: number;
   role: "owner" | "member";
   joinedAt: string | null;
+  username: string;
 };
 
 export type PaginatedList<T> = {

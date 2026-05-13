@@ -2,6 +2,7 @@ export class AuditLog {
   public constructor(
     public id: number = 0,
     public user_id: number | null = null,
+    public username: string | null = null,
     public action: string = "",
     public entity_type: string | null = null,
     public entity_id: number | null = null,

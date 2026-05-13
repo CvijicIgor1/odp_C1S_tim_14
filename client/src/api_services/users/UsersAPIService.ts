@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import type { IUsersAPIService, ApiResponse } from "./IUsersAPIService";
 import type { UserDto } from "../../models/user/UserTypes";
 import { readItem } from "../../helpers/local_storage";
@@ -23,6 +23,18 @@ export const usersApi: IUsersAPIService = {
   async getById(id) {
     return axios.get<ApiResponse<UserDto>>(`${BASE}/${id}`, { headers: authHeader() })
       .then(r => r.data).catch(e => err(e, "Failed to load user"));
+  },
+  async updateProfile(id, username, email, avatar, newPassword) {
+    return axios.patch<ApiResponse<void>>(`${BASE}/${id}/profile`, { username, email, avatar, newPassword }, { headers: authHeader() })
+      .then(r => r.data).catch(e => err(e, "Failed to update profile"));
+  },
+  async updateRole(id, role) {
+    return axios.patch<ApiResponse<void>>(`${BASE}/${id}/role`, { role }, { headers: authHeader() })
+      .then(r => r.data).catch(e => err(e, "Failed to update role"));
+  },
+  async updateStatus(id, isActive) {
+    return axios.patch<ApiResponse<void>>(`${BASE}/${id}/status`, { isActive }, { headers: authHeader() })
+      .then(r => r.data).catch(e => err(e, "Failed to update status"));
   },
   async deactivate(id) {
     return axios.patch<ApiResponse<void>>(`${BASE}/${id}/deactivate`, {}, { headers: authHeader() })

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { PageHeader, Empty, ErrorBox, SuccessBox, Spinner } from "../../components/ui/UI";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { teamsApi } from "../../api_services/team/TeamAPIService";
-import type { TeamDto } from "../../models/team/TeamTypes";
+import type { TeamDto, TeamMemberDto } from "../../models/team/TeamTypes";
 
 export default function UserTeams() {
   const { user } = useAuth();
@@ -25,6 +25,11 @@ export default function UserTeams() {
   const [addInputs, setAddInputs] = useState<Record<number, string>>({});
   const [addingTo, setAddingTo] = useState<number | null>(null);
 
+  const [expandedTeam, setExpandedTeam] = useState<number | null>(null);
+  const [members, setMembers] = useState<Record<number, TeamMemberDto[]>>({});
+  const [membersLoading, setMembersLoading] = useState<number | null>(null);
+  const [updatingMember, setUpdatingMember] = useState<number | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -38,16 +43,46 @@ export default function UserTeams() {
 
   useEffect(() => { load(); }, [load]);
 
+  const loadMembers = async (teamId: number) => {
+    setMembersLoading(teamId);
+    try {
+      const res = await teamsApi.getMembers(teamId);
+      if (res.success) setMembers(prev => ({ ...prev, [teamId]: res.data?.items ?? [] }));
+      else setError(res.message);
+    } finally {
+      setMembersLoading(null);
+    }
+  };
+
+  const toggleMembers = async (teamId: number) => {
+    if (expandedTeam === teamId) {
+      setExpandedTeam(null);
+      return;
+    }
+    setExpandedTeam(teamId);
+    if (!members[teamId]) await loadMembers(teamId);
+  };
+
   const handleAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const base64 = reader.result as string;
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 256;
+      const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const base64 = canvas.toDataURL("image/jpeg", 0.8);
       setNewAvatar(base64);
       setAvatarPreview(base64);
     };
-    reader.readAsDataURL(file);
+    img.src = reader.result as string;
+  };
+  reader.readAsDataURL(file);
   };
 
   const handleCreate = async () => {
@@ -87,6 +122,7 @@ export default function UserTeams() {
       if (res.success) {
         setAddInputs(prev => ({ ...prev, [teamId]: "" }));
         setSuccess("Member added");
+        await loadMembers(teamId);
       } else {
         setError(res.message);
       }
@@ -96,10 +132,28 @@ export default function UserTeams() {
   };
 
   const handleRemoveMember = async (teamId: number, userId: number) => {
+    setUpdatingMember(userId);
     setError(""); setSuccess("");
-    const res = await teamsApi.removeMember(teamId, userId);
-    if (res.success) { setSuccess("Member removed"); await load(); }
-    else setError(res.message);
+    try {
+      const res = await teamsApi.removeMember(teamId, userId);
+      if (res.success) { setSuccess("Member removed"); await loadMembers(teamId); await load(); }
+      else setError(res.message);
+    } finally {
+      setUpdatingMember(null);
+    }
+  };
+
+  const handleChangeRole = async (teamId: number, userId: number, currentRole: string) => {
+    const newRole = currentRole === "owner" ? "member" : "owner";
+    setUpdatingMember(userId);
+    setError(""); setSuccess("");
+    try {
+      const res = await teamsApi.updateMemberRole(teamId, userId, newRole as "owner" | "member");
+      if (res.success) { setSuccess(`Role changed to ${newRole}`); await loadMembers(teamId); }
+      else setError(res.message);
+    } finally {
+      setUpdatingMember(null);
+    }
   };
 
   const isOwner = (team: TeamDto) => team.currentUserRole === "owner";
@@ -198,35 +252,86 @@ export default function UserTeams() {
 
                 <p className="text-white/50 text-sm mb-6 line-clamp-2">{team.description}</p>
 
-                {/* Dodavanje člana */}
-                {isOwner(team) && (
-                  <div className="border-t border-white/5 pt-4 space-y-4">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        placeholder="Add member by username..."
-                        value={addInputs[team.id] ?? ""}
-                        onChange={e => setAddInputs(prev => ({ ...prev, [team.id]: e.target.value }))}
-                        className="flex-1 bg-white/5 border border-transparent rounded-lg px-3 py-2 text-xs text-white focus:border-white/10 outline-none"
-                      />
-                      <button
-                        onClick={() => handleAddMember(team.id)}
-                        disabled={addingTo === team.id || !(addInputs[team.id] ?? "").trim()}
-                        className="text-xs text-white bg-white/10 px-3 py-2 rounded-lg hover:bg-white/20 disabled:opacity-40"
-                      >
-                        {addingTo === team.id ? <Spinner size={12} /> : "Add"}
-                      </button>
-                    </div>
+                {/* Members panel */}
+                {expandedTeam === team.id && (
+                  <div className="border-t border-white/5 pt-4 mb-4 space-y-2">
+                    <p className="text-xs text-white/25 uppercase tracking-widest mb-3">Members</p>
+
+                    {membersLoading === team.id && (
+                      <div className="flex justify-center py-4"><Spinner size={14} /></div>
+                    )}
+
+                    {membersLoading !== team.id && (members[team.id] ?? []).map(m => (
+                      <div key={m.userId} className="flex items-center justify-between bg-white/3 rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-white/60 font-mono">{m.username}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded border ${
+                            m.role === "owner"
+                              ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                              : "bg-white/5 text-white/30 border-white/10"
+                          }`}>{m.role}</span>
+                        </div>
+                        {isOwner(team) && (
+                          <div className="flex gap-3">
+                            {updatingMember === m.userId
+                              ? <Spinner size={11} />
+                              : (
+                                <>
+                                  <button
+                                    onClick={() => handleChangeRole(team.id, m.userId, m.role)}
+                                    className="text-[11px] text-white/30 hover:text-white/60 transition-colors underline underline-offset-2"
+                                  >
+                                    → {m.role === "owner" ? "member" : "owner"}
+                                  </button>
+                                  <button
+                                    onClick={() => handleRemoveMember(team.id, m.userId)}
+                                    className="text-[11px] text-red-500/40 hover:text-red-500 transition-colors"
+                                  >
+                                    Remove
+                                  </button>
+                                </>
+                              )
+                            }
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Add member input — owner only */}
+                    {isOwner(team) && (
+                      <div className="flex items-center gap-2 pt-2">
+                        <input
+                          type="text"
+                          placeholder="Add member by username..."
+                          value={addInputs[team.id] ?? ""}
+                          onChange={e => setAddInputs(prev => ({ ...prev, [team.id]: e.target.value }))}
+                          className="flex-1 bg-white/5 border border-transparent rounded-lg px-3 py-2 text-xs text-white focus:border-white/10 outline-none"
+                        />
+                        <button
+                          onClick={() => handleAddMember(team.id)}
+                          disabled={addingTo === team.id || !(addInputs[team.id] ?? "").trim()}
+                          className="text-xs text-white bg-white/10 px-3 py-2 rounded-lg hover:bg-white/20 disabled:opacity-40"
+                        >
+                          {addingTo === team.id ? <Spinner size={12} /> : "Add"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* Akcije */}
-                <div className="flex gap-4 mt-6 pt-4 border-t border-white/5">
+                <div className="flex gap-4 mt-2 pt-4 border-t border-white/5">
                   <button
                     onClick={() => navigate(`/teams/${team.id}/projects`)}
                     className="text-[11px] text-white/40 hover:text-white transition-colors"
                   >
                     View projects
+                  </button>
+                  <button
+                    onClick={() => toggleMembers(team.id)}
+                    className="text-[11px] text-white/40 hover:text-white/70 transition-colors"
+                  >
+                    {expandedTeam === team.id ? "Hide members" : "Manage members"}
                   </button>
                   {isOwner(team) && (
                     <button

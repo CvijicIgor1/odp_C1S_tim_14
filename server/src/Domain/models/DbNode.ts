@@ -11,6 +11,7 @@ export class DbNode {
     public status: NodeStatus = NodeStatus.HEALTHY,
     public lastCheck: Date | null = null,
     public successfulConnections: number = 0,
-    public failedConnections: number = 0
+    public failedConnections: number = 0,
+    public replicationLagMs: number | null = null
   ) {}
 }

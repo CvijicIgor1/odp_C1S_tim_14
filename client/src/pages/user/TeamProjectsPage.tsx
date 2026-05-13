@@ -85,6 +85,10 @@ export default function TeamProjectsPage() {
 
   const handleCreate = async () => {
     if (!name.trim() || !desc.trim()) return;
+    if (deadline && new Date(deadline) <= new Date()) {
+      setError("Deadline must be a future date");
+      return;
+    }
     setCreating(true);
     setError("");
     setSuccess("");

@@ -8,6 +8,7 @@ import { ProjectFilters } from "../../Domain/types/ProjectFilters";
 import { Project } from "../../Domain/models/Project";
 import { Tag } from "../../Domain/models/Tag";
 import { TagDto } from "../../Domain/DTOs/tags/TagDto";
+import { AddTagResult } from "../../Domain/enums/AddTagResult";
 
 export class ProjectService implements IProjectService
 {
@@ -61,6 +62,26 @@ export class ProjectService implements IProjectService
         return new PaginatedListDto<ProjectDto>(dtos, totalNumber, page, limit);
     }
 
+    async getAllProjectsAsAdmin(page: number, limit: number): Promise<PaginatedListDto<ProjectDto>>
+    {
+        const { projects, totalNumber } = await this.projectRepository.findAllAsAdmin(page, limit);
+
+        const ids = projects.map((p) => p.id);
+        const [tagsMap, countsMap] = await Promise.all([
+            this.projectRepository.getTagsForProjects(ids),
+            this.projectRepository.getWatcherCounts(ids),
+        ]);
+
+        const dtos = projects.map((project) =>
+            this.toDto(
+                project,
+                tagsMap.get(project.id) ?? [],
+                countsMap.get(project.id) ?? 0,
+            )
+        );
+
+        return new PaginatedListDto<ProjectDto>(dtos, totalNumber, page, limit);
+    }
     async getProjectById(id: number, userId: number, isAdmin: boolean = false): Promise<ProjectDto> 
     {
         const project = await this.projectRepository.findById(id);
@@ -78,8 +99,11 @@ export class ProjectService implements IProjectService
 
     async createProject(teamId: number, dto: CreateProjectDto, userId: number): Promise<ProjectDto> 
     {
-        const created = await this.projectRepository.create(teamId, dto);
+        if(dto.deadline){
+        const newProject = new Project(0, 0, dto.name, dto.description, dto.status, dto.priority, new Date(dto.deadline), new Date(), new Date());
+        const created = await this.projectRepository.create(teamId, newProject);
         if (created.id === 0) return new ProjectDto();
+        
 
         if (dto.tagIds && dto.tagIds.length > 0) {
             await Promise.all(
@@ -90,13 +114,20 @@ export class ProjectService implements IProjectService
         const tags = await this.projectRepository.getTagsForProject(created.id);
         const watcherCount = 0; // novi projekat, nema pratilaca
         return this.toDto(created, tags, watcherCount);
+
+        }
+        else return new ProjectDto();
     }
 
     async updateProject(id: number, dto: UpdateProjectDto, userId: number,isAdmin: boolean = false): Promise<boolean> 
     {
+        if(dto.deadline){
+        const inputProject = new Project(0, 0, dto.name, dto.description, dto.status, dto.priority, new Date(dto.deadline), new Date(), new Date());
         const canEdit = await this.checkOwnerOrAdmin(id, userId, isAdmin); // proverava da li je admin/owner ako jeste poziva repo ako ne vraca false
         if (!canEdit) return false;
-        return this.projectRepository.update(id, dto);
+        return this.projectRepository.update(id, inputProject);
+        }
+        else return false;
     }
 
     async deleteProject(id: number, userId: number, isAdmin: boolean = false): Promise<boolean> 
@@ -106,11 +137,14 @@ export class ProjectService implements IProjectService
         return this.projectRepository.delete(id);
     }
 
-    async addTag(projectId: number, tagId: number, userId: number, isAdmin: boolean = false): Promise<boolean> 
+    async addTag(projectId: number, tagId: number, userId: number, isAdmin: boolean = false): Promise<AddTagResult> 
     {
         const canEdit = await this.checkOwnerOrAdmin(projectId, userId, isAdmin);
-        if (!canEdit) return false;
-        return this.projectRepository.addTag(projectId, tagId);
+        if (!canEdit) return AddTagResult.FORBIDDEN;
+        const existing = await this.projectRepository.getTagsForProject(projectId);
+        if (existing.some((t) => t.id === tagId)) return AddTagResult.DUPLICATE;
+        await this.projectRepository.addTag(projectId, tagId);
+        return AddTagResult.OK;
     }
  
     async removeTag(projectId: number, tagId: number, userId: number, isAdmin: boolean = false): Promise<boolean> 

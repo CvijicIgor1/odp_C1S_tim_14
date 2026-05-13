@@ -7,4 +7,5 @@ export interface IUserService {
   updateRole(id: number, role: UserRole): Promise<boolean>;
   updateStatus(id: number, isActive: boolean): Promise<boolean>;
   deactivate(id: number): Promise<boolean>;
+  updateProfile(id: number, username: string, email: string, avatar: string, newPassword?: string): Promise<boolean>;
 }

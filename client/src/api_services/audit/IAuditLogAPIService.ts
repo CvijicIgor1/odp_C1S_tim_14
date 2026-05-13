@@ -4,6 +4,7 @@ import type { PaginatedList } from "../../models/team/TeamTypes";
 export type AuditLogDto = {
   id: number;
   user_id: number | null;
+  username: string | null;
   action: string;
   entity_type: string | null;
   entity_id: number | null;

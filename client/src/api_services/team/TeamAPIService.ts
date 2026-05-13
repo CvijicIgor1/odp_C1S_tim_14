@@ -20,6 +20,10 @@ export const teamsApi: ITeamAPIService = {
     return axios.get<ApiResponse<PaginatedList<TeamDto>>>(BASE, { headers: authHeader(), params: { page, limit } })
       .then(r => r.data).catch(e => err(e, "Failed to load teams"));
   },
+  async getAllAsAdmin(page = 1, limit = 100) {
+    return axios.get<ApiResponse<PaginatedList<TeamDto>>>(`${BASE}/all`, { headers: authHeader(), params: { page, limit } })
+      .then(r => r.data).catch(e => err(e, "Failed to load all teams"));
+  },
   async getById(id) {
     return axios.get<ApiResponse<TeamDto>>(`${BASE}/${id}`, { headers: authHeader() })
       .then(r => r.data).catch(e => err(e, "Failed to load team"));

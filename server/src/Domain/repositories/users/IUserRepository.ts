@@ -1,4 +1,4 @@
-import { User } from "../../models/User";
+﻿import { User } from "../../models/User";
 import { UserRole } from "../../enums/UserRole";
 
 export interface IUserRepository {
@@ -11,4 +11,6 @@ export interface IUserRepository {
   updateRole(id: number, role: UserRole): Promise<boolean>;
   updateStatus(id: number, isActive: boolean): Promise<boolean>;
   deactivate(id: number): Promise<boolean>;
+  updateProfile(id: number, username: string, email: string, avatar: string, passwordHash?: string): Promise<boolean>;
+  exists(id: number): Promise<boolean>;
 }

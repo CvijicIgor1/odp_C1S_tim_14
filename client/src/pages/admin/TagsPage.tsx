@@ -45,10 +45,11 @@ export default function TagsPage() {
     setSuccess("");
     try {
       const res = await tagsApi.create(newName.trim());
-      if (res.success) {
+      if (res.success && res.data) {
+        setTags(prev => [...prev, res.data!].sort((a, b) => a.name.localeCompare(b.name)));
+        setTotal(prev => prev + 1);
         setNewName("");
         setSuccess("Tag created");
-        await load();
       } else {
         setError(res.message);
       }
@@ -62,8 +63,9 @@ export default function TagsPage() {
     setSuccess("");
     const res = await tagsApi.delete(id);
     if (res.success) {
+      setTags(prev => prev.filter(t => t.id !== id));
+      setTotal(prev => Math.max(0, prev - 1));
       setSuccess("Tag deleted");
-      await load();
     } else {
       setError(res.message);
     }

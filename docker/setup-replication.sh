@@ -166,6 +166,7 @@ CREATE TABLE comments (
 CREATE TABLE audits (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id     INT UNSIGNED NULL,
+  username    VARCHAR(40)  NULL,
   action      VARCHAR(80)  NOT NULL,
   entity_type VARCHAR(40)  NULL,
   entity_id   INT UNSIGNED NULL,

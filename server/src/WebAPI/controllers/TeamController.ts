@@ -1,4 +1,4 @@
-import { Request, Response, Router } from "express";
+import { Request, Response, Router, NextFunction } from "express";
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
@@ -10,6 +10,7 @@ import { CreateTeamDto } from "../../Domain/DTOs/teams/CreateTeamDto";
 import { AddMemberDto } from "../../Domain/DTOs/teams/AddMemberDto";
 import { UpdateMemberRoleDto } from "../../Domain/DTOs/teams/UpdateMemberRoleDto";
 import { UpdateTeamDto } from "../../Domain/DTOs/teams/UpdateTeamDto";
+import { TEAM_NAME_MIN, TEAM_NAME_MAX } from "../../Domain/constants/Constants";
 
 export class TeamController {
     private readonly router = Router();
@@ -48,6 +49,10 @@ export class TeamController {
             res.status(400).json({ success: false, message: "All fields are mandatory (name, description, avatar)" });
             return;
         }
+        if (name.length < TEAM_NAME_MIN || name.length > TEAM_NAME_MAX) {
+            res.status(400).json({ success: false, message: `Team name must be between ${TEAM_NAME_MIN} and ${TEAM_NAME_MAX} characters` });
+            return;
+        }
         const team = await this.teamService.createNewTeam(new CreateTeamDto(name, description, avatar), req.user!.user_id);
         if (team.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
         res.status(201).json({ success: true, message: "Team created successfully", data: team });
@@ -61,23 +66,35 @@ export class TeamController {
         res.status(200).json({ success: true, data: team });
     }
 
-    private async update(req: Request, res: Response): Promise<void> {
+    private async update(req: Request, res: Response, next: NextFunction): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid ID" }); return; }
         const dto = req.body as UpdateTeamDto;
-        const ok = await this.teamService.updateTeam(id, dto, req.user!.user_id);
-        if (!ok) { res.status(404).json({ success: false, message: "Team not found"}); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team", id, undefined, req.ip);
-        res.status(200).json({ success: true, message: "Team updated successfully" });
+        if (dto.name !== undefined && (dto.name.length < TEAM_NAME_MIN || dto.name.length > TEAM_NAME_MAX)) {
+            res.status(400).json({ success: false, message: `Team name must be between ${TEAM_NAME_MIN} and ${TEAM_NAME_MAX} characters` });
+            return;
+        }
+        try {
+            const ok = await this.teamService.updateTeam(id, dto, req.user!.user_id);
+            if (!ok) { res.status(404).json({ success: false, message: "Team not found"}); return; }
+            await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team", id, undefined, req.ip, req.user!.username);
+            res.status(200).json({ success: true, message: "Team updated successfully" });
+        } catch (err) {
+            next(err);
+        }
     }
 
-    private async delete(req: Request, res: Response): Promise<void> {
+    private async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid team ID" }); return; }
-        const ok = await this.teamService.deleteTeam(id, req.user!.user_id);
-        if (!ok) { res.status(404).json({ success: false, message: "Team not found" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team", id, undefined, req.ip);
-        res.status(200).json({ success: true, message: "Team deleted successfully" });
+        try {
+            const ok = await this.teamService.deleteTeam(id, req.user!.user_id);
+            if (!ok) { res.status(404).json({ success: false, message: "Team not found" }); return; }
+            await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team", id, undefined, req.ip, req.user!.username);
+            res.status(200).json({ success: true, message: "Team deleted successfully" });
+        } catch (err) {
+            next(err);
+        }
     }
 
     private async getMembers(req: Request, res: Response): Promise<void> {
@@ -87,38 +104,51 @@ export class TeamController {
         res.status(200).json({ success: true, data: result });
     }
 
-    private async addMember(req: Request, res: Response): Promise<void> {
+    private async addMember(req: Request, res: Response, next: NextFunction): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid member ID" }); return; }
         const { username, role } = req.body as { username?: string; role?: TeamMemberRole };
         if (!username) { res.status(400).json({ success: false, message: "Username is required" }); return; }
         const ok = await this.teamService.addTeamMember(id, new AddMemberDto(username, role ?? TeamMemberRole.MEMBER), req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "User not found" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "team_member", id, `username=${username}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "team_member", id, `username=${username}`, req.ip, req.user!.username);
         res.status(201).json({ success: true, message: "Member added successfully" });
     }
 
-    private async updateMemberRole(req: Request, res: Response): Promise<void> {
+    private async updateMemberRole(req: Request, res: Response, next: NextFunction): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         const memberId = parseInt(req.params.userId as string, 10);
         if (isNaN(id) || isNaN(memberId)) { res.status(400).json({ success: false, message: "Invalid IDs" }); return; }
+
         const { role } = req.body as UpdateMemberRoleDto;
         if (!role || (role !== "owner" && role !== "member")) {
             res.status(400).json({ success: false, message: "Role must be 'owner' or 'member'" }); return;
         }
+
+        if (role === "member") {
+            const ownerCount = await this.teamService.countOwners(id);
+            if (ownerCount <= 1) {
+                res.status(400).json({ success: false, message: "Tim mora imati tačno jednog vlasnika" }); return;
+            }
+        }
+
         const ok = await this.teamService.updateMemberRole(id, memberId, new UpdateMemberRoleDto(role), req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team_member", memberId, `role=${role}`, req.ip);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team_member", memberId, `role=${role}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Role changed successfully" });
     }
 
-    private async removeMember(req: Request, res: Response): Promise<void> {
+    private async removeMember(req: Request, res: Response, next: NextFunction): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         const memberId = parseInt(req.params.userId as string, 10);
         if (isNaN(id) || isNaN(memberId)) { res.status(400).json({ success: false, message: "Invalid IDs" }); return; }
-        const ok = await this.teamService.removeTeamMember(id, memberId, req.user!.user_id);
-        if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team_member", memberId, undefined, req.ip);
-        res.status(200).json({ success: true, message: "Member removed successfully" });
+        try {
+            const ok = await this.teamService.removeTeamMember(id, memberId, req.user!.user_id);
+            if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
+            await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team_member", memberId, undefined, req.ip, req.user!.username);
+            res.status(200).json({ success: true, message: "Member removed successfully" });
+        } catch (err) {
+            next(err);
+        }
     }
 }
