@@ -67,7 +67,7 @@ export class DbManager {
     try {
       conn = await Promise.race([
         info.pool.getConnection(),
-        new Promise<never>((_, reject) =>
+        new Promise<PoolConnection>((_, reject) =>
           setTimeout(() => reject(new Error("Health check connection timeout")), HEALTH_CHECK_TIMEOUT)
         ),
       ]);
