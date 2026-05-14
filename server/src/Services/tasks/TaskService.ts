@@ -1,5 +1,9 @@
 import { ITaskService } from "../../Domain/services/tasks/ITaskService";
-import { ITaskRepository } from "../../Domain/repositories/tasks/ITaskRepository";
+import { ITaskQueryRepository } from "../../Domain/repositories/tasks/ITaskQueryRepository";
+import { ITaskCommandRepository } from "../../Domain/repositories/tasks/ITaskCommandRepository";
+import { ITaskAssigneeRepository } from "../../Domain/repositories/tasks/ITaskAssigneeRepository";
+import { ITaskCommentRepository } from "../../Domain/repositories/tasks/ITaskCommentRepository";
+import { ITaskAccessRepository } from "../../Domain/repositories/tasks/ITaskAccessRepository";
 import { TaskDto } from "../../Domain/DTOs/tasks/TaskDto";
 import { TaskDetailDto } from "../../Domain/DTOs/tasks/TaskDetailDto";
 import { CreateTaskDto } from "../../Domain/DTOs/tasks/CreateTaskDto";
@@ -16,8 +20,11 @@ import { TaskAssignee } from "../../Domain/models/TaskAssignee";
 
 export class TaskService implements ITaskService {
     public constructor(
-        private readonly taskRepo: ITaskRepository
-        // private readonly auditService: IAuditService s
+        private readonly taskQueryRepository: ITaskQueryRepository,
+        private readonly taskCommandRepository: ITaskCommandRepository,
+        private readonly taskAssigneeRepository: ITaskAssigneeRepository,
+        private readonly taskCommentRepository: ITaskCommentRepository,
+        private readonly taskAccessRepository: ITaskAccessRepository,
     ) { }
 
 
@@ -64,10 +71,10 @@ export class TaskService implements ITaskService {
     ): Promise<GroupedTasksDto> {
         const empty = new GroupedTasksDto([], [], []);
 
-        const isMember = await this.taskRepo.isUserInProjectTeam(projectId, userId);
+        const isMember = await this.taskAccessRepository.isUserInProjectTeam(projectId, userId);
         if (!isAdmin && !isMember) return empty;
 
-        const { todo, in_progress, done } = await this.taskRepo.findByProjectId(projectId);
+        const { todo, in_progress, done } = await this.taskQueryRepository.findByProjectId(projectId);
 
         return new GroupedTasksDto(
             todo.map((t) => this.toDto(t)),
@@ -83,14 +90,14 @@ export class TaskService implements ITaskService {
     ): Promise<TaskDetailDto> {
         const empty = new TaskDetailDto();
 
-        const task = await this.taskRepo.findById(taskId);
+        const task = await this.taskQueryRepository.findById(taskId);
         if (task.id === 0) return empty;
 
-        const isMember = await this.taskRepo.isUserInProjectTeam(task.projectId, userId);
+        const isMember = await this.taskAccessRepository.isUserInProjectTeam(task.projectId, userId);
         if (!isAdmin && !isMember) return empty;
 
-        const comments = await this.taskRepo.getComments(taskId);
-        const assignees = await this.taskRepo.getAssignees(taskId);
+        const comments = await this.taskCommentRepository.getComments(taskId);
+        const assignees = await this.taskQueryRepository.getAssignees(taskId);
 
         return new TaskDetailDto(
             this.toDto(task),
@@ -100,7 +107,7 @@ export class TaskService implements ITaskService {
     }
 
     async getMyTasks(userId: number): Promise<TaskDto[]> {
-        const tasks = await this.taskRepo.findByAssignee(userId);
+        const tasks = await this.taskQueryRepository.findByAssignee(userId);
         return tasks.map((t) => this.toDto(t));
     }
 
@@ -116,7 +123,7 @@ export class TaskService implements ITaskService {
             dto.deadline,
             dto.estimatedHours,
         );
-        const created = await this.taskRepo.create(newTask);
+        const created = await this.taskCommandRepository.create(newTask);
         if (created.id === 0) return new TaskDto();
         return this.toDto(created);
     }
@@ -126,11 +133,11 @@ export class TaskService implements ITaskService {
         dto: UpdateTaskDto,
         userId: number
     ): Promise<boolean> {
-        const task = await this.taskRepo.findById(taskId);
+        const task = await this.taskQueryRepository.findById(taskId);
         if (task.id === 0) return false;
 
         const canEdit = task.createdByUserId === userId
-            || await this.taskRepo.isTeamOwnerOfTask(taskId, userId);
+            || await this.taskAccessRepository.isTeamOwnerOfTask(taskId, userId);
 
         if (!canEdit) return false;
 
@@ -145,7 +152,7 @@ export class TaskService implements ITaskService {
             dto.deadline,
             dto.estimatedHours,
         );
-        return this.taskRepo.update(taskId, updatedTask);
+        return this.taskCommandRepository.update(taskId, updatedTask);
     }
 
     async updateTaskStatus(
@@ -153,30 +160,30 @@ export class TaskService implements ITaskService {
         dto: UpdateTaskStatusDto,
         userId: number
     ): Promise<boolean> {
-        const task = await this.taskRepo.findById(taskId);
+        const task = await this.taskQueryRepository.findById(taskId);
         if (task.id === 0) return false;
 
-        const canChange = await this.taskRepo.isAssignee(taskId, userId)
-            || await this.taskRepo.isTeamOwnerOfTask(taskId, userId);
+        const canChange = await this.taskAssigneeRepository.isAssignee(taskId, userId)
+            || await this.taskAccessRepository.isTeamOwnerOfTask(taskId, userId);
 
         if (!canChange) return false;
 
-        return this.taskRepo.updateStatus(taskId, dto.status);
+        return this.taskCommandRepository.updateStatus(taskId, dto.status);
     }
 
     async deleteTask(
         taskId: number,
         userId: number
     ): Promise<boolean> {
-        const task = await this.taskRepo.findById(taskId);
+        const task = await this.taskQueryRepository.findById(taskId);
         if (task.id === 0) return false;
 
         const canDelete = task.createdByUserId === userId
-            || await this.taskRepo.isTeamOwnerOfTask(taskId, userId);
+            || await this.taskAccessRepository.isTeamOwnerOfTask(taskId, userId);
 
         if (!canDelete) return false;
 
-        return this.taskRepo.delete(taskId);
+        return this.taskCommandRepository.delete(taskId);
     }
 
     async addAssignee(
@@ -184,16 +191,16 @@ export class TaskService implements ITaskService {
         dto: AddTaskAssigneeDto,
         callerId: number
     ): Promise<boolean> {
-        const task = await this.taskRepo.findById(taskId);
+        const task = await this.taskQueryRepository.findById(taskId);
         if (task.id === 0) return false;
 
-        const isTeamMember = await this.taskRepo.isUserInProjectTeam(task.projectId, dto.userId);
+        const isTeamMember = await this.taskAccessRepository.isUserInProjectTeam(task.projectId, dto.userId);
         if (!isTeamMember) return false;
 
-        const alreadyAssigned = await this.taskRepo.isAssignee(taskId, dto.userId);
+        const alreadyAssigned = await this.taskAssigneeRepository.isAssignee(taskId, dto.userId);
         if (alreadyAssigned) return false;
 
-        return this.taskRepo.addAssignee(taskId, dto.userId, callerId);
+        return this.taskAssigneeRepository.addAssignee(taskId, dto.userId, callerId);
     }
 
     async removeAssignee(
@@ -201,7 +208,7 @@ export class TaskService implements ITaskService {
         assigneeUserId: number,
         callerId: number
     ): Promise<boolean> {
-        return this.taskRepo.removeAssignee(taskId, assigneeUserId);
+        return this.taskAssigneeRepository.removeAssignee(taskId, assigneeUserId);
     }
 
     async addComment(
@@ -209,15 +216,15 @@ export class TaskService implements ITaskService {
         dto: AddCommentDto,
         userId: number
     ): Promise<CommentDto | null> {
-        const task = await this.taskRepo.findById(taskId);
+        const task = await this.taskQueryRepository.findById(taskId);
         if (task.id === 0) return null;
 
-        const canComment = await this.taskRepo.isAssignee(taskId, userId)
-            || await this.taskRepo.isTeamOwnerOfTask(taskId, userId);
+        const canComment = await this.taskAssigneeRepository.isAssignee(taskId, userId)
+            || await this.taskAccessRepository.isTeamOwnerOfTask(taskId, userId);
 
         if (!canComment) return new CommentDto();
 
-        const comment = await this.taskRepo.addComment(taskId, userId, dto.content);
+        const comment = await this.taskCommentRepository.addComment(taskId, userId, dto.content);
         if (comment.id === 0) return new CommentDto();
 
         return this.toCommentDto(comment);
@@ -227,11 +234,11 @@ export class TaskService implements ITaskService {
         commentId: number,
         userId: number
     ): Promise<boolean> {
-        const comment = await this.taskRepo.findCommentById(commentId);
+        const comment = await this.taskCommentRepository.findCommentById(commentId);
         if (comment.id === 0) return false;
 
         if (comment.userId !== userId) return false;
 
-        return this.taskRepo.deleteComment(commentId);
+        return this.taskCommentRepository.deleteComment(commentId);
     }
 }

@@ -1,33 +1,39 @@
 ﻿import bcrypt from "bcryptjs";
 import { IUserService } from "../../Domain/services/users/IUserService";
-import { IUserRepository } from "../../Domain/repositories/users/IUserRepository";
+import { IUserQueryRepository } from "../../Domain/repositories/users/IUserQueryRepository";
+import { IUserCommandRepository } from "../../Domain/repositories/users/IUserCommandRepository";
+import { IUserAdminRepository } from "../../Domain/repositories/users/IUserAdminRepository";
 import { UserDto } from "../../Domain/DTOs/users/UserDto";
 import { UserRole } from "../../Domain/enums/UserRole";
 
 export class UserService implements IUserService {
-  public constructor(private readonly userRepo: IUserRepository) {}
+  public constructor(
+    private readonly userQueryRepository: IUserQueryRepository,
+    private readonly userCommandRepository: IUserCommandRepository,
+    private readonly userAdminRepository: IUserAdminRepository,
+  ) {}
 
   async getAll(): Promise<UserDto[]> {
-    const users = await this.userRepo.findAll();
+    const users = await this.userQueryRepository.findAll();
     return users.map((u) => new UserDto(u.id, u.username, u.email, u.role, u.fullName, u.avatar, Boolean(u.isActive), u.createdAt, u.updatedAt));
   }
 
   async getById(id: number): Promise<UserDto | null> {
-    const u = await this.userRepo.findById(id);
+    const u = await this.userQueryRepository.findById(id);
     if (u.id === 0) return null;
     return new UserDto(u.id, u.username, u.email, u.role, u.fullName, u.avatar, Boolean(u.isActive), u.createdAt, u.updatedAt);
   }
 
   async updateRole(id: number, role: UserRole): Promise<boolean> {
-    return this.userRepo.updateRole(id, role);
+    return this.userAdminRepository.updateRole(id, role);
   }
 
   async updateStatus(id: number, isActive: boolean): Promise<boolean> {
-    return this.userRepo.updateStatus(id, isActive);
+    return this.userAdminRepository.updateStatus(id, isActive);
   }
 
   async deactivate(id: number): Promise<boolean> {
-    return this.userRepo.deactivate(id);
+    return this.userAdminRepository.deactivate(id);
   }
 
   async updateProfile(id: number, username: string, email: string, avatar: string, newPassword?: string): Promise<boolean> {
@@ -37,6 +43,6 @@ export class UserService implements IUserService {
       passwordHash = await bcrypt.hash(newPassword, saltRounds).catch(() => undefined);
       if (!passwordHash) return false;
     }
-    return this.userRepo.updateProfile(id, username, email, avatar, passwordHash);
+    return this.userCommandRepository.updateProfile(id, username, email, avatar, passwordHash);
   }
 }

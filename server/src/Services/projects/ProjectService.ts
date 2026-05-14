@@ -1,5 +1,11 @@
-import { IProjectService } from "../../Domain/services/projects/IProjectService";
-import { IProjectRepository } from "../../Domain/repositories/projects/IProjectRepository";
+import { IProjectReadService } from "../../Domain/services/projects/IProjectReadService";
+import { IProjectWriteService } from "../../Domain/services/projects/IProjectWriteService";
+import { IProjectTagWatchService } from "../../Domain/services/projects/IProjectTagWatchService";
+import { IProjectQueryRepository } from "../../Domain/repositories/projects/IProjectQueryRepository";
+import { IProjectCommandRepository } from "../../Domain/repositories/projects/IProjectCommandRepository";
+import { IProjectTagRepository } from "../../Domain/repositories/projects/IProjectTagRepository";
+import { IProjectWatcherRepository } from "../../Domain/repositories/projects/IProjectWatcherRepository";
+import { IProjectAccessRepository } from "../../Domain/repositories/projects/IProjectAccessRepository";
 import { CreateProjectDto } from "../../Domain/DTOs/projects/CreateProjectDto";
 import { UpdateProjectDto } from "../../Domain/DTOs/projects/UpdateProjectDto";
 import { ProjectDto} from "../../Domain/DTOs/projects/ProjectDto";
@@ -10,11 +16,15 @@ import { Tag } from "../../Domain/models/Tag";
 import { TagDto } from "../../Domain/DTOs/tags/TagDto";
 import { AddTagResult } from "../../Domain/enums/AddTagResult";
 
-export class ProjectService implements IProjectService
+export class ProjectService implements IProjectReadService, IProjectWriteService, IProjectTagWatchService
 {
     public constructor
     (
-        private readonly projectRepository: IProjectRepository,
+        private readonly projectQueryRepository: IProjectQueryRepository,
+        private readonly projectCommandRepository: IProjectCommandRepository,
+        private readonly projectTagRepository: IProjectTagRepository,
+        private readonly projectWatcherRepository: IProjectWatcherRepository,
+        private readonly projectAccessRepository: IProjectAccessRepository,
     ) {}
 
     private toDto(project: Project, tags: Tag[], watcherCount: number): ProjectDto 
@@ -37,18 +47,18 @@ export class ProjectService implements IProjectService
 
     private async checkOwnerOrAdmin(projectId: number, userId: number, isAdmin: boolean): Promise<boolean> 
     {
-        if (isAdmin) return true; // globalni admin je najvisi u hijerarhiji
-        return this.projectRepository.isTeamOwner(projectId, userId);
+        if (isAdmin) return true;
+        return this.projectAccessRepository.isTeamOwner(projectId, userId);
     }
 
     async getTeamProjects(teamId: number, userId: number, page: number, limit: number, filters?: ProjectFilters): Promise<PaginatedListDto<ProjectDto>> 
     {
-        const { projects: paged, totalNumber } = await this.projectRepository.findAllByTeam(teamId, page, limit, filters);
+        const { projects: paged, totalNumber } = await this.projectQueryRepository.findAllByTeam(teamId, page, limit, filters);
 
         const ids = paged.map((p) => p.id);
         const [tagsMap, countsMap] = await Promise.all([
-            this.projectRepository.getTagsForProjects(ids),
-            this.projectRepository.getWatcherCounts(ids),
+            this.projectTagRepository.getTagsForProjects(ids),
+            this.projectWatcherRepository.getWatcherCounts(ids),
         ]);
 
         const dtos = paged.map((project) =>
@@ -64,12 +74,12 @@ export class ProjectService implements IProjectService
 
     async getAllProjectsAsAdmin(page: number, limit: number): Promise<PaginatedListDto<ProjectDto>>
     {
-        const { projects, totalNumber } = await this.projectRepository.findAllAsAdmin(page, limit);
+        const { projects, totalNumber } = await this.projectQueryRepository.findAllAsAdmin(page, limit);
 
         const ids = projects.map((p) => p.id);
         const [tagsMap, countsMap] = await Promise.all([
-            this.projectRepository.getTagsForProjects(ids),
-            this.projectRepository.getWatcherCounts(ids),
+            this.projectTagRepository.getTagsForProjects(ids),
+            this.projectWatcherRepository.getWatcherCounts(ids),
         ]);
 
         const dtos = projects.map((project) =>
@@ -82,18 +92,19 @@ export class ProjectService implements IProjectService
 
         return new PaginatedListDto<ProjectDto>(dtos, totalNumber, page, limit);
     }
+
     async getProjectById(id: number, userId: number, isAdmin: boolean = false): Promise<ProjectDto> 
     {
-        const project = await this.projectRepository.findById(id);
+        const project = await this.projectQueryRepository.findById(id);
         if (!project || project.id === 0) return new ProjectDto();
  
         if (!isAdmin) {
-            const isMember = await this.projectRepository.isTeamMember(id, userId);
+            const isMember = await this.projectAccessRepository.isTeamMember(id, userId);
             if (!isMember) return new ProjectDto();
         }
 
-        const tags = await this.projectRepository.getTagsForProject(id);
-        const watcherCount = await this.projectRepository.getWatcherCount(id);
+        const tags = await this.projectTagRepository.getTagsForProject(id);
+        const watcherCount = await this.projectWatcherRepository.getWatcherCount(id);
         return this.toDto(project, tags, watcherCount);
     }
 
@@ -101,18 +112,18 @@ export class ProjectService implements IProjectService
     {
         if(dto.deadline){
         const newProject = new Project(0, 0, dto.name, dto.description, dto.status, dto.priority, new Date(dto.deadline), new Date(), new Date());
-        const created = await this.projectRepository.create(teamId, newProject);
+        const created = await this.projectCommandRepository.create(teamId, newProject);
         if (created.id === 0) return new ProjectDto();
         
 
         if (dto.tagIds && dto.tagIds.length > 0) {
             await Promise.all(
-                dto.tagIds.map((tagId) => this.projectRepository.addTag(created.id, tagId))
+                dto.tagIds.map((tagId) => this.projectTagRepository.addTag(created.id, tagId))
             );
         }
 
-        const tags = await this.projectRepository.getTagsForProject(created.id);
-        const watcherCount = 0; // novi projekat, nema pratilaca
+        const tags = await this.projectTagRepository.getTagsForProject(created.id);
+        const watcherCount = 0;
         return this.toDto(created, tags, watcherCount);
 
         }
@@ -125,7 +136,7 @@ export class ProjectService implements IProjectService
         const inputProject = new Project(0, 0, dto.name, dto.description, dto.status, dto.priority, new Date(dto.deadline), new Date(), new Date());
         const canEdit = await this.checkOwnerOrAdmin(id, userId, isAdmin); // proverava da li je admin/owner ako jeste poziva repo ako ne vraca false
         if (!canEdit) return false;
-        return this.projectRepository.update(id, inputProject);
+        return this.projectCommandRepository.update(id, inputProject);
         }
         else return false;
     }
@@ -134,16 +145,16 @@ export class ProjectService implements IProjectService
     {
         const canEdit = await this.checkOwnerOrAdmin(id, userId, isAdmin);
         if (!canEdit) return false;
-        return this.projectRepository.delete(id);
+        return this.projectCommandRepository.delete(id);
     }
 
     async addTag(projectId: number, tagId: number, userId: number, isAdmin: boolean = false): Promise<AddTagResult> 
     {
         const canEdit = await this.checkOwnerOrAdmin(projectId, userId, isAdmin);
         if (!canEdit) return AddTagResult.FORBIDDEN;
-        const existing = await this.projectRepository.getTagsForProject(projectId);
+        const existing = await this.projectTagRepository.getTagsForProject(projectId);
         if (existing.some((t) => t.id === tagId)) return AddTagResult.DUPLICATE;
-        await this.projectRepository.addTag(projectId, tagId);
+        await this.projectTagRepository.addTag(projectId, tagId);
         return AddTagResult.OK;
     }
  
@@ -151,34 +162,33 @@ export class ProjectService implements IProjectService
     {
         const canEdit = await this.checkOwnerOrAdmin(projectId, userId, isAdmin);
         if (!canEdit) return false;
-        return this.projectRepository.removeTag(projectId, tagId);
+        return this.projectTagRepository.removeTag(projectId, tagId);
     }
 
     async watchProject(projectId: number, userId: number): Promise<boolean>
     {
-        const isMember = await this.projectRepository.isTeamMember(projectId, userId);
+        const isMember = await this.projectAccessRepository.isTeamMember(projectId, userId);
         if (!isMember) return false;
 
-        const alreadyWatcher = await this.projectRepository.isWatcher(projectId, userId);
+        const alreadyWatcher = await this.projectWatcherRepository.isWatcher(projectId, userId);
         if (alreadyWatcher) return true;
 
-        return this.projectRepository.addWatcher(projectId, userId);
+        return this.projectWatcherRepository.addWatcher(projectId, userId);
     }
 
     async unwatchProject(projectId: number, userId: number): Promise<boolean> 
     {
-        return this.projectRepository.removeWatcher(projectId, userId);
+        return this.projectWatcherRepository.removeWatcher(projectId, userId);
     }
 
-    
     async getWatchedProjects(userId: number, page: number, limit: number): Promise<PaginatedListDto<ProjectDto>> 
     {
-        const { projects: paged, totalNumber } = await this.projectRepository.findWatchedByUser(userId, page, limit);
+        const { projects: paged, totalNumber } = await this.projectQueryRepository.findWatchedByUser(userId, page, limit);
 
         const ids = paged.map((p) => p.id);
         const [tagsMap, countsMap] = await Promise.all([
-            this.projectRepository.getTagsForProjects(ids),
-            this.projectRepository.getWatcherCounts(ids),
+            this.projectTagRepository.getTagsForProjects(ids),
+            this.projectWatcherRepository.getWatcherCounts(ids),
         ]);
 
         const dtos = paged.map((p) =>
