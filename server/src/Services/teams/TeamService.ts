@@ -5,7 +5,6 @@ import { ITeamMemberRepository } from '../../Domain/repositories/teams/ITeamMemb
 import { IUserQueryRepository } from '../../Domain/repositories/users/IUserQueryRepository';
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { AuditAction } from "../../Domain/enums/AuditLog";
-import { AppError } from "../../Domain/errors/AppError";
 import { AddMemberDto } from "../../Domain/DTOs/teams/AddMemberDto";
 import { CreateTeamDto } from "../../Domain/DTOs/teams/CreateTeamDto";
 import { UpdateMemberRoleDto } from "../../Domain/DTOs/teams/UpdateMemberRoleDto";
@@ -87,14 +86,14 @@ export class TeamService implements ITeamService {
 
     async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<boolean> {
         const owner = await this.teamMemberRepository.isOwner(teamId, userId);
-        if (!owner) throw new AppError(403, "Only the team owner can update the team");
+        if (!owner) return false;
         const input = new Team(0, dto.name, dto.description, dto.avatar, new Date(), new Date());
         return this.teamCommandRepository.update(teamId, input);
     }
 
     async deleteTeam(teamId: number, userId: number): Promise<boolean> {
         const owner = await this.teamMemberRepository.isOwner(teamId, userId);
-        if (!owner) throw new AppError(403, "Only the team owner can delete the team");
+        if (!owner) return false;
         return await this.teamCommandRepository.delete(teamId);
     }
 
@@ -119,7 +118,7 @@ export class TeamService implements ITeamService {
 
     async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean> {
         const isOwner = await this.teamMemberRepository.isOwner(teamId, userId);
-        if (!isOwner) throw new AppError(403, "Only the team owner can add members");
+        if (!isOwner) return false;
         const noviClan = new TeamMember(0, 0, dto.role, new Date(), dto.username);
         return await this.teamMemberRepository.addMember(teamId, noviClan);
     }
@@ -128,14 +127,14 @@ export class TeamService implements ITeamService {
         const ownerCount = await this.teamMemberRepository.countOwners(teamId);
         if (ownerCount <= 1) {
             const memberIsOwner = await this.teamMemberRepository.isOwner(teamId, memberId);
-            if (memberIsOwner) throw new AppError(400, "Cannot remove the last owner of a team");
+            if (memberIsOwner) return false;
         }
         return await this.teamMemberRepository.removeMember(teamId, memberId);
     }
 
     async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<boolean> {
         const isOwner = await this.teamMemberRepository.isOwner(teamId, callerId);
-        if (!isOwner) throw new AppError(403, "Only the team owner can change member roles");
+        if (!isOwner) return false;
 
         return await this.teamCommandRepository.updateMemberRole(teamId, memberId, dto.role);
     }
