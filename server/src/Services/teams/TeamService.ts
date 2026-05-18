@@ -137,6 +137,11 @@ export class TeamService implements ITeamService {
         const isOwner = await this.teamMemberRepository.isOwner(teamId, callerId);
         if (!isOwner) throw new AppError(403, "Only the team owner can change member roles");
 
+        if (dto.role === TeamMemberRole.MEMBER) {
+            const ownerCount = await this.teamMemberRepository.countOwners(teamId);
+            if (ownerCount <= 1) return false;
+        }
+
         return await this.teamCommandRepository.updateMemberRole(teamId, memberId, dto.role);
     }
 } 

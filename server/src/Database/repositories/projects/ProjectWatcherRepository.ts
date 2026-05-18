@@ -24,12 +24,6 @@ export class ProjectWatcherRepository implements IProjectWatcherRepository
         );
     }
 
-    private safeInt(value: number, fallback: number): number
-    {
-        const n = Math.floor(value);
-        return Number.isFinite(n) && n > 0 ? n : fallback;
-    }
-
     async addWatcher(projectId: number, userId: number): Promise<boolean>
     {
         const res = await this.db.getWriteConnection();

@@ -12,7 +12,7 @@ import { CreateProjectDto } from "../../Domain/DTOs/projects/CreateProjectDto";
 import { UpdateProjectDto } from "../../Domain/DTOs/projects/UpdateProjectDto";
 import { ProjectStatus } from "../../Domain/enums/ProjectStatus";
 import { Priority } from "../../Domain/enums/Priority";
-import { PROJECT_NAME_MIN, PROJECT_NAME_MAX } from "../../Domain/constants/Constants";
+import { validateCreateProject, validateUpdateProject } from "../validators/projects/ProjectValidator";
 
 export class ProjectController {
     private readonly router = Router();
@@ -96,17 +96,8 @@ export class ProjectController {
         if (isNaN(teamId)) { res.status(400).json({ success: false, message: "Invalid team ID" }); return; }
 
         const { name, description, status, priority, deadline, tagIds } = req.body as CreateProjectDto;
-        if (!name || !description || !deadline) {
-            res.status(400).json({ success: false, message: "name, description and deadline are required" });
-            return;
-        }
-        if (name.length < PROJECT_NAME_MIN || name.length > PROJECT_NAME_MAX) {
-            res.status(400).json({ success: false, message: `Project name must be between ${PROJECT_NAME_MIN} and ${PROJECT_NAME_MAX} characters` });
-            return;
-        }
-        if (new Date(deadline) <= new Date()) {
-            res.status(400).json({ success: false, message: "Deadline must be a future date" }); return;
-        }
+        const error = validateCreateProject({ name, description, status, priority, deadline, tagIds } as CreateProjectDto);
+        if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
         const dto = new CreateProjectDto(name, description, status, priority, deadline, tagIds ?? []);
         const project = await this.projectWriteService.createProject(teamId, dto, req.user!.user_id);
@@ -123,13 +114,9 @@ export class ProjectController {
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid project ID" }); return; }
 
         const dto = req.body as UpdateProjectDto;
-        if (dto.name !== undefined && (dto.name.length < PROJECT_NAME_MIN || dto.name.length > PROJECT_NAME_MAX)) {
-            res.status(400).json({ success: false, message: `Project name must be between ${PROJECT_NAME_MIN} and ${PROJECT_NAME_MAX} characters` });
-            return;
-        }
-        if (dto.deadline && new Date(dto.deadline) <= new Date()) {
-            res.status(400).json({ success: false, message: "Deadline must be a future date" }); return;
-        }
+        const error = validateUpdateProject(dto);
+        if (error) { res.status(400).json({ success: false, message: error.message }); return; }
+
         const isAdmin = req.user?.role === UserRole.ADMIN;
 
         const ok = await this.projectWriteService.updateProject(id, dto, req.user!.user_id, isAdmin);

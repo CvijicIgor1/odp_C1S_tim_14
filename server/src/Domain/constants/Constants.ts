@@ -9,3 +9,7 @@ export const PROJECT_NAME_MIN = 2;
 export const PROJECT_NAME_MAX = 120;
 export const TASK_TITLE_MIN   = 2;
 export const TASK_TITLE_MAX   = 200;
+
+export const ESTIMATED_HOURS_MIN = 0.5;
+export const ESTIMATED_HOURS_MAX = 500;
+export const COMMENT_MAX_LENGTH  = 2000;

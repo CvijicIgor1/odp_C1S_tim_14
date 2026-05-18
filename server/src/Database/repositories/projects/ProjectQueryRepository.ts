@@ -6,6 +6,7 @@ import { Project } from "../../../Domain/models/Project";
 import { ProjectFilters } from "../../../Domain/types/ProjectFilters";
 import { ProjectStatus } from "../../../Domain/enums/ProjectStatus";
 import { Priority } from "../../../Domain/enums/Priority";
+import { safeInt } from "../../../utils/pagination";
 
 export class ProjectQueryRepository implements IProjectQueryRepository
 {
@@ -29,19 +30,13 @@ export class ProjectQueryRepository implements IProjectQueryRepository
         );
     }
 
-    private safeInt(value: number, fallback: number): number
-    {
-        const n = Math.floor(value);
-        return Number.isFinite(n) && n > 0 ? n : fallback;
-    }
-
     async findAllByTeam(teamId: number, page: number, limit: number, filters?: ProjectFilters): Promise<{ projects: Project[]; totalNumber: number }>
     {
         const res = await this.db.getReadConnection();
         if (!res) return { projects: [], totalNumber: 0 };
 
-        const safePage = this.safeInt(page, 1);
-        const safeLimit = this.safeInt(limit, 20);
+        const safePage = safeInt(page, 1);
+        const safeLimit = safeInt(limit, 20);
         const offset = (safePage - 1) * safeLimit;
 
         try
@@ -105,8 +100,8 @@ export class ProjectQueryRepository implements IProjectQueryRepository
         if (!res) return { projects: [], totalNumber: 0 };
         try
         {
-            const safePage = this.safeInt(page, 1);
-            const safeLimit = this.safeInt(limit, 20);
+            const safePage = safeInt(page, 1);
+            const safeLimit = safeInt(limit, 20);
             const offset = (safePage - 1) * safeLimit;
 
             const [[countRow]] = await res.conn.execute<RowDataPacket[]>(`SELECT COUNT(*) AS total FROM projects`);
@@ -133,8 +128,8 @@ export class ProjectQueryRepository implements IProjectQueryRepository
         const res = await this.db.getReadConnection();
         if (!res) return { projects: [], totalNumber: 0 };
 
-        const safePage = this.safeInt(page, 1);
-        const safeLimit = this.safeInt(limit, 20);
+        const safePage = safeInt(page, 1);
+        const safeLimit = safeInt(limit, 20);
         const offset = (safePage - 1) * safeLimit;
 
         try

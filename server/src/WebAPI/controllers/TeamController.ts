@@ -10,7 +10,7 @@ import { CreateTeamDto } from "../../Domain/DTOs/teams/CreateTeamDto";
 import { AddMemberDto } from "../../Domain/DTOs/teams/AddMemberDto";
 import { UpdateMemberRoleDto } from "../../Domain/DTOs/teams/UpdateMemberRoleDto";
 import { UpdateTeamDto } from "../../Domain/DTOs/teams/UpdateTeamDto";
-import { TEAM_NAME_MIN, TEAM_NAME_MAX } from "../../Domain/constants/Constants";
+import { validateCreateTeam, validateUpdateTeam, validateMemberRole } from "../validators/teams/TeamValidator";
 
 export class TeamController {
     private readonly router = Router();
@@ -45,14 +45,9 @@ export class TeamController {
 
     private async create(req: Request, res: Response): Promise<void> {
         const { name, description, avatar } = req.body as CreateTeamDto;
-        if (!name || !description || !avatar) {
-            res.status(400).json({ success: false, message: "All fields are mandatory (name, description, avatar)" });
-            return;
-        }
-        if (name.length < TEAM_NAME_MIN || name.length > TEAM_NAME_MAX) {
-            res.status(400).json({ success: false, message: `Team name must be between ${TEAM_NAME_MIN} and ${TEAM_NAME_MAX} characters` });
-            return;
-        }
+        const error = validateCreateTeam({ name, description, avatar } as CreateTeamDto);
+        if (error) { res.status(400).json({ success: false, message: error.message }); return; }
+
         const team = await this.teamService.createNewTeam(new CreateTeamDto(name, description, avatar), req.user!.user_id);
         if (team.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
         res.status(201).json({ success: true, message: "Team created successfully", data: team });
@@ -70,10 +65,8 @@ export class TeamController {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid ID" }); return; }
         const dto = req.body as UpdateTeamDto;
-        if (dto.name !== undefined && (dto.name.length < TEAM_NAME_MIN || dto.name.length > TEAM_NAME_MAX)) {
-            res.status(400).json({ success: false, message: `Team name must be between ${TEAM_NAME_MIN} and ${TEAM_NAME_MAX} characters` });
-            return;
-        }
+        const error = validateUpdateTeam(dto);
+        if (error) { res.status(400).json({ success: false, message: error.message }); return; }
         try {
             const ok = await this.teamService.updateTeam(id, dto, req.user!.user_id);
             if (!ok) { res.status(404).json({ success: false, message: "Team not found"}); return; }
@@ -121,16 +114,8 @@ export class TeamController {
         if (isNaN(id) || isNaN(memberId)) { res.status(400).json({ success: false, message: "Invalid IDs" }); return; }
 
         const { role } = req.body as UpdateMemberRoleDto;
-        if (!role || (role !== "owner" && role !== "member")) {
-            res.status(400).json({ success: false, message: "Role must be 'owner' or 'member'" }); return;
-        }
-
-        if (role === "member") {
-            const ownerCount = await this.teamService.countOwners(id);
-            if (ownerCount <= 1) {
-                res.status(400).json({ success: false, message: "Tim mora imati tačno jednog vlasnika" }); return;
-            }
-        }
+        const error = validateMemberRole(role);
+        if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
         const ok = await this.teamService.updateMemberRole(id, memberId, new UpdateMemberRoleDto(role), req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
