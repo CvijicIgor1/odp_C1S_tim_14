@@ -17,8 +17,8 @@ export class TeamMemberService implements ITeamMemberService {
         private readonly auditService: IAuditService,
     ) {}
 
-    async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<TeamOperationResult> {
-        const isOwner = await this.teamMemberRepository.isOwner(teamId, userId);
+    async addTeamMember(teamId: number, dto: AddMemberDto, userId: number, isAdmin: boolean = false): Promise<TeamOperationResult> {
+        const isOwner = isAdmin || await this.teamMemberRepository.isOwner(teamId, userId);
         if (!isOwner) return TeamOperationResult.Forbidden;
         const newMember = new TeamMember(0, 0, dto.role, new Date(), dto.username);
         const ok = await this.teamMemberRepository.addMember(teamId, newMember);
@@ -27,8 +27,8 @@ export class TeamMemberService implements ITeamMemberService {
         return TeamOperationResult.Success;
     }
 
-    async removeTeamMember(teamId: number, memberId: number, userId: number): Promise<TeamOperationResult> {
-        const isOwner = await this.teamMemberRepository.isOwner(teamId, userId);
+    async removeTeamMember(teamId: number, memberId: number, userId: number, isAdmin: boolean = false): Promise<TeamOperationResult> {
+        const isOwner = isAdmin || await this.teamMemberRepository.isOwner(teamId, userId);
         const isSelfRemoval = memberId === userId;
         if (!isOwner && !isSelfRemoval) return TeamOperationResult.Forbidden;
 
@@ -43,8 +43,8 @@ export class TeamMemberService implements ITeamMemberService {
         return TeamOperationResult.Success;
     }
 
-    async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<UpdateRoleResult> {
-        const isOwner = await this.teamMemberRepository.isOwner(teamId, callerId);
+    async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number, isAdmin: boolean = false): Promise<UpdateRoleResult> {
+        const isOwner = isAdmin || await this.teamMemberRepository.isOwner(teamId, callerId);
         if (!isOwner) return UpdateRoleResult.Forbidden;
 
         if (dto.role === TeamMemberRole.MEMBER) {

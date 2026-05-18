@@ -5,6 +5,6 @@ import { UpdateTeamDto } from "../../DTOs/teams/UpdateTeamDto";
 
 export interface ITeamWriteService {
     createNewTeam(dto: CreateTeamDto, userId: number): Promise<TeamDto>;
-    updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<TeamOperationResult>;
-    deleteTeam(teamId: number, userId: number): Promise<TeamOperationResult>;
+    updateTeam(teamId: number, dto: UpdateTeamDto, userId: number, isAdmin?: boolean): Promise<TeamOperationResult>;
+    deleteTeam(teamId: number, userId: number, isAdmin?: boolean): Promise<TeamOperationResult>;
 }

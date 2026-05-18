@@ -29,8 +29,8 @@ export class TeamWriteService implements ITeamWriteService {
         return this.toDto(created, TeamMemberRole.OWNER);
     }
 
-    async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<TeamOperationResult> {
-        const owner = await this.teamMemberRepository.isOwner(teamId, userId);
+    async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number, isAdmin: boolean = false): Promise<TeamOperationResult> {
+        const owner = isAdmin || await this.teamMemberRepository.isOwner(teamId, userId);
         if (!owner) return TeamOperationResult.Forbidden;
         const input = new Team(0, dto.name, dto.description, dto.avatar, new Date(), new Date());
         const ok = await this.teamCommandRepository.update(teamId, input);
@@ -39,8 +39,8 @@ export class TeamWriteService implements ITeamWriteService {
         return TeamOperationResult.Success;
     }
 
-    async deleteTeam(teamId: number, userId: number): Promise<TeamOperationResult> {
-        const owner = await this.teamMemberRepository.isOwner(teamId, userId);
+    async deleteTeam(teamId: number, userId: number, isAdmin: boolean = false): Promise<TeamOperationResult> {
+        const owner = isAdmin || await this.teamMemberRepository.isOwner(teamId, userId);
         if (!owner) return TeamOperationResult.Forbidden;
         const ok = await this.teamCommandRepository.delete(teamId);
         if (!ok) return TeamOperationResult.NotFound;

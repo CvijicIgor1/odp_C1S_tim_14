@@ -4,6 +4,7 @@ import { PageHeader, Empty, ErrorBox, SuccessBox, Spinner } from "../../componen
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { teamsApi } from "../../api_services/team/TeamAPIService";
 import type { TeamDto, TeamMemberDto } from "../../models/team/TeamTypes";
+import { UserRole } from "../../models/user/UserRole";
 
 export default function UserTeams() {
   const { user } = useAuth();
@@ -68,21 +69,21 @@ export default function UserTeams() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      const MAX = 256;
-      const scale = Math.min(MAX / img.width, MAX / img.height, 1);
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const base64 = canvas.toDataURL("image/jpeg", 0.8);
-      setNewAvatar(base64);
-      setAvatarPreview(base64);
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 256;
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const base64 = canvas.toDataURL("image/jpeg", 0.8);
+        setNewAvatar(base64);
+        setAvatarPreview(base64);
+      };
+      img.src = reader.result as string;
     };
-    img.src = reader.result as string;
-  };
-  reader.readAsDataURL(file);
+    reader.readAsDataURL(file);
   };
 
   const handleCreate = async () => {
@@ -156,7 +157,8 @@ export default function UserTeams() {
     }
   };
 
-  const isOwner = (team: TeamDto) => team.currentUserRole === "owner";
+  const canManageTeam = (team: TeamDto) =>
+    team.currentUserRole === "owner" || user?.role === UserRole.ADMIN;
 
   return (
     <div className="space-y-12">
@@ -265,13 +267,12 @@ export default function UserTeams() {
                       <div key={m.userId} className="flex items-center justify-between bg-white/3 rounded-lg px-3 py-2">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-white/60 font-mono">{m.username}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded border ${
-                            m.role === "owner"
-                              ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                              : "bg-white/5 text-white/30 border-white/10"
-                          }`}>{m.role}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded border ${m.role === "owner"
+                            ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                            : "bg-white/5 text-white/30 border-white/10"
+                            }`}>{m.role}</span>
                         </div>
-                        {isOwner(team) && (
+                        {canManageTeam(team) && (
                           <div className="flex gap-3">
                             {updatingMember === m.userId
                               ? <Spinner size={11} />
@@ -298,7 +299,7 @@ export default function UserTeams() {
                     ))}
 
                     {/* Add member input — owner only */}
-                    {isOwner(team) && (
+                    {canManageTeam(team) && (
                       <div className="flex items-center gap-2 pt-2">
                         <input
                           type="text"
@@ -333,7 +334,7 @@ export default function UserTeams() {
                   >
                     {expandedTeam === team.id ? "Hide members" : "Manage members"}
                   </button>
-                  {isOwner(team) && (
+                  {canManageTeam(team) && (
                     <button
                       onClick={() => handleDelete(team.id)}
                       className="text-[11px] text-red-500/40 hover:text-red-500 transition-colors"

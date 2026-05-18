@@ -5,10 +5,12 @@ import { usersApi } from "../../api_services/users/UsersAPIService";
 import { tasksApi } from "../../api_services/task/TaskAPIService";
 import { projectsApi } from "../../api_services/project/ProjectAPIService";
 import { teamsApi } from "../../api_services/team/TeamAPIService";
+import { useAuth } from "../../hooks/auth/useAuthHook";
 import type { TaskDetailDto, CommentDto, TaskAssigneeDto } from "../../models/project/ProjectTypes";
 import type { TeamMemberDto } from "../../models/team/TeamTypes";
 
 export default function TaskDetailPage() {
+  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const tid = Number(id);
 
@@ -21,6 +23,7 @@ export default function TaskDetailPage() {
   const [addingComment, setAdding] = useState(false);
 
   const [teamMembers, setTeamMembers] = useState<TeamMemberDto[]>([]);
+  const [isTeamOwner, setIsTeamOwner] = useState(false);
   const [userMap, setUserMap] = useState<Map<number, string>>(new Map());
   const [assigneeId, setAssigneeId] = useState("");
   const [addingAssignee, setAddingAss] = useState(false);
@@ -36,6 +39,10 @@ export default function TaskDetailPage() {
         let members: TeamMemberDto[] = [];
         const projectRes = await projectsApi.getById(res.data.task.projectId);
         if (projectRes.success && projectRes.data) {
+          const teamRes = await teamsApi.getById(projectRes.data.teamId);
+          if (teamRes.success && teamRes.data) {
+            setIsTeamOwner(teamRes.data.currentUserRole === "owner");
+          }
           const membersRes = await teamsApi.getMembers(projectRes.data.teamId);
           if (membersRes.success && membersRes.data) {
             members = membersRes.data.items;
@@ -122,6 +129,10 @@ export default function TaskDetailPage() {
   };
 
   const task = detail?.task;
+  const currentUserId = user?.id ?? 0;
+  const isTaskCreator = task?.createdByUserId === currentUserId;
+  const canManageAssignees = isTaskCreator || isTeamOwner;
+  const canComment = isTeamOwner || !!detail?.assignees.some((assignee) => assignee.userId === currentUserId);
 
   const assignedUserIds = new Set(detail?.assignees.map((a) => a.userId) ?? []);
   const availableMembers = teamMembers.filter((m) => !assignedUserIds.has(m.userId));
@@ -160,18 +171,20 @@ export default function TaskDetailPage() {
                     <span className="text-white/60 text-sm font-mono">
                       {userMap.get(a.userId) ?? `User #${a.userId}`}
                     </span>
-                    <button
-                      onClick={() => handleRemoveAssignee(a.userId)}
-                      className="text-[11px] text-red-500/40 hover:text-red-500 transition-colors"
-                    >
-                      Remove
-                    </button>
+                    {canManageAssignees && (
+                      <button
+                        onClick={() => handleRemoveAssignee(a.userId)}
+                        className="text-[11px] text-red-500/40 hover:text-red-500 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
             )}
 
-            {availableMembers.length > 0 && (
+            {canManageAssignees && availableMembers.length > 0 && (
               <div className="flex items-center gap-2">
                 <Combobox
                   options={availableMembers.map((m) => ({ value: String(m.userId), label: userMap.get(m.userId) ?? `User #${m.userId}` }))}
@@ -201,12 +214,14 @@ export default function TaskDetailPage() {
                   <div key={c.id} className="bg-[#0d0d0d] border border-white/5 rounded-xl px-4 py-3 space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-mono text-white/25">{userMap.get(c.userId) ?? `User #${c.userId}`} · {c.createdAt?.slice(0, 10)}</span>
-                      <button
-                        onClick={() => handleDeleteComment(c.id)}
-                        className="text-[11px] text-red-500/30 hover:text-red-500 transition-colors"
-                      >
-                        Delete
-                      </button>
+                      {c.userId === currentUserId && (
+                        <button
+                          onClick={() => handleDeleteComment(c.id)}
+                          className="text-[11px] text-red-500/30 hover:text-red-500 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                     <p className="text-white/70 text-sm">{c.content}</p>
                   </div>
@@ -215,21 +230,23 @@ export default function TaskDetailPage() {
             )}
 
             {/* Add comment */}
-            <div className="space-y-3">
-              <textarea
-                placeholder="Add a comment..."
-                value={comment}
-                onChange={e => setComment(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white h-24 focus:outline-none focus:border-white/20"
-              />
-              <button
-                onClick={handleAddComment}
-                disabled={addingComment || !comment.trim()}
-                className="text-xs px-6 py-2.5 bg-white text-black font-bold rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40"
-              >
-                {addingComment ? <Spinner size={12} /> : "Post comment"}
-              </button>
-            </div>
+            {canComment && (
+              <div className="space-y-3">
+                <textarea
+                  placeholder="Add a comment..."
+                  value={comment}
+                  onChange={e => setComment(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white h-24 focus:outline-none focus:border-white/20"
+                />
+                <button
+                  onClick={handleAddComment}
+                  disabled={addingComment || !comment.trim()}
+                  className="text-xs px-6 py-2.5 bg-white text-black font-bold rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40"
+                >
+                  {addingComment ? <Spinner size={12} /> : "Post comment"}
+                </button>
+              </div>
+            )}
           </section>
         </>
       )}

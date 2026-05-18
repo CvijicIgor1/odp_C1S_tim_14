@@ -5,6 +5,8 @@ import { projectsApi } from "../../api_services/project/ProjectAPIService";
 import { tasksApi } from "../../api_services/task/TaskAPIService";
 import { tagsApi } from "../../api_services/tag/TagAPIService";
 import { teamsApi } from "../../api_services/team/TeamAPIService";
+import { useAuth } from "../../hooks/auth/useAuthHook";
+import { UserRole } from "../../models/user/UserRole";
 import type { ProjectDto, TaskDto, TaskStatus, Priority, TagDto } from "../../models/project/ProjectTypes";
 
 const COLUMNS: { key: TaskStatus; label: string }[] = [
@@ -25,6 +27,7 @@ const priorityColor: Record<Priority, string> = {
 };
 
 export default function ProjectKanbanPage() {
+  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const pid = Number(id);
   const navigate = useNavigate();
@@ -37,7 +40,8 @@ export default function ProjectKanbanPage() {
 
   const [isWatching, setIsWatching] = useState(false);
   const [watchLoading, setWatchLoading] = useState(false);
-  const [isOwner, setIsOwner] = useState(false);
+  const [canManageProject, setCanManageProject] = useState(false);
+  const canModifyTasks = user?.role !== UserRole.ADMIN;
 
   const [showEdit, setShowEdit] = useState(false);
   const [editName, setEditName] = useState("");
@@ -73,7 +77,9 @@ export default function ProjectKanbanPage() {
         setProject(pRes.data);
         const teamRes = await teamsApi.getById(pRes.data.teamId);
         if (teamRes.success && teamRes.data) {
-          setIsOwner(teamRes.data.currentUserRole === "owner");
+          setCanManageProject(teamRes.data.currentUserRole === "owner" || user?.role === UserRole.ADMIN);
+        } else {
+          setCanManageProject(user?.role === UserRole.ADMIN);
         }
         const watchedRes = await projectsApi.getWatched(1, 1000);
         if (watchedRes.success && watchedRes.data) {
@@ -92,7 +98,7 @@ export default function ProjectKanbanPage() {
     } finally {
       setLoading(false);
     }
-  }, [pid]);
+  }, [pid, user?.role]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -227,7 +233,7 @@ export default function ProjectKanbanPage() {
     const task = dragTask.current;
     dragTask.current = null;
     setDragging(null);
-    if (!task || task.status === col) return;
+    if (!task || task.status === col || !canModifyTasks) return;
 
     setGrouped(prev => {
       const next = { ...prev };
@@ -264,7 +270,7 @@ export default function ProjectKanbanPage() {
             >
               {watchLoading ? <Spinner size={12} /> : isWatching ? "👀… Watching" : "👀 Watch"}
             </button>
-            {isOwner && (
+            {canManageProject && (
               <button
                 onClick={() => {
                   setEditName(project?.name ?? "");
@@ -279,12 +285,14 @@ export default function ProjectKanbanPage() {
                 {showEdit ? "Cancel edit" : "Edit project"}
               </button>
             )}
-            <button
-              onClick={() => setShowCreate(v => !v)}
-              className="text-xs px-4 py-2 bg-white text-black font-bold rounded-xl hover:bg-white/90 transition-colors"
-            >
-              {showCreate ? "Cancel" : "+ New task"}
-            </button>
+            {canModifyTasks && (
+              <button
+                onClick={() => setShowCreate(v => !v)}
+                className="text-xs px-4 py-2 bg-white text-black font-bold rounded-xl hover:bg-white/90 transition-colors"
+              >
+                {showCreate ? "Cancel" : "+ New task"}
+              </button>
+            )}
           </div>
         }
       />
@@ -309,17 +317,19 @@ export default function ProjectKanbanPage() {
                 className="flex items-center gap-1.5 text-xs px-3 py-1 bg-white/5 border border-white/10 text-white/50 rounded-lg group"
               >
                 {t.name}
-                <button
-                  onClick={() => handleRemoveTag(t.id)}
-                  disabled={tagLoading}
-                  className="text-white/20 hover:text-red-400 transition-colors disabled:opacity-40 leading-none"
-                  title="Remove tag"
-                >
-                  Ã—
-                </button>
+                {canManageProject && (
+                  <button
+                    onClick={() => handleRemoveTag(t.id)}
+                    disabled={tagLoading}
+                    className="text-white/20 hover:text-red-400 transition-colors disabled:opacity-40 leading-none"
+                    title="Remove tag"
+                  >
+                    x
+                  </button>
+                )}
               </span>
             ))}
-            {availableTags.length > 0 && (
+            {canManageProject && availableTags.length > 0 && (
               <select
                 value=""
                 onChange={e => { if (e.target.value) handleAddTag(Number(e.target.value)); }}
