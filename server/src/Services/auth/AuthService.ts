@@ -29,7 +29,7 @@ export class AuthService implements IAuthService {
     const hash = await bcrypt.hash(password, SALT_ROUNDS).catch(() => "");
     if (!hash) return new AuthUserDto();
     const created = await this.userCommandRepository.create(new User(0, username, email, UserRole.USER, hash, full_name, avatar));
-    if (created.id === 0) return new AuthUserDto();
+    if (created === "duplicate" || created.id === 0) return new AuthUserDto();
     return new AuthUserDto(created.id, created.username, created.role, created.avatar);
   }
 }

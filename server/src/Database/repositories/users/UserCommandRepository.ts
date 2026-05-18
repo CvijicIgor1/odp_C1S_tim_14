@@ -11,7 +11,7 @@ export class UserCommandRepository implements IUserCommandRepository
         private readonly logger: ILoggerService
     ) {}
 
-    async create(user: User): Promise<User>
+    async create(user: User): Promise<User | "duplicate">
     {
         const res = await this.db.getWriteConnection();
         if (!res) return new User();
@@ -26,6 +26,7 @@ export class UserCommandRepository implements IUserCommandRepository
         }
         catch (err)
         {
+            if ((err as { code?: string }).code === "ER_DUP_ENTRY") return "duplicate";
             this.logger.error("UserCommandRepository", "create failed", err);
             return new User();
         }
