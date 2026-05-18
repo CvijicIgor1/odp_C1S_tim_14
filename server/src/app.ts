@@ -46,7 +46,6 @@ import { ProjectController } from "./WebAPI/controllers/ProjectController";
 import { TagController }     from "./WebAPI/controllers/TagController";
 import { AuditController }   from "./WebAPI/controllers/AuditController";
 import { TaskController }    from "./WebAPI/controllers/TaskController";
-import { errorHandler } from "./Middlewares/error/ErrorHandlerMiddleware";
 
 export const logger = new ConsoleLoggerService();
 export const db     = new DbManager(logger);

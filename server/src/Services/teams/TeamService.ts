@@ -14,7 +14,7 @@ import { UpdateTeamDto } from "../../Domain/DTOs/teams/UpdateTeamDto";
 import { Team } from "../../Domain/models/Team";
 import { TeamMember } from "../../Domain/models/TeamMember";
 import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
-import { PaginatedListDto } from '../../Domain/DTOs/entity/PaginatedListDto';
+import { PaginatedListDto } from '../../Domain/DTOs/paginatedList/PaginatedListDto';
 import { TeamDto } from "../../Domain/DTOs/teams/TeamDto";
 import { TeamMemberDto } from "../../Domain/DTOs/teams/TeamMemberDto";
 

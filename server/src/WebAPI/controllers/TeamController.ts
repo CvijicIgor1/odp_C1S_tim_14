@@ -117,7 +117,7 @@ export class TeamController {
         const result = await this.teamService.updateMemberRole(id, memberId, new UpdateMemberRoleDto(role), req.user!.user_id);
         if (result === UpdateRoleResult.Forbidden) { res.status(403).json({ success: false, message: "Only the team owner can change member roles" }); return; }
         if (result === UpdateRoleResult.NotFound)  { res.status(404).json({ success: false, message: "Member not found" }); return; }
-        if (result === UpdateRoleResult.LastOwner) { res.status(400).json({ success: false, message: "Tim mora imati tačno jednog vlasnika" }); return; }
+        if (result === UpdateRoleResult.LastOwner) { res.status(400).json({ success: false, message: "A team must have exactly one owner" }); return; }
         await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team_member", memberId, `role=${role}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Role changed successfully" });
     }

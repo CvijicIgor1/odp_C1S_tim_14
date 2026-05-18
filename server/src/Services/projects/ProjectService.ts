@@ -9,7 +9,7 @@ import { IProjectAccessRepository } from "../../Domain/repositories/projects/IPr
 import { CreateProjectDto } from "../../Domain/DTOs/projects/CreateProjectDto";
 import { UpdateProjectDto } from "../../Domain/DTOs/projects/UpdateProjectDto";
 import { ProjectDto} from "../../Domain/DTOs/projects/ProjectDto";
-import { PaginatedListDto } from "../../Domain/DTOs/entity/PaginatedListDto";
+import { PaginatedListDto } from "../../Domain/DTOs/paginatedList/PaginatedListDto";
 import { ProjectFilters } from "../../Domain/types/ProjectFilters";
 import { Project } from "../../Domain/models/Project";
 import { Tag } from "../../Domain/models/Tag";

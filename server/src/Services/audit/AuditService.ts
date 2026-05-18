@@ -3,7 +3,7 @@ import { IAuditRepository } from "../../Domain/repositories/audit/IAuditReposito
 import { AuditLog } from "../../Domain/models/AuditLog";
 import { AuditAction } from "../../Domain/enums/AuditLog";
 import { AuditLogDto } from "../../Domain/DTOs/audit/AuditLogDto";
-import { PaginatedListDto } from "../../Domain/DTOs/entity/PaginatedListDto";
+import { PaginatedListDto } from "../../Domain/DTOs/paginatedList/PaginatedListDto";
 
 const parseDetail = (raw: string | null): Record<string, unknown> | null => {
     if (raw === null || raw === undefined) return null;

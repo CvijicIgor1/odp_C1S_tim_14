@@ -1,6 +1,6 @@
 import { UpdateRoleResult } from "../../enums/UpdateRoleResult";
 import { TeamOperationResult } from "../../enums/TeamOperationResult";
-import { PaginatedListDto } from "../../DTOs/entity/PaginatedListDto";
+import { PaginatedListDto } from "../../DTOs/paginatedList/PaginatedListDto";
 import { AddMemberDto } from "../../DTOs/teams/AddMemberDto";
 import { CreateTeamDto } from "../../DTOs/teams/CreateTeamDto";
 import { TeamDto } from "../../DTOs/teams/TeamDto";

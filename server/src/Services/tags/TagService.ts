@@ -1,6 +1,6 @@
 import { ITagRepository } from "../../Domain/repositories/tags/ITagsRepository";
 import { ITagService } from "../../Domain/services/tags/ITagService";
-import { PaginatedListDto } from "../../Domain/DTOs/entity/PaginatedListDto";
+import { PaginatedListDto } from "../../Domain/DTOs/paginatedList/PaginatedListDto";
 import { CreateTagDto } from "../../Domain/DTOs/tags/CreateTagDto";
 import { TagDto } from "../../Domain/DTOs/tags/TagDto";
 import { Tag } from "../../Domain/models/Tag";

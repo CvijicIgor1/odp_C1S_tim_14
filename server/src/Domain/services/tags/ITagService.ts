@@ -1,4 +1,4 @@
-import { PaginatedListDto } from "../../DTOs/entity/PaginatedListDto"
+import { PaginatedListDto } from "../../DTOs/paginatedList/PaginatedListDto"
 import { CreateTagDto } from "../../DTOs/tags/CreateTagDto";
 import { TagDto } from "../../DTOs/tags/TagDto"
 
