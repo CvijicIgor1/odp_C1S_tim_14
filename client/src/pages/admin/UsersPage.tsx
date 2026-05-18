@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { PageHeader, Table, TableHead, RoleBadge, Empty, ErrorBox, SuccessBox, Spinner } from "../../components/ui/UI";
 import { usersApi } from "../../api_services/users/UsersAPIService";
 import type { UserDto } from "../../models/user/UserTypes";
+import { UserRole } from "../../models/user/UserRole";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserDto[]>([]);
@@ -25,7 +26,7 @@ export default function UsersPage() {
   useEffect(() => { load(); }, [load]);
 
   const handleRoleToggle = async (u: UserDto) => {
-    const newRole = u.role === "admin" ? "user" : "admin";
+    const newRole = u.role === UserRole.ADMIN ? UserRole.USER : UserRole.ADMIN;
     setUpdating(u.id);
     setError(""); setSuccess("");
     try {
@@ -76,7 +77,7 @@ export default function UsersPage() {
                           onClick={() => handleRoleToggle(u)}
                           className="text-xs text-white/30 hover:text-amber-400 transition-colors underline underline-offset-2"
                         >
-                          → {u.role === "admin" ? "user" : "admin"}
+                          → {u.role === UserRole.ADMIN ? UserRole.USER : UserRole.ADMIN}
                         </button>
                         <button
                           onClick={() => handleStatusToggle(u)}

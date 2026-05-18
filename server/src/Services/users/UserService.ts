@@ -5,6 +5,7 @@ import { IUserCommandRepository } from "../../Domain/repositories/users/IUserCom
 import { IUserAdminRepository } from "../../Domain/repositories/users/IUserAdminRepository";
 import { UserDto } from "../../Domain/DTOs/users/UserDto";
 import { UserRole } from "../../Domain/enums/UserRole";
+import { SALT_ROUNDS } from "../../Domain/constants/Constants";
 
 export class UserService implements IUserService {
   public constructor(
@@ -37,12 +38,11 @@ export class UserService implements IUserService {
   }
 
   async updateProfile(id: number, username: string, email: string, avatar: string, newPassword?: string): Promise<boolean> {
-    let passwordHash: string | undefined;
     if (newPassword) {
-      const saltRounds = parseInt(process.env.SALT_ROUNDS ?? "10", 10);
-      passwordHash = await bcrypt.hash(newPassword, saltRounds).catch(() => undefined);
+      const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS).catch(() => undefined);
       if (!passwordHash) return false;
+      return this.userCommandRepository.updateProfile(id, username, email, avatar, passwordHash);
     }
-    return this.userCommandRepository.updateProfile(id, username, email, avatar, passwordHash);
+    return this.userCommandRepository.updateProfile(id, username, email, avatar);
   }
 }

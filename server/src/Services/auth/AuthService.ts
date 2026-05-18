@@ -5,10 +5,9 @@ import { IUserCommandRepository } from "../../Domain/repositories/users/IUserCom
 import { AuthUserDto } from "../../Domain/DTOs/auth/AuthUserDto";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { User } from "../../Domain/models/User";
+import { SALT_ROUNDS } from "../../Domain/constants/Constants";
 
 export class AuthService implements IAuthService {
-  private readonly saltRounds = parseInt(process.env.SALT_ROUNDS ?? "10", 10);
-
   public constructor(
     private readonly userQueryRepository: IUserQueryRepository,
     private readonly userCommandRepository: IUserCommandRepository,
@@ -27,7 +26,7 @@ export class AuthService implements IAuthService {
     if (byName.id !== 0) return new AuthUserDto();
     const byEmail = await this.userQueryRepository.findByEmail(email);
     if (byEmail.id !== 0) return new AuthUserDto();
-    const hash = await bcrypt.hash(password, this.saltRounds).catch(() => "");
+    const hash = await bcrypt.hash(password, SALT_ROUNDS).catch(() => "");
     if (!hash) return new AuthUserDto();
     const created = await this.userCommandRepository.create(new User(0, username, email, UserRole.USER, hash, full_name, avatar));
     if (created.id === 0) return new AuthUserDto();

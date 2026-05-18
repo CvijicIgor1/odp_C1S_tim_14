@@ -1,4 +1,5 @@
 import { type ReactNode, useRef, useState } from "react";
+import { UserRole } from "../../models/user/UserRole";
 
 export function Spinner({ size = 16 }: { size?: number }) {
   return (
@@ -83,10 +84,10 @@ export function NodeBadge({ status }: { status: string }) {
   );
 }
 
-export function RoleBadge({ role }: { role: string }) {
+export function RoleBadge({ role }: { role: UserRole }) {
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${
-      role === "admin" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-white/5 text-white/40 border-white/10"
+      role === UserRole.ADMIN ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-white/5 text-white/40 border-white/10"
     }`}>{role}</span>
   );
 }

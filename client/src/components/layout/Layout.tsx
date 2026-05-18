@@ -2,6 +2,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { usersApi } from "../../api_services/users/UsersAPIService";
+import { UserRole } from "../../models/user/UserRole";
 
 const userNav = [
   { to: "/dashboard", label: "Dashboard" },
@@ -22,7 +23,7 @@ const adminNav = [
 export function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const nav = user?.role === "admin" ? adminNav : userNav;
+  const nav = user?.role === UserRole.ADMIN ? adminNav : userNav;
   const [avatar, setAvatar] = useState<string>("");
 
   useEffect(() => {

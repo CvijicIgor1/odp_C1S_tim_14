@@ -1,8 +1,10 @@
+import type { UserRole } from "./UserRole";
+
 export type UserDto = {
   id: number;
   username: string;
   email: string;
-  role: string;
+  role: UserRole;
   fullName: string;
   avatar: string;
   isActive: number;

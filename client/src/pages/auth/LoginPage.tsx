@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LoginForm } from "../../components/auth/LoginForm";
 import { authApi } from "../../api_services/auth/AuthAPIService";
 import { useAuth } from "../../hooks/auth/useAuthHook";
+import { UserRole } from "../../models/user/UserRole";
 
 export default function LoginPage() {
   const { isAuthenticated, user } = useAuth();
@@ -10,7 +11,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
-    navigate(user.role === "admin" ? "/admin" : "/dashboard");
+    navigate(user.role === UserRole.ADMIN ? "/admin" : "/dashboard");
   }, [isAuthenticated, user, navigate]);
 
   return (

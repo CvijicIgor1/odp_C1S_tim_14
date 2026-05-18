@@ -3,8 +3,7 @@ import { IAuditRepository } from "../../../Domain/repositories/audit/IAuditRepos
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
-
-const safeInt = (n: number): number => Math.max(0, Math.floor(n));
+import { safeInt } from '../../../utils/pagination';
 
 export class AuditRepository implements IAuditRepository{
     public constructor(
@@ -34,8 +33,8 @@ export class AuditRepository implements IAuditRepository{
   async findAll(page: number, limit: number): Promise<{ logs: AuditLog[]; totalNumber: number }> {
     const res = await this.db.getReadConnection();
     if (!res) return { logs: [], totalNumber: 0 };
-    const lim    = safeInt(Math.max(1, limit));
-    const offset = safeInt(Math.max(0, (page - 1) * lim));
+    const lim    = safeInt(Math.max(1, limit), 1);
+    const offset = safeInt(Math.max(0, (page - 1) * lim), 0);
     try {
       const [rows] = await res.conn.execute<RowDataPacket[]>(
         `SELECT * FROM audits ORDER BY created_at DESC LIMIT ${lim} OFFSET ${offset}`

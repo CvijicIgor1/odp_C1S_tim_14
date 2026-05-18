@@ -1,6 +1,6 @@
 import { Request, Response, Router } from "express";
-import jwt from "jsonwebtoken";
 import { IAuthService } from "../../Domain/services/auth/IAuthService";
+import { ITokenService } from "../../Domain/services/auth/ITokenService";
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { AuditAction } from "../../Domain/enums/AuditLog";
 import { ValidationResult } from "../../Domain/types/ValidationResult";
@@ -13,6 +13,7 @@ export class AuthController {
 
   public constructor(
     private readonly authService: IAuthService,
+    private readonly tokenService: ITokenService,
     private readonly auditService: IAuditService
   ) {
     this.router.post("/auth/login", this.login.bind(this));
@@ -22,30 +23,22 @@ export class AuthController {
 
   private async login(req: Request, res: Response): Promise<void> {
     const { username, password } = req.body as { username?: string; password?: string };
-    const v: ValidationResult = validateLogin(username ?? "", password ?? "");
-    if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
+    const validation: ValidationResult = validateLogin(username ?? "", password ?? "");
+    if (!validation.valid) { res.status(400).json({ success: false, message: validation.message }); return; }
     const result = await this.authService.login(username!, password!);
     if (result.id === 0) { res.status(401).json({ success: false, message: "Invalid username or password" }); return; }
-    const token = jwt.sign(
-      { user_id: result.id, username: result.username, role: result.role},
-      process.env.JWT_SECRET ?? "",
-      { expiresIn: "24h" }
-    );
+    const token = this.tokenService.sign(result);
     await this.auditService.log(result.id, AuditAction.LOGIN, undefined, undefined, undefined, req.ip, result.username);
     res.status(200).json({ success: true, message: "Login successful", data: token });
   }
 
   private async register(req: Request, res: Response): Promise<void> {
     const { username, email, password, full_name, image } = req.body as {username?: string; email?: string; password?: string; full_name?: string; image?: string;};
-    const v: ValidationResult = validateRegister(username ?? "", email ?? "", password ?? "");
-    if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
+    const validation: ValidationResult = validateRegister(username ?? "", email ?? "", password ?? "");
+    if (!validation.valid) { res.status(400).json({ success: false, message: validation.message }); return; }
     const result = await this.authService.register(username!, email!, password!, full_name ?? "", image ?? "");
     if (result.id === 0) { res.status(409).json({ success: false, message: "Username or email already taken" }); return; }
-    const token = jwt.sign(
-      { user_id: result.id, username: result.username, role: result.role},
-      process.env.JWT_SECRET ?? "",
-      { expiresIn: "24h" }
-    );
+    const token = this.tokenService.sign(result);
     await this.auditService.log(result.id, AuditAction.REGISTER, undefined, undefined, undefined, req.ip, result.username);
     res.status(201).json({ success: true, message: "Registration successful", data: token });
   }

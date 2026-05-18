@@ -5,6 +5,7 @@ import { authenticate } from "../../Middlewares/authentification/AuthMiddleware"
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { AuditAction } from "../../Domain/enums/AuditLog";
+import { validateUpdateRole, validateUpdateStatus, validateUpdateProfile } from "../validators/users/UserValidator";
 
 export class UserController {
   private readonly router = Router();
@@ -35,10 +36,9 @@ export class UserController {
     const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
     const { role } = req.body as { role?: UserRole };
-    if (!role || !Object.values(UserRole).includes(role)) {
-      res.status(400).json({ success: false, message: "Valid role is required ('user' or 'admin')" }); return;
-    }
-    const ok = await this.userService.updateRole(id, role);
+    const error = validateUpdateRole(role);
+    if (error) { res.status(400).json({ success: false, message: error.message }); return; }
+    const ok = await this.userService.updateRole(id, role as UserRole);
     if (!ok) { res.status(404).json({ success: false, message: "User not found" }); return; }
     await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "user", id, `role=${role}`, req.ip, req.user!.username);
     res.status(200).json({ success: true, message: "User role updated" });
@@ -48,10 +48,9 @@ export class UserController {
     const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
     const { isActive } = req.body as { isActive?: boolean };
-    if (isActive === undefined || typeof isActive !== "boolean") {
-      res.status(400).json({ success: false, message: "isActive (boolean) is required" }); return;
-    }
-    const ok = await this.userService.updateStatus(id, isActive);
+    const error = validateUpdateStatus(isActive);
+    if (error) { res.status(400).json({ success: false, message: error.message }); return; }
+    const ok = await this.userService.updateStatus(id, isActive as boolean);
     if (!ok) { res.status(404).json({ success: false, message: "User not found" }); return; }
     await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "user", id, `isActive=${isActive}`, req.ip, req.user!.username);
     res.status(200).json({ success: true, message: "User status updated" });
@@ -74,10 +73,9 @@ export class UserController {
     const { username, email, avatar, newPassword } = req.body as {
       username?: string; email?: string; avatar?: string; newPassword?: string;
     };
-    if (!username || !email) {
-      res.status(400).json({ success: false, message: "username and email are required" }); return;
-    }
-    const ok = await this.userService.updateProfile(id, username, email, avatar ?? "", newPassword);
+    const error = validateUpdateProfile({ username, email });
+    if (error) { res.status(400).json({ success: false, message: error.message }); return; }
+    const ok = await this.userService.updateProfile(id, username as string, email as string, avatar ?? "", newPassword);
     if (!ok) { res.status(404).json({ success: false, message: "User not found or update failed" }); return; }
     await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "user", id, "profile", req.ip, req.user!.username);
     res.status(200).json({ success: true, message: "Profile updated" });
