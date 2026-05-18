@@ -5,7 +5,7 @@ import { authenticate } from "../../Middlewares/authentification/AuthMiddleware"
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { AuditAction } from "../../Domain/enums/AuditLog";
-import { validateUpdateRole, validateUpdateStatus, validateUpdateProfile } from "../validators/users/UserValidator";
+import { validateUpdateRole, validateUpdateStatus, validateUpdateProfile, validatePasswordUpdate } from "../validators/users/UserValidator";
 
 export class UserController {
   private readonly router = Router();
@@ -77,6 +77,8 @@ export class UserController {
     };
     const error = validateUpdateProfile({ username, email });
     if (error) { res.status(400).json({ success: false, message: error.message }); return; }
+    const passwordError = validatePasswordUpdate(newPassword);
+    if (passwordError) { res.status(400).json({ success: false, message: passwordError.message }); return; }
     const ok = await this.userService.updateProfile(id, username as string, email as string, avatar ?? "", newPassword);
     if (!ok) { res.status(404).json({ success: false, message: "User not found or update failed" }); return; }
     await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "user", id, "profile", req.ip, req.user!.username);

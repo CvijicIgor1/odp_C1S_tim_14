@@ -34,7 +34,7 @@ export class AuthController {
 
   private async register(req: Request, res: Response): Promise<void> {
     const { username, email, password, full_name, image } = req.body as {username?: string; email?: string; password?: string; full_name?: string; image?: string;};
-    const validation: ValidationResult = validateRegister(username ?? "", email ?? "", password ?? "");
+    const validation: ValidationResult = validateRegister(username ?? "", email ?? "", password ?? "", full_name ?? "", image ?? "");
     if (!validation.valid) { res.status(400).json({ success: false, message: validation.message }); return; }
     const result = await this.authService.register(username!, email!, password!, full_name ?? "", image ?? "");
     if (result.id === 0) { res.status(409).json({ success: false, message: "Username or email already taken" }); return; }

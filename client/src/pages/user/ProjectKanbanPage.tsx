@@ -8,6 +8,7 @@ import { teamsApi } from "../../api_services/team/TeamAPIService";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { UserRole } from "../../models/user/UserRole";
 import type { ProjectDto, TaskDto, TaskStatus, Priority, TagDto } from "../../models/project/ProjectTypes";
+import { validateEstimatedHours, validateFutureDate, validateProjectDescription, validateProjectName, validateTaskDescription, validateTaskTitle } from "../../helpers/validation";
 
 const COLUMNS: { key: TaskStatus; label: string }[] = [
   { key: "todo", label: "To Do" },
@@ -130,9 +131,13 @@ export default function ProjectKanbanPage() {
   };
 
   const handleSaveEdit = async () => {
-    if (editDeadline && new Date(editDeadline) <= new Date()) {
-      setError("Deadline must be a future date");
-      return;
+    const nameError = validateProjectName(editName);
+    if (nameError) { setError(nameError); return; }
+    const descriptionError = validateProjectDescription(editDesc);
+    if (descriptionError) { setError(descriptionError); return; }
+    if (editDeadline) {
+      const deadlineError = validateFutureDate(editDeadline, "Deadline");
+      if (deadlineError) { setError(deadlineError); return; }
     }
     setSaving(true);
     setError("");
@@ -158,11 +163,14 @@ export default function ProjectKanbanPage() {
   };
 
   const handleCreate = async () => {
-    if (!newTitle.trim()) return;
-    if (newDeadline && new Date(newDeadline) <= new Date()) {
-      setError("Deadline must be a future date");
-      return;
-    }
+    const titleError = validateTaskTitle(newTitle);
+    if (titleError) { setError(titleError); return; }
+    const descriptionError = validateTaskDescription(newDesc);
+    if (descriptionError) { setError(descriptionError); return; }
+    const deadlineError = validateFutureDate(newDeadline, "Deadline");
+    if (deadlineError) { setError(deadlineError); return; }
+    const hoursError = validateEstimatedHours(Number(newHours));
+    if (hoursError) { setError(hoursError); return; }
     setCreating(true);
     setError("");
     setSuccess("");
@@ -173,7 +181,7 @@ export default function ProjectKanbanPage() {
         newDesc.trim(),
         "todo",
         newPriority,
-        newDeadline || new Date().toISOString().slice(0, 10),
+        newDeadline,
         Number(newHours) || 0,
       );
       if (res.success) {

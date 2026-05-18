@@ -5,6 +5,7 @@ import { useAuth } from "../../hooks/auth/useAuthHook";
 import { teamsApi } from "../../api_services/team/TeamAPIService";
 import type { TeamDto, TeamMemberDto } from "../../models/team/TeamTypes";
 import { UserRole } from "../../models/user/UserRole";
+import { validateBase64Image, validateTeamDescription, validateTeamName, validateUsername } from "../../helpers/validation";
 
 export default function UserTeams() {
   const { user } = useAuth();
@@ -87,7 +88,12 @@ export default function UserTeams() {
   };
 
   const handleCreate = async () => {
-    if (!newName.trim() || !newDesc.trim() || !newAvatar.trim()) return;
+    const nameError = validateTeamName(newName);
+    if (nameError) { setError(nameError); return; }
+    const descriptionError = validateTeamDescription(newDesc);
+    if (descriptionError) { setError(descriptionError); return; }
+    const avatarError = validateBase64Image(newAvatar, "Team avatar");
+    if (avatarError) { setError(avatarError); return; }
     setCreating(true);
     setError("");
     setSuccess("");
@@ -115,7 +121,8 @@ export default function UserTeams() {
 
   const handleAddMember = async (teamId: number) => {
     const username = (addInputs[teamId] ?? "").trim();
-    if (!username) return;
+    const usernameError = validateUsername(username);
+    if (usernameError) { setError(usernameError); return; }
     setAddingTo(teamId);
     setError(""); setSuccess("");
     try {

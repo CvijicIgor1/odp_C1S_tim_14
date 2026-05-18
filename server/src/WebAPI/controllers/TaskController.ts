@@ -13,7 +13,7 @@ import { UpdateTaskDto } from "../../Domain/DTOs/tasks/UpdateTaskDto";
 import { UpdateTaskStatusDto } from "../../Domain/DTOs/tasks/UpdateTaskStatusDto";
 import { AddTaskAssigneeDto } from "../../Domain/DTOs/tasks/AddTaskAssigneeDto";
 import { AddCommentDto } from "../../Domain/DTOs/tasks/AddCommentDto";
-import { validateCreateTask, validateUpdateTask, validateComment } from "../validators/tasks/TaskValidator";
+import { validateCreateTask, validateUpdateTask, validateUpdateTaskStatus, validateComment } from "../validators/tasks/TaskValidator";
 
 export class TaskController {
     private readonly router = Router();
@@ -82,7 +82,7 @@ export class TaskController {
         if (isNaN(projectId)) { res.status(400).json({ success: false, message: "Invalid project ID" }); return; }
 
         const { title, description, status, priority, deadline, estimatedHours } = req.body;
-        const error = validateCreateTask({ title, description, deadline, estimatedHours });
+        const error = validateCreateTask({ title, description, status, priority, deadline, estimatedHours });
         if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
         const dto = new CreateTaskDto(projectId, title, description, status, priority, deadline, Number(estimatedHours ?? 0));
@@ -119,6 +119,8 @@ export class TaskController {
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid task ID" }); return; }
 
         const dto = req.body as UpdateTaskStatusDto;
+        const error = validateUpdateTaskStatus(dto);
+        if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
         const result = await this.taskWriteService.updateTaskStatus(id, dto, req.user!.user_id);
 

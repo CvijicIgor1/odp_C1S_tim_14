@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import type { IAuthAPIService } from "../../api_services/auth/IAuthAPIService";
+import { validateBase64Image, validateEmail, validateFullName, validatePassword, validateUsername } from "../../helpers/validation";
 
 export function RegisterForm({ authApi }: { authApi: IAuthAPIService }) {
   const { login } = useAuth();
@@ -31,8 +32,19 @@ export function RegisterForm({ authApi }: { authApi: IAuthAPIService }) {
 
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); setError(""); setLoading(true);
-    const res = await authApi.register(form.username,form.fullname, form.email, form.password, form.image);
+    e.preventDefault(); setError("");
+    const usernameError = validateUsername(form.username);
+    if (usernameError) { setError(usernameError); return; }
+    const fullNameError = validateFullName(form.fullname);
+    if (fullNameError) { setError(fullNameError); return; }
+    const emailError = validateEmail(form.email);
+    if (emailError) { setError(emailError); return; }
+    const passwordError = validatePassword(form.password);
+    if (passwordError) { setError(passwordError); return; }
+    const imageError = validateBase64Image(form.image, "Profile image");
+    if (imageError) { setError(imageError); return; }
+    setLoading(true);
+    const res = await authApi.register(form.username, form.fullname, form.email, form.password, form.image);
     setLoading(false);
     if (!res.success || !res.data) { setError(res.message ?? "Registration failed"); return; }
     login(res.data);

@@ -3,6 +3,7 @@ import { PageHeader, ErrorBox, SuccessBox, Spinner, RoleBadge } from "../../comp
 import { usersApi } from "../../api_services/users/UsersAPIService";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import type { UserDto } from "../../models/user/UserTypes";
+import { validateEmail, validatePassword, validateUsername } from "../../helpers/validation";
 
 export default function ProfilePage() {
   const { user: authUser } = useAuth();
@@ -71,6 +72,12 @@ export default function ProfilePage() {
       setError("Passwords do not match");
       return;
     }
+    const usernameError = validateUsername(editUsername);
+    if (usernameError) { setError(usernameError); return; }
+    const emailError = validateEmail(editEmail);
+    if (emailError) { setError(emailError); return; }
+    const passwordError = newPassword ? validatePassword(newPassword) : null;
+    if (passwordError) { setError(passwordError); return; }
     setSaving(true);
     setError("");
     setSuccess("");

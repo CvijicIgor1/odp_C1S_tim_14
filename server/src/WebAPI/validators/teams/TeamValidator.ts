@@ -11,12 +11,24 @@ export function validateCreateTeam(dto: CreateTeamDto): ValidationError | null {
     if (dto.name.length < TEAM_NAME_MIN || dto.name.length > TEAM_NAME_MAX) {
         return { message: `Team name must be between ${TEAM_NAME_MIN} and ${TEAM_NAME_MAX} characters` };
     }
+    if (dto.description.trim().length < 3 || dto.description.trim().length > 1000) {
+        return { message: "Team description must be between 3 and 1000 characters" };
+    }
+    if (!dto.avatar.startsWith("data:image/")) {
+        return { message: "Team avatar must be a base64 image" };
+    }
     return null;
 }
 
 export function validateUpdateTeam(dto: UpdateTeamDto): ValidationError | null {
     if (dto.name !== undefined && (dto.name.length < TEAM_NAME_MIN || dto.name.length > TEAM_NAME_MAX)) {
         return { message: `Team name must be between ${TEAM_NAME_MIN} and ${TEAM_NAME_MAX} characters` };
+    }
+    if (dto.description !== undefined && (dto.description.trim().length < 3 || dto.description.trim().length > 1000)) {
+        return { message: "Team description must be between 3 and 1000 characters" };
+    }
+    if (dto.avatar !== undefined && dto.avatar !== "" && !dto.avatar.startsWith("data:image/")) {
+        return { message: "Team avatar must be a base64 image" };
     }
     return null;
 }

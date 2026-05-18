@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import type { IAuthAPIService } from "../../api_services/auth/IAuthAPIService";
+import { validatePassword, validateUsername } from "../../helpers/validation";
 
 export function LoginForm({ authApi }: { authApi: IAuthAPIService }) {
   const { login } = useAuth();
@@ -10,7 +11,12 @@ export function LoginForm({ authApi }: { authApi: IAuthAPIService }) {
   const [loading, setLoading] = useState(false);
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); setError(""); setLoading(true);
+    e.preventDefault(); setError("");
+    const usernameError = validateUsername(username);
+    if (usernameError) { setError(usernameError); return; }
+    const passwordError = validatePassword(password);
+    if (passwordError) { setError(passwordError); return; }
+    setLoading(true);
     const res = await authApi.login(username, password);
     setLoading(false);
     if (!res.success || !res.data) { setError(res.message ?? "Invalid credentials"); return; }

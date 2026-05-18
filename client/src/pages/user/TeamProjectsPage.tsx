@@ -4,6 +4,7 @@ import { PageHeader, Empty, ErrorBox, SuccessBox, Spinner, StatusBadge, Paginati
 import { projectsApi } from "../../api_services/project/ProjectAPIService";
 import { tagsApi } from "../../api_services/tag/TagAPIService";
 import type { ProjectDto, ProjectStatus, Priority, TagDto } from "../../models/project/ProjectTypes";
+import { validateFutureDate, validateProjectDescription, validateProjectName } from "../../helpers/validation";
 
 const PAGE_SIZE = 10;
 
@@ -84,11 +85,12 @@ export default function TeamProjectsPage() {
   };
 
   const handleCreate = async () => {
-    if (!name.trim() || !desc.trim()) return;
-    if (deadline && new Date(deadline) <= new Date()) {
-      setError("Deadline must be a future date");
-      return;
-    }
+    const nameError = validateProjectName(name);
+    if (nameError) { setError(nameError); return; }
+    const descriptionError = validateProjectDescription(desc);
+    if (descriptionError) { setError(descriptionError); return; }
+    const deadlineError = validateFutureDate(deadline, "Deadline");
+    if (deadlineError) { setError(deadlineError); return; }
     setCreating(true);
     setError("");
     setSuccess("");
@@ -99,7 +101,7 @@ export default function TeamProjectsPage() {
         desc.trim(),
         status,
         priority,
-        deadline || null,
+        deadline,
         selectedTags,
       );
       if (res.success) {

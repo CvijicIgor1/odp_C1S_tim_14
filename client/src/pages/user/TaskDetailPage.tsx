@@ -75,6 +75,10 @@ export default function TaskDetailPage() {
 
   const handleAddComment = async () => {
     if (!comment.trim()) return;
+    if (comment.trim().length > 2000) {
+      setError("Comment cannot exceed 2000 characters");
+      return;
+    }
     setAdding(true);
     setError("");
     setSuccess("");
