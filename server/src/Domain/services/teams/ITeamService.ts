@@ -1,4 +1,5 @@
 import { UpdateRoleResult } from "../../enums/UpdateRoleResult";
+import { TeamOperationResult } from "../../enums/TeamOperationResult";
 import { PaginatedListDto } from "../../DTOs/entity/PaginatedListDto";
 import { AddMemberDto } from "../../DTOs/teams/AddMemberDto";
 import { CreateTeamDto } from "../../DTOs/teams/CreateTeamDto";
@@ -13,11 +14,11 @@ export interface ITeamService {
     getAllAsAdmin(userId: number, page: number, limit: number, isAdmin: boolean): Promise<PaginatedListDto<TeamDto>>;
     getWithTeamId(teamId: number, userId: number, isAdmin: boolean): Promise<TeamDto>;
     createNewTeam(dto: CreateTeamDto, userId: number): Promise<TeamDto>;
-    updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<boolean>;
-    deleteTeam(teamId: number, userId: number): Promise<boolean>;
+    updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<TeamOperationResult>;
+    deleteTeam(teamId: number, userId: number): Promise<TeamOperationResult>;
     getTeamMembers(teamId: number, page:number, limit:number, userId: number): Promise<PaginatedListDto<TeamMemberDto>>;
     countOwners(teamId: number): Promise<number>;
-    addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean>;
-    removeTeamMember(teamId: number, memberId: number, userId: number): Promise<boolean>;
+    addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<TeamOperationResult>;
+    removeTeamMember(teamId: number, memberId: number, userId: number): Promise<TeamOperationResult>;
     updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<UpdateRoleResult>;
 }

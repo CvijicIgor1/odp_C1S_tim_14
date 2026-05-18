@@ -1,4 +1,4 @@
-import { Request, Response, Router, NextFunction } from "express";
+import { Request, Response, Router } from "express";
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
@@ -6,6 +6,7 @@ import { authorize } from '../../Middlewares/authorization/AuthorizeMiddleware';
 import { UserRole } from "../../Domain/enums/UserRole";
 import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
 import { AuditAction } from "../../Domain/enums/AuditLog";
+import { TeamOperationResult } from "../../Domain/enums/TeamOperationResult";
 import { UpdateRoleResult } from "../../Domain/enums/UpdateRoleResult";
 import { CreateTeamDto } from "../../Domain/DTOs/teams/CreateTeamDto";
 import { AddMemberDto } from "../../Domain/DTOs/teams/AddMemberDto";
@@ -62,33 +63,27 @@ export class TeamController {
         res.status(200).json({ success: true, data: team });
     }
 
-    private async update(req: Request, res: Response, next: NextFunction): Promise<void> {
+    private async update(req: Request, res: Response): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid ID" }); return; }
         const dto = req.body as UpdateTeamDto;
         const error = validateUpdateTeam(dto);
         if (error) { res.status(400).json({ success: false, message: error.message }); return; }
-        try {
-            const ok = await this.teamService.updateTeam(id, dto, req.user!.user_id);
-            if (!ok) { res.status(404).json({ success: false, message: "Team not found"}); return; }
-            await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team", id, undefined, req.ip, req.user!.username);
-            res.status(200).json({ success: true, message: "Team updated successfully" });
-        } catch (err) {
-            next(err);
-        }
+        const result = await this.teamService.updateTeam(id, dto, req.user!.user_id);
+        if (result === TeamOperationResult.Forbidden) { res.status(403).json({ success: false, message: "Only the team owner can update the team" }); return; }
+        if (result === TeamOperationResult.NotFound)  { res.status(404).json({ success: false, message: "Team not found" }); return; }
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team", id, undefined, req.ip, req.user!.username);
+        res.status(200).json({ success: true, message: "Team updated successfully" });
     }
 
-    private async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
+    private async delete(req: Request, res: Response): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid team ID" }); return; }
-        try {
-            const ok = await this.teamService.deleteTeam(id, req.user!.user_id);
-            if (!ok) { res.status(404).json({ success: false, message: "Team not found" }); return; }
-            await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team", id, undefined, req.ip, req.user!.username);
-            res.status(200).json({ success: true, message: "Team deleted successfully" });
-        } catch (err) {
-            next(err);
-        }
+        const result = await this.teamService.deleteTeam(id, req.user!.user_id);
+        if (result === TeamOperationResult.Forbidden) { res.status(403).json({ success: false, message: "Only the team owner can delete the team" }); return; }
+        if (result === TeamOperationResult.NotFound)  { res.status(404).json({ success: false, message: "Team not found" }); return; }
+        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team", id, undefined, req.ip, req.user!.username);
+        res.status(200).json({ success: true, message: "Team deleted successfully" });
     }
 
     private async getMembers(req: Request, res: Response): Promise<void> {
@@ -98,18 +93,19 @@ export class TeamController {
         res.status(200).json({ success: true, data: result });
     }
 
-    private async addMember(req: Request, res: Response, next: NextFunction): Promise<void> {
+    private async addMember(req: Request, res: Response): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid member ID" }); return; }
         const { username, role } = req.body as { username?: string; role?: TeamMemberRole };
         if (!username) { res.status(400).json({ success: false, message: "Username is required" }); return; }
-        const ok = await this.teamService.addTeamMember(id, new AddMemberDto(username, role ?? TeamMemberRole.MEMBER), req.user!.user_id);
-        if (!ok) { res.status(404).json({ success: false, message: "User not found" }); return; }
+        const result = await this.teamService.addTeamMember(id, new AddMemberDto(username, role ?? TeamMemberRole.MEMBER), req.user!.user_id);
+        if (result === TeamOperationResult.Forbidden) { res.status(403).json({ success: false, message: "Only the team owner can add members" }); return; }
+        if (result === TeamOperationResult.NotFound)  { res.status(404).json({ success: false, message: "User not found" }); return; }
         await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "team_member", id, `username=${username}`, req.ip, req.user!.username);
         res.status(201).json({ success: true, message: "Member added successfully" });
     }
 
-    private async updateMemberRole(req: Request, res: Response, next: NextFunction): Promise<void> {
+    private async updateMemberRole(req: Request, res: Response): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         const memberId = parseInt(req.params.userId as string, 10);
         if (isNaN(id) || isNaN(memberId)) { res.status(400).json({ success: false, message: "Invalid IDs" }); return; }
@@ -119,23 +115,21 @@ export class TeamController {
         if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
         const result = await this.teamService.updateMemberRole(id, memberId, new UpdateMemberRoleDto(role), req.user!.user_id);
-        if (result === UpdateRoleResult.NotFound) { res.status(404).json({ success: false, message: "Member not found" }); return; }
+        if (result === UpdateRoleResult.Forbidden) { res.status(403).json({ success: false, message: "Only the team owner can change member roles" }); return; }
+        if (result === UpdateRoleResult.NotFound)  { res.status(404).json({ success: false, message: "Member not found" }); return; }
         if (result === UpdateRoleResult.LastOwner) { res.status(400).json({ success: false, message: "Tim mora imati tačno jednog vlasnika" }); return; }
         await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team_member", memberId, `role=${role}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Role changed successfully" });
     }
 
-    private async removeMember(req: Request, res: Response, next: NextFunction): Promise<void> {
+    private async removeMember(req: Request, res: Response): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         const memberId = parseInt(req.params.userId as string, 10);
         if (isNaN(id) || isNaN(memberId)) { res.status(400).json({ success: false, message: "Invalid IDs" }); return; }
-        try {
-            const ok = await this.teamService.removeTeamMember(id, memberId, req.user!.user_id);
-            if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
-            await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team_member", memberId, undefined, req.ip, req.user!.username);
-            res.status(200).json({ success: true, message: "Member removed successfully" });
-        } catch (err) {
-            next(err);
-        }
+        const result = await this.teamService.removeTeamMember(id, memberId, req.user!.user_id);
+        if (result === TeamOperationResult.LastOwner) { res.status(400).json({ success: false, message: "Cannot remove the last owner of a team" }); return; }
+        if (result === TeamOperationResult.NotFound)  { res.status(404).json({ success: false, message: "Member not found" }); return; }
+        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team_member", memberId, undefined, req.ip, req.user!.username);
+        res.status(200).json({ success: true, message: "Member removed successfully" });
     }
 }

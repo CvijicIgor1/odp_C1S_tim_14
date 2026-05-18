@@ -5,8 +5,8 @@ import { ITeamMemberRepository } from '../../Domain/repositories/teams/ITeamMemb
 import { IUserQueryRepository } from '../../Domain/repositories/users/IUserQueryRepository';
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { AuditAction } from "../../Domain/enums/AuditLog";
+import { TeamOperationResult } from "../../Domain/enums/TeamOperationResult";
 import { UpdateRoleResult } from "../../Domain/enums/UpdateRoleResult";
-import { AppError } from "../../Domain/errors/AppError";
 import { AddMemberDto } from "../../Domain/DTOs/teams/AddMemberDto";
 import { CreateTeamDto } from "../../Domain/DTOs/teams/CreateTeamDto";
 import { UpdateMemberRoleDto } from "../../Domain/DTOs/teams/UpdateMemberRoleDto";
@@ -86,17 +86,19 @@ export class TeamService implements ITeamService {
         return this.toDto(created, TeamMemberRole.OWNER);  //ima manje posla nego kod Almondovog CreateOrder, jer ne moramo da rukujemo brojkama
     }
 
-    async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<boolean> {
+    async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number): Promise<TeamOperationResult> {
         const owner = await this.teamMemberRepository.isOwner(teamId, userId);
-        if (!owner) throw new AppError(403, "Only the team owner can update the team");
+        if (!owner) return TeamOperationResult.Forbidden;
         const input = new Team(0, dto.name, dto.description, dto.avatar, new Date(), new Date());
-        return this.teamCommandRepository.update(teamId, input);
+        const ok = await this.teamCommandRepository.update(teamId, input);
+        return ok ? TeamOperationResult.Success : TeamOperationResult.NotFound;
     }
 
-    async deleteTeam(teamId: number, userId: number): Promise<boolean> {
+    async deleteTeam(teamId: number, userId: number): Promise<TeamOperationResult> {
         const owner = await this.teamMemberRepository.isOwner(teamId, userId);
-        if (!owner) throw new AppError(403, "Only the team owner can delete the team");
-        return await this.teamCommandRepository.delete(teamId);
+        if (!owner) return TeamOperationResult.Forbidden;
+        const ok = await this.teamCommandRepository.delete(teamId);
+        return ok ? TeamOperationResult.Success : TeamOperationResult.NotFound;
     }
 
     async getTeamMembers(teamId: number, page: number, limit: number, userId: number): Promise<PaginatedListDto<TeamMemberDto>> {
@@ -118,25 +120,27 @@ export class TeamService implements ITeamService {
         return this.teamMemberRepository.countOwners(teamId);
     }
 
-    async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean> {
+    async addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<TeamOperationResult> {
         const isOwner = await this.teamMemberRepository.isOwner(teamId, userId);
-        if (!isOwner) throw new AppError(403, "Only the team owner can add members");
+        if (!isOwner) return TeamOperationResult.Forbidden;
         const noviClan = new TeamMember(0, 0, dto.role, new Date(), dto.username);
-        return await this.teamMemberRepository.addMember(teamId, noviClan);
+        const ok = await this.teamMemberRepository.addMember(teamId, noviClan);
+        return ok ? TeamOperationResult.Success : TeamOperationResult.NotFound;
     }
 
-    async removeTeamMember(teamId: number, memberId: number, userId: number): Promise<boolean> {
+    async removeTeamMember(teamId: number, memberId: number, userId: number): Promise<TeamOperationResult> {
         const ownerCount = await this.teamMemberRepository.countOwners(teamId);
         if (ownerCount <= 1) {
             const memberIsOwner = await this.teamMemberRepository.isOwner(teamId, memberId);
-            if (memberIsOwner) throw new AppError(400, "Cannot remove the last owner of a team");
+            if (memberIsOwner) return TeamOperationResult.LastOwner;
         }
-        return await this.teamMemberRepository.removeMember(teamId, memberId);
+        const ok = await this.teamMemberRepository.removeMember(teamId, memberId);
+        return ok ? TeamOperationResult.Success : TeamOperationResult.NotFound;
     }
 
     async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<UpdateRoleResult> {
         const isOwner = await this.teamMemberRepository.isOwner(teamId, callerId);
-        if (!isOwner) throw new AppError(403, "Only the team owner can change member roles");
+        if (!isOwner) return UpdateRoleResult.Forbidden;
 
         if (dto.role === TeamMemberRole.MEMBER) {
             const ownerCount = await this.teamMemberRepository.countOwners(teamId);
