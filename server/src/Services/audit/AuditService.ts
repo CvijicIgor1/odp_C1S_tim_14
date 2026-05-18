@@ -5,11 +5,14 @@ import { AuditAction } from "../../Domain/enums/AuditLog";
 import { AuditLogDto } from "../../Domain/DTOs/audit/AuditLogDto";
 import { PaginatedListDto } from "../../Domain/DTOs/paginatedList/PaginatedListDto";
 
-const parseDetail = (raw: string | null): Record<string, unknown> | null => {
-    if (raw === null || raw === undefined) return null;
+type JsonScalar = string | number | boolean | null;
+type JsonValue = JsonScalar | JsonValue[] | { [key: string]: JsonValue };
+
+const parseDetail = (raw: string | null): { [key: string]: JsonValue } | null => {
+    if (raw === null) return null;
     if (raw.trim() === "") return null;
     try {
-        return JSON.parse(raw) as Record<string, unknown>;
+        return JSON.parse(raw) as { [key: string]: JsonValue };
     } catch {
         return { value: raw };
     }

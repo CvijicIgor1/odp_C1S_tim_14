@@ -24,7 +24,7 @@ export function validateCreateTask(body: {
     status?: string;
     priority?: string;
     deadline?: string;
-    estimatedHours?: unknown;
+    estimatedHours?: number | string;
 }): ValidationError | null {
     if (!body.title || !body.description || !body.deadline) {
         return { message: "title, description and deadline are required" };

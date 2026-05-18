@@ -49,7 +49,7 @@ export class ProjectController {
         const teamId = parseInt(String(req.params.teamId), 10);
         if (isNaN(teamId)) { res.status(400).json({ success: false, message: "Invalid team ID" }); return; }
 
-        const { page, limit } = parsePagination(req.query as Record<string, unknown>);
+        const { page, limit } = parsePagination(req.query as Record<string, string | number | boolean | null | undefined>);
 
         const filters = {
             status:   req.query.status   ? String(req.query.status)   as ProjectStatus : undefined,
@@ -64,7 +64,7 @@ export class ProjectController {
     
     private async getAllAsAdmin(req: Request, res: Response): Promise<void> 
     {
-        const { page, limit } = parsePagination(req.query as Record<string, unknown>, 100, 200);
+        const { page, limit } = parsePagination(req.query as Record<string, string | number | boolean | null | undefined>, 100, 200);
 
         const result = await this.projectReadService.getAllProjectsAsAdmin(page, limit);
         res.status(200).json({ success: true, data: result });
@@ -72,7 +72,7 @@ export class ProjectController {
 
     private async getWatched(req: Request, res: Response): Promise<void> 
     {
-        const { page, limit } = parsePagination(req.query as Record<string, unknown>);
+        const { page, limit } = parsePagination(req.query as Record<string, string | number | boolean | null | undefined>);
 
         const result = await this.projectReadService.getWatchedProjects(req.user!.user_id, page, limit);
         res.status(200).json({ success: true, data: result });

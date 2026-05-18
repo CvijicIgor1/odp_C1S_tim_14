@@ -30,7 +30,7 @@ export class HealthController {
 
   // POST /health/failover — Промоција slave у master
   private async failover(req: Request, res: Response): Promise<void> {
-    const { slaveIndex } = req.body as { slaveIndex?: unknown };
+    const { slaveIndex } = req.body as { slaveIndex?: number };
     if (slaveIndex !== 0 && slaveIndex !== 1) {
       res.status(400).json({ success: false, message: "slaveIndex must be 0 or 1" });
       return;

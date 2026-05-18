@@ -5,7 +5,14 @@ import type { AuthUser } from "../../types/auth/AuthUser";
 import type { JwtTokenClaims } from "../../types/auth/JwtTokenClaims";
 import { authApi } from "../../api_services/auth/AuthAPIService";
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  token: null,
+  login: () => {},
+  logout: () => {},
+  isAuthenticated: false,
+  isLoading: false,
+});
 const KEY = "authToken";
 
 const decode = (token: string): JwtTokenClaims | null => {

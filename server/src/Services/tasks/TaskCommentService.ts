@@ -24,8 +24,7 @@ export class TaskCommentService implements ITaskCommentService {
         const task = await this.taskQueryRepository.findById(taskId);
         if (task.id === 0) return { result: AddCommentResult.NotFound };
 
-        const canComment = await this.taskAssigneeRepository.isAssignee(taskId, userId)
-            || await this.taskAccessRepository.isTeamOwnerOfTask(taskId, userId);
+        const canComment = await this.taskAssigneeRepository.isAssignee(taskId, userId);
 
         if (!canComment) return { result: AddCommentResult.Forbidden };
 

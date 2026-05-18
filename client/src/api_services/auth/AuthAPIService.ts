@@ -3,10 +3,12 @@ import type { AuthResponse } from "../../types/auth/AuthResponse";
 import type { IAuthAPIService } from "./IAuthAPIService";
 
 const BASE = import.meta.env.VITE_API_URL + "auth";
-const err = (e: unknown, fallback: string): AuthResponse => ({
-  success: false,
-  message: axios.isAxiosError(e) ? (e.response?.data as { message?: string })?.message ?? fallback : fallback,
-});
+function err(e: Error, fallback: string): AuthResponse {
+  return {
+    success: false,
+    message: axios.isAxiosError(e) ? (e.response?.data as { message?: string })?.message ?? fallback : fallback,
+  };
+}
 
 export const authApi: IAuthAPIService = {
   async login(username, password) {

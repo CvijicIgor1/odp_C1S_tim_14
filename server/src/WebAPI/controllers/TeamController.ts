@@ -40,13 +40,13 @@ export class TeamController {
     public getRouter(): Router { return this.router; }
 
     private async getAll(req: Request, res: Response): Promise<void> {
-        const { page, limit } = parsePagination(req.query as Record<string, unknown>);
+        const { page, limit } = parsePagination(req.query as Record<string, string | number | boolean | null | undefined>);
         const result = await this.teamReadService.getAll(req.user!.user_id, page, limit);
         res.status(200).json({ success: true, data: result });
     }
 
     private async getAllAsAdmin(req: Request, res: Response): Promise<void> {
-        const { page, limit } = parsePagination(req.query as Record<string, unknown>);
+        const { page, limit } = parsePagination(req.query as Record<string, string | number | boolean | null | undefined>);
         const result = await this.teamReadService.getAllAsAdmin(req.user!.user_id, page, limit, req.user?.role === UserRole.ADMIN);
         res.status(200).json({ success: true, data: result });
     }
@@ -97,7 +97,7 @@ export class TeamController {
           if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid ID" }); return; }
           const team = await this.teamReadService.getWithTeamId(id, req.user!.user_id, req.user?.role === UserRole.ADMIN);
           if (team.id === 0) { res.status(404).json({ success: false, message: "Team not found" }); return; }
-          const { page, limit } = parsePagination(req.query as Record<string, unknown>);
+          const { page, limit } = parsePagination(req.query as Record<string, string | number | boolean | null | undefined>);
           const result = await this.teamReadService.getTeamMembers(id, page, limit, req.user!.user_id);
           res.status(200).json({ success: true, data: result });
       }

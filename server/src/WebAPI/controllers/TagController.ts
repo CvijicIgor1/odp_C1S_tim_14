@@ -19,7 +19,7 @@ export class TagController {
     }
 
     private async getAllTags(req: Request, res: Response): Promise<void>{
-        const { page, limit } = parsePagination(req.query as Record<string, unknown>);
+        const { page, limit } = parsePagination(req.query as Record<string, string | number | boolean | null | undefined>);
         const result = await this.tagService.getAll(page, limit);
         res.status(200).json({success: true, data: result});
     }

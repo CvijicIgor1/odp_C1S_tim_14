@@ -5,7 +5,7 @@ export function safeInt(value: number, fallback: number): number
 }
 
 export function parsePagination(
-    query: Record<string, unknown>,
+    query: Record<string, string | number | boolean | null | undefined>,
     defaultLimit = 20,
     maxLimit = 100
 ): { page: number; limit: number }

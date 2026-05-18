@@ -8,7 +8,7 @@ export type AuditLogDto = {
   action: string;
   entity_type: string | null;
   entity_id: number | null;
-  detail: Record<string, unknown> | null;
+  detail: Record<string, string | number | boolean | null | undefined> | null;
   ip_address: string | null;
   created_at: string;
 };

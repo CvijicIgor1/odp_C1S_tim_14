@@ -8,7 +8,7 @@ export function validateUpdateRole(role: string | undefined): ValidationError | 
     return null;
 }
 
-export function validateUpdateStatus(isActive: unknown): ValidationError | null {
+export function validateUpdateStatus(isActive: boolean | undefined): ValidationError | null {
     if (isActive === undefined || typeof isActive !== "boolean") {
         return { message: "isActive (boolean) is required" };
     }

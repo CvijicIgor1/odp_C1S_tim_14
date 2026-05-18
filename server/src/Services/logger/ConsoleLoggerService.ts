@@ -18,7 +18,7 @@ export class ConsoleLoggerService implements ILoggerService {
     console.warn(`${GRAY}${ts()}${RESET} ${YELLOW}[WARN]${RESET} ${GRAY}[${context}]${RESET} ${message}`);
   }
 
-  error(context: string, message: string, err?: unknown): void {
+  error(context: string, message: string, err?: Error | string | number | boolean | null): void {
     const detail = err instanceof Error ? ` — ${err.message}` : err ? ` — ${String(err)}` : "";
     console.error(`${GRAY}${ts()}${RESET} ${RED}[ERROR]${RESET} ${GRAY}[${context}]${RESET} ${message}${detail}`);
   }

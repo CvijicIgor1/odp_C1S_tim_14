@@ -44,6 +44,7 @@ const slave2Pool: Pool = mysql.createPool({
 });
 
 interface NodeInfo { name: string; pool: Pool; node: DbNode; excludedFromReads?: boolean; isOriginalMaster?: boolean; }
+type ReplicaStatusRow = { Seconds_Behind_Master: number | null };
 
 export class DbManager implements IDbHealthService {
   private master: NodeInfo;
@@ -158,10 +159,10 @@ export class DbManager implements IDbHealthService {
 
   private async measureReplicationLag(info: NodeInfo): Promise<void> {
     if (info.node.status === NodeStatus.UNREACHABLE) { info.node.replicationLagMs = null; return; }
-    let conn: import("mysql2/promise").PoolConnection | null = null;
+    let conn: PoolConnection | null = null;
     try {
       conn = await info.pool.getConnection();
-      const [rows] = await conn.query("SHOW SLAVE STATUS") as [Record<string, unknown>[], unknown];
+      const [rows] = await conn.query("SHOW SLAVE STATUS") as [ReplicaStatusRow[], mysql.FieldPacket[]];
       if (Array.isArray(rows) && rows.length > 0) {
         const lag = rows[0].Seconds_Behind_Master;
         info.node.replicationLagMs = typeof lag === "number" ? lag * 1000 : null;

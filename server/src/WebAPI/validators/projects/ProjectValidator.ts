@@ -24,7 +24,7 @@ export function validateCreateProject(dto: CreateProjectDto): ValidationError | 
     if (Number.isNaN(new Date(dto.deadline).getTime()) || new Date(dto.deadline) <= new Date()) {
         return { message: "Deadline must be a future date" };
     }
-    if (!Array.isArray(dto.tagIds) || dto.tagIds.some((tagId) => !Number.isInteger(tagId) || tagId <= 0)) {
+    if (dto.tagIds !== null && dto.tagIds !== undefined && (!Array.isArray(dto.tagIds) || dto.tagIds.some((tagId) => !Number.isInteger(tagId) || tagId <= 0))) {
         return { message: "tagIds must contain valid positive integers" };
     }
     return null;

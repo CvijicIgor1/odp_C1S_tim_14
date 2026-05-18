@@ -15,7 +15,7 @@ export class AuditController {
     public getRouter(): Router { return this.router; }
 
     private async getLogs(req: Request, res: Response): Promise<void> {
-        const { page, limit } = parsePagination(req.query as Record<string, unknown>);
+        const { page, limit } = parsePagination(req.query as Record<string, string | number | boolean | null | undefined>);
 
         const result = await this.auditService.findAll(page, limit);
         res.status(200).json({ success: true, data: result });
