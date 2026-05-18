@@ -32,7 +32,7 @@ export function RegisterForm({ authApi }: { authApi: IAuthAPIService }) {
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); setError(""); setLoading(true);
-    const res = await authApi.register(form.username,form.fullname, form.email, form.password, form.image, "user");
+    const res = await authApi.register(form.username,form.fullname, form.email, form.password, form.image);
     setLoading(false);
     if (!res.success || !res.data) { setError(res.message ?? "Registration failed"); return; }
     login(res.data);

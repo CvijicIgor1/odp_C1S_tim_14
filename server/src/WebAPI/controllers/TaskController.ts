@@ -24,6 +24,8 @@ export class TaskController {
         private readonly taskCommentService: ITaskCommentService,
         private readonly auditService: IAuditService
     ) {
+        this.router.get("/tasks/project/:projectId", authenticate, this.getByProject.bind(this));
+        this.router.post("/tasks", authenticate, this.create.bind(this));
         this.router.get("/projects/:projectId/tasks", authenticate, this.getByProject.bind(this));
         this.router.post("/projects/:projectId/tasks", authenticate, this.create.bind(this));
         this.router.get("/tasks/my", authenticate, this.getMyTasks.bind(this));
@@ -75,7 +77,8 @@ export class TaskController {
 
     private async create(req: Request, res: Response): Promise<void>
     {
-        const projectId = parseInt(String(req.params.projectId), 10);
+        const projectIdRaw = req.params.projectId ?? req.body.projectId;
+        const projectId = parseInt(String(projectIdRaw), 10);
         if (isNaN(projectId)) { res.status(400).json({ success: false, message: "Invalid project ID" }); return; }
 
         const { title, description, status, priority, deadline, estimatedHours } = req.body;

@@ -106,13 +106,20 @@ const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL ?? "*" }));
 app.use(express.json({ limit: "10mb" }));
 
-app.use("/api/v1", new AuthController(authService, tokenService, auditService).getRouter());
-app.use("/api/v1", new UserController(userService, auditService).getRouter());
-app.use("/api/v1", new TeamController(teamReadService, teamWriteService, teamMemberService, auditService).getRouter());
-app.use("/api/v1", new ProjectController(projectReadService, projectWriteService, projectTagWatchService, auditService).getRouter());
-app.use("/api/v1", new TagController(tagService, auditService).getRouter());
-app.use("/api/v1", new HealthController(db, auditService).getRouter());
-app.use("/api/v1", new AuditController(auditService).getRouter());
-app.use("/api/v1", new TaskController(taskReadService, taskWriteService, taskCommentService, auditService).getRouter());
+const routers = [
+  new AuthController(authService, tokenService, auditService).getRouter(),
+  new UserController(userService, auditService).getRouter(),
+  new TeamController(teamReadService, teamWriteService, teamMemberService, auditService).getRouter(),
+  new ProjectController(projectReadService, projectWriteService, projectTagWatchService, auditService).getRouter(),
+  new TagController(tagService, auditService).getRouter(),
+  new HealthController(db, auditService).getRouter(),
+  new AuditController(auditService).getRouter(),
+  new TaskController(taskReadService, taskWriteService, taskCommentService, auditService).getRouter(),
+];
+
+for (const router of routers) {
+  app.use("/api", router);
+  app.use("/api/v1", router);
+}
 
 export default app;

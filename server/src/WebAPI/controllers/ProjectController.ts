@@ -26,6 +26,8 @@ export class ProjectController {
         private readonly projectTagWatchService: IProjectTagWatchService,
         private readonly auditService: IAuditService
     ) {
+        this.router.get("/projects/team/:teamId", authenticate, this.getTeamProjects.bind(this));
+        this.router.post("/projects", authenticate, this.create.bind(this));
         this.router.get("/teams/:teamId/projects",      authenticate, this.getTeamProjects.bind(this));
         this.router.post("/teams/:teamId/projects",     authenticate, this.create.bind(this));
         this.router.get("/projects/all",          authenticate, authorize(UserRole.ADMIN), this.getAllAsAdmin.bind(this));
@@ -93,10 +95,11 @@ export class ProjectController {
     
     private async create(req: Request, res: Response): Promise<void> 
     {
-        const teamId = parseInt(String(req.params.teamId), 10);
+        const teamIdRaw = req.params.teamId ?? req.body.teamId;
+        const teamId = parseInt(String(teamIdRaw), 10);
         if (isNaN(teamId)) { res.status(400).json({ success: false, message: "Invalid team ID" }); return; }
 
-        const { name, description, status, priority, deadline, tagIds } = req.body as CreateProjectDto;
+        const { name, description, status, priority, deadline, tagIds } = req.body as CreateProjectDto & { teamId?: number };
         const error = validateCreateProject({ name, description, status, priority, deadline, tagIds } as CreateProjectDto);
         if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 

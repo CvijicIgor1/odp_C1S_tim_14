@@ -18,7 +18,7 @@ const err = <T>(e: unknown, fallback: string): ApiResponse<T> => ({
 export const projectsApi: IProjectAPIService = {
   async getTeamProjects(teamId) {
     return axios
-      .get<ApiResponse<PaginatedList<ProjectDto>>>(`${BASE}teams/${teamId}/projects`, {
+      .get<ApiResponse<PaginatedList<ProjectDto>>>(`${BASE}projects/team/${teamId}`, {
         headers: auth(),
         params: { page: 1, limit: 1000 },
       })
@@ -54,7 +54,7 @@ export const projectsApi: IProjectAPIService = {
 
   async create(teamId, name, description, status, priority, deadline, tagIds = []) {
     return axios
-      .post<ApiResponse<ProjectDto>>(`${BASE}teams/${teamId}/projects`, { name, description, status, priority, deadline, tagIds }, { headers: auth() })
+      .post<ApiResponse<ProjectDto>>(`${BASE}projects`, { teamId, name, description, status, priority, deadline, tagIds }, { headers: auth() })
       .then(r => r.data)
       .catch(e => err(e, "Failed to create project"));
   },

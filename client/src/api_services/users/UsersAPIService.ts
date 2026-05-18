@@ -17,11 +17,11 @@ const err = <T>(e: unknown, fallback: string): ApiResponse<T> => ({
 
 export const usersApi: IUsersAPIService = {
   async getAll() {
-    return axios.get<ApiResponse<UserDto[]>>(BASE, { headers: authHeader() })
+    return axios.get<ApiResponse<UserDto[]>>(`${BASE}/all`, { headers: authHeader() })
       .then(r => r.data).catch(e => err(e, "Failed to load users"));
   },
   async getById(id) {
-    return axios.get<ApiResponse<UserDto>>(`${BASE}/${id}`, { headers: authHeader() })
+    return axios.get<ApiResponse<UserDto>>(`${BASE}/${id}`)
       .then(r => r.data).catch(e => err(e, "Failed to load user"));
   },
   async updateProfile(id, username, email, avatar, newPassword) {
@@ -29,7 +29,7 @@ export const usersApi: IUsersAPIService = {
       .then(r => r.data).catch(e => err(e, "Failed to update profile"));
   },
   async updateRole(id, role) {
-    return axios.patch<ApiResponse<void>>(`${BASE}/${id}/role`, { role }, { headers: authHeader() })
+    return axios.put<ApiResponse<void>>(`${BASE}/${id}/role`, { role }, { headers: authHeader() })
       .then(r => r.data).catch(e => err(e, "Failed to update role"));
   },
   async updateStatus(id, isActive) {

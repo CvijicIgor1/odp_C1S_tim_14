@@ -19,7 +19,7 @@ const err = <T>(e: unknown, fallback: string): ApiResponse<T> => ({
 export const tasksApi: ITaskAPIService = {
   async getByProject(projectId) {
     return axios
-      .get<ApiResponse<GroupedTasksDto>>(`${BASE}projects/${projectId}/tasks`, { headers: auth() })
+      .get<ApiResponse<GroupedTasksDto>>(`${BASE}tasks/project/${projectId}`, { headers: auth() })
       .then(r => r.data)
       .catch(e => err(e, "Failed to load tasks"));
   },
@@ -40,7 +40,7 @@ export const tasksApi: ITaskAPIService = {
 
   async create(projectId, title, description, status, priority, deadline, estimatedHours = 0) {
     return axios
-      .post<ApiResponse<TaskDto>>(`${BASE}projects/${projectId}/tasks`, { title, description, status, priority, deadline, estimatedHours }, { headers: auth() })
+      .post<ApiResponse<TaskDto>>(`${BASE}tasks`, { projectId, title, description, status, priority, deadline, estimatedHours }, { headers: auth() })
       .then(r => r.data)
       .catch(e => err(e, "Failed to create task"));
   },
