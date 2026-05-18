@@ -13,6 +13,7 @@ import ProjectKanbanPage from "./pages/user/ProjectKanbanPage";
 import TaskDetailPage from "./pages/user/TaskDetailPage";
 import MyTasksPage from "./pages/user/MyTasksPage";
 import ProfilePage from "./pages/user/ProfilePage";
+import WatchedProjectsPage from "./pages/user/WatchedProjectsPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersPage from "./pages/admin/UsersPage";
 import AllTeamsPage from "./pages/admin/AllTeamsPage";
@@ -33,6 +34,7 @@ export default function App() {
       <Route path="/teams"     element={<ProtectedRoute requiredRole={UserRole.USER}><UserTeams /></ProtectedRoute>} />
       <Route path="/teams/:teamId/projects" element={<ProtectedRoute requiredRole={UserRole.USER}><TeamProjectsPage /></ProtectedRoute>} />
       <Route path="/projects/:id" element={<ProtectedRoute requiredRole={UserRole.USER}><ProjectKanbanPage /></ProtectedRoute>} />
+      <Route path="/watched-projects" element={<ProtectedRoute requiredRole={UserRole.USER}><WatchedProjectsPage /></ProtectedRoute>} />
       <Route path="/tasks/:id" element={<ProtectedRoute requiredRole={UserRole.USER}><TaskDetailPage /></ProtectedRoute>} />
       <Route path="/my-tasks" element={<ProtectedRoute requiredRole={UserRole.USER}><MyTasksPage /></ProtectedRoute>} />
       <Route path="/profile"  element={<ProtectedRoute requiredRole={UserRole.USER}><ProfilePage /></ProtectedRoute>} />

@@ -11,12 +11,27 @@ export default function MyTasksPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const priorityOrder: Record<TaskDto["priority"], number> = {
+    critical: 0,
+    high: 1,
+    medium: 2,
+    low: 3,
+  };
+
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
       const res = await tasksApi.getMyTasks();
-      if (res.success && res.data) setTasks(res.data);
+      if (res.success && res.data) {
+        const sorted = [...res.data].sort((a, b) => {
+          const aDeadline = new Date(a.deadline).getTime();
+          const bDeadline = new Date(b.deadline).getTime();
+          if (aDeadline !== bDeadline) return aDeadline - bDeadline;
+          return priorityOrder[a.priority] - priorityOrder[b.priority];
+        });
+        setTasks(sorted);
+      }
       else setError(res.message);
     } finally {
       setLoading(false);

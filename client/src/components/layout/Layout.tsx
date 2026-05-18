@@ -7,6 +7,7 @@ import { UserRole } from "../../models/user/UserRole";
 const userNav = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/teams",     label: "Teams" },
+  { to: "/watched-projects", label: "Watched" },
   { to: "/my-tasks",  label: "My Tasks" },
   { to: "/profile",   label: "Profile" },
 ];
