@@ -1,6 +1,6 @@
 import { ITeamWriteService } from "../../Domain/services/teams/ITeamWriteService";
 import { ITeamCommandRepository } from '../../Domain/repositories/teams/ITeamCommandRepository';
-import { ITeamMemberRepository } from '../../Domain/repositories/teams/ITeamMemberRepository';
+import { ITeamQueryRepository } from "../../Domain/repositories/teams/ITeamQueryRepository";
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { AuditAction } from "../../Domain/enums/AuditLog";
 import { TeamOperationResult } from "../../Domain/enums/TeamOperationResult";
@@ -13,12 +13,17 @@ import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
 export class TeamWriteService implements ITeamWriteService {
     public constructor(
         private readonly teamCommandRepository: ITeamCommandRepository,
-        private readonly teamMemberRepository: ITeamMemberRepository,
+        private readonly teamQueryRepository: ITeamQueryRepository,
         private readonly auditService: IAuditService,
     ) {}
 
     private toDto(team: Team, role: TeamMemberRole = TeamMemberRole.MEMBER): TeamDto {
         return new TeamDto(team.id, team.name, team.description, team.avatar, team.updatedAt, team.createdAt, role);
+    }
+
+    private async isTeamOwner(teamId: number, userId: number): Promise<boolean> {
+        const members = await this.teamQueryRepository.getMembers(teamId);
+        return members.members.some((member) => member.userId === userId && member.role === TeamMemberRole.OWNER);
     }
 
     async createNewTeam(dto: CreateTeamDto, userId: number): Promise<TeamDto> {
@@ -30,7 +35,7 @@ export class TeamWriteService implements ITeamWriteService {
     }
 
     async updateTeam(teamId: number, dto: UpdateTeamDto, userId: number, isAdmin: boolean = false): Promise<TeamOperationResult> {
-        const owner = isAdmin || await this.teamMemberRepository.isOwner(teamId, userId);
+        const owner = isAdmin || await this.isTeamOwner(teamId, userId);
         if (!owner) return TeamOperationResult.Forbidden;
         const input = new Team(0, dto.name, dto.description, dto.avatar, new Date(), new Date());
         const ok = await this.teamCommandRepository.update(teamId, input);
@@ -40,7 +45,7 @@ export class TeamWriteService implements ITeamWriteService {
     }
 
     async deleteTeam(teamId: number, userId: number, isAdmin: boolean = false): Promise<TeamOperationResult> {
-        const owner = isAdmin || await this.teamMemberRepository.isOwner(teamId, userId);
+        const owner = isAdmin || await this.isTeamOwner(teamId, userId);
         if (!owner) return TeamOperationResult.Forbidden;
         const ok = await this.teamCommandRepository.delete(teamId);
         if (!ok) return TeamOperationResult.NotFound;

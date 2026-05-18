@@ -14,7 +14,6 @@ ROOT_PASS="root1234"
 REPL_USER="replicator"
 REPL_PASS="repl1234"
 
-# TODO: Replace "project_db" with your actual database name
 DB_NAME="nexushub"
 
 M="mysql  -h127.0.0.1    -P3306 -uroot -p${ROOT_PASS} --protocol=TCP --connect-timeout=5"
@@ -108,7 +107,6 @@ CREATE TABLE projects (
   FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
 );
 
--- TODO: Replace "entities" with your domain table and its columns
 CREATE TABLE project_tags (
   project_id INT UNSIGNED NOT NULL,
   tag_id     INT UNSIGNED NOT NULL,

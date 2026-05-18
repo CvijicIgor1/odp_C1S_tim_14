@@ -4,6 +4,7 @@ import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 import { Team } from "../../../Domain/models/Team";
 import { TeamMember } from "../../../Domain/models/TeamMember";
+import { TeamMemberRole } from "../../../Domain/enums/TeamMemberRole";
 
 export class TeamQueryRepository implements ITeamQueryRepository
 {
@@ -26,7 +27,7 @@ export class TeamQueryRepository implements ITeamQueryRepository
         return new TeamMember(r.team_id, r.user_id, r.role, r.joined_at ? new Date(r.joined_at) : new Date());
     }
 
-    async findAll(userId: number): Promise<{ teams: Array<{ team: Team; role: string }>; totalNumber: number }>
+    async findAll(userId: number): Promise<{ teams: Array<{ team: Team; role: TeamMemberRole }>; totalNumber: number }>
     {
         const res = await this.db.getReadConnection();
         if (!res) return { teams: [], totalNumber: 0 };
@@ -37,14 +38,14 @@ export class TeamQueryRepository implements ITeamQueryRepository
             );
             if (memberRows.length === 0) return { teams: [], totalNumber: 0 };
 
-            const roleByTeamId = new Map<number, string>(memberRows.map((r) => [r.team_id as number, r.role as string]));
+            const roleByTeamId = new Map<number, TeamMemberRole>(memberRows.map((r) => [r.team_id as number, r.role as TeamMemberRole]));
             const teamIds = memberRows.map((r) => r.team_id as number);
             const placeholders = teamIds.map(() => "?").join(", ");
 
             const [teamRows] = await res.conn.execute<RowDataPacket[]>(
                 `SELECT * FROM teams WHERE id IN (${placeholders}) ORDER BY name ASC`, teamIds
             );
-            const teams = teamRows.map((r) => ({ team: this.map(r), role: roleByTeamId.get(r.id as number) ?? "member" }));
+            const teams = teamRows.map((r) => ({ team: this.map(r), role: roleByTeamId.get(r.id as number) ?? TeamMemberRole.MEMBER }));
             return { teams, totalNumber: teams.length };
         }
         catch (err)

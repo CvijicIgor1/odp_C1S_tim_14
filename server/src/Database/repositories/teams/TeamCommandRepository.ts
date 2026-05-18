@@ -24,8 +24,8 @@ export class TeamCommandRepository implements ITeamCommandRepository
             );
             if (result.insertId === 0) return new Team();
             await res.conn.execute<ResultSetHeader>(
-                `INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, 'owner')`,
-                [result.insertId, ownerId]
+                `INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)`,
+                [result.insertId, ownerId, TeamMemberRole.OWNER]
             );
             return new Team(result.insertId, newTeam.name, newTeam.description, newTeam.avatar);
         }

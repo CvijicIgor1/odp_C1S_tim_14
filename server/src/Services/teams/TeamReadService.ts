@@ -1,6 +1,5 @@
 import { ITeamReadService } from "../../Domain/services/teams/ITeamReadService";
 import { ITeamQueryRepository } from '../../Domain/repositories/teams/ITeamQueryRepository';
-import { ITeamMemberRepository } from '../../Domain/repositories/teams/ITeamMemberRepository';
 import { IUserQueryRepository } from '../../Domain/repositories/users/IUserQueryRepository';
 import { PaginatedListDto } from '../../Domain/DTOs/paginatedList/PaginatedListDto';
 import { TeamDto } from "../../Domain/DTOs/teams/TeamDto";
@@ -12,7 +11,6 @@ import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
 export class TeamReadService implements ITeamReadService {
     public constructor(
         private readonly teamQueryRepository: ITeamQueryRepository,
-        private readonly teamMemberRepository: ITeamMemberRepository,
         private readonly userQueryRepository: IUserQueryRepository,
     ) {}
 
@@ -27,7 +25,7 @@ export class TeamReadService implements ITeamReadService {
     async getAll(userId: number, page: number, limit: number): Promise<PaginatedListDto<TeamDto>> {
         const { teams, totalNumber } = await this.teamQueryRepository.findAll(userId);
         return new PaginatedListDto(
-            teams.map(({ team, role }) => this.toDto(team, role as TeamMemberRole)),
+            teams.map(({ team, role }) => this.toDto(team, role)),
             totalNumber,
             page,
             limit
@@ -69,6 +67,7 @@ export class TeamReadService implements ITeamReadService {
     }
 
     async countOwners(teamId: number): Promise<number> {
-        return this.teamMemberRepository.countOwners(teamId);
+        const { members } = await this.teamQueryRepository.getMembers(teamId);
+        return members.filter((member) => member.role === TeamMemberRole.OWNER).length;
     }
 }

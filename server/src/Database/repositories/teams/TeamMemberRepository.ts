@@ -164,48 +164,4 @@ export class TeamMemberRepository implements ITeamMemberRepository
         }
     }
 
-    async countOwners(teamId: number): Promise<number>
-    {
-        const res = await this.db.getReadConnection();
-        if (!res) return 0;
-        try
-        {
-            const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT COUNT(*) AS cnt FROM team_members WHERE team_id = ? AND role = 'owner'`, [teamId]
-            );
-            return Number(rows[0].cnt);
-        }
-        catch (err)
-        {
-            this.logger.error("TeamMemberRepository", "countOwners failed", err);
-            return 0;
-        }
-        finally
-        {
-            res.conn.release();
-        }
-    }
-
-    async isOwner(teamId: number, userId: number): Promise<boolean>
-    {
-        const res = await this.db.getReadConnection();
-        if (!res) return false;
-        try
-        {
-            const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT 1 FROM team_members WHERE team_id = ? AND user_id = ? AND role = 'owner' LIMIT 1`,
-                [teamId, userId]
-            );
-            return rows.length > 0;
-        }
-        catch (err)
-        {
-            this.logger.error("TeamMemberRepository", "isOwner failed", err);
-            return false;
-        }
-        finally
-        {
-            res.conn.release();
-        }
-    }
 }

@@ -2,6 +2,7 @@ import { RowDataPacket } from "mysql2";
 import { IProjectAccessRepository } from "../../../Domain/repositories/projects/IProjectAccessRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
+import { TeamMemberRole } from "../../../Domain/enums/TeamMemberRole";
 
 export class ProjectAccessRepository implements IProjectAccessRepository
 {
@@ -51,7 +52,7 @@ export class ProjectAccessRepository implements IProjectAccessRepository
             const teamId = pRows[0].team_id;
 
             const [tRows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT 1 FROM team_members WHERE team_id = ? AND user_id = ? AND role = 'owner' LIMIT 1`, [teamId, userId]
+                `SELECT 1 FROM team_members WHERE team_id = ? AND user_id = ? AND role = ? LIMIT 1`, [teamId, userId, TeamMemberRole.OWNER]
             );
             return tRows.length > 0;
         }
