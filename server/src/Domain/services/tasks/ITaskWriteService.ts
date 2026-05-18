@@ -7,7 +7,7 @@ import { TaskOperationResult } from "../../enums/TaskOperationResult";
 
 export interface ITaskWriteService
 {
-    createTask(dto: CreateTaskDto, userId: number): Promise<TaskDto>;
+    createTask(dto: CreateTaskDto, userId: number): Promise<{ result: TaskOperationResult; task?: TaskDto }>;
 
     updateTask(taskId: number, dto: UpdateTaskDto, userId: number): Promise<TaskOperationResult>;
 
@@ -15,7 +15,7 @@ export interface ITaskWriteService
 
     deleteTask(taskId: number, userId: number): Promise<boolean>;
 
-    addAssignee(taskId: number, dto: AddTaskAssigneeDto, callerId: number): Promise<boolean>;
+    addAssignee(taskId: number, dto: AddTaskAssigneeDto, callerId: number): Promise<TaskOperationResult>;
 
     removeAssignee(taskId: number, assigneeUserId: number, callerId: number): Promise<boolean>;
 }

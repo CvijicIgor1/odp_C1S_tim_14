@@ -1,6 +1,5 @@
 import { UserRole } from "../../../Domain/enums/UserRole";
-
-export type ValidationError = { message: string };
+import { ValidationError } from "../../../Domain/types/ValidationError";
 
 export function validateUpdateRole(role: string | undefined): ValidationError | null {
     if (!role || !Object.values(UserRole).includes(role as UserRole)) {

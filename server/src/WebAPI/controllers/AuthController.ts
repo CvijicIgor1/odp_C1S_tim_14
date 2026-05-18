@@ -23,8 +23,8 @@ export class AuthController {
 
   private async login(req: Request, res: Response): Promise<void> {
     const { username, password } = req.body as { username?: string; password?: string };
-    const v: ValidationResult = validateLogin(username ?? "", password ?? "");
-    if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
+    const validation: ValidationResult = validateLogin(username ?? "", password ?? "");
+    if (!validation.valid) { res.status(400).json({ success: false, message: validation.message }); return; }
     const result = await this.authService.login(username!, password!);
     if (result.id === 0) { res.status(401).json({ success: false, message: "Invalid username or password" }); return; }
     const token = this.tokenService.sign(result);
@@ -34,8 +34,8 @@ export class AuthController {
 
   private async register(req: Request, res: Response): Promise<void> {
     const { username, email, password, full_name, image } = req.body as {username?: string; email?: string; password?: string; full_name?: string; image?: string;};
-    const v: ValidationResult = validateRegister(username ?? "", email ?? "", password ?? "");
-    if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
+    const validation: ValidationResult = validateRegister(username ?? "", email ?? "", password ?? "");
+    if (!validation.valid) { res.status(400).json({ success: false, message: validation.message }); return; }
     const result = await this.authService.register(username!, email!, password!, full_name ?? "", image ?? "");
     if (result.id === 0) { res.status(409).json({ success: false, message: "Username or email already taken" }); return; }
     const token = this.tokenService.sign(result);

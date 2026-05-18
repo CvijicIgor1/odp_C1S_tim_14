@@ -2,8 +2,7 @@ import { TEAM_NAME_MIN, TEAM_NAME_MAX } from "../../../Domain/constants/Constant
 import { CreateTeamDto } from "../../../Domain/DTOs/teams/CreateTeamDto";
 import { UpdateTeamDto } from "../../../Domain/DTOs/teams/UpdateTeamDto";
 import { TeamMemberRole } from "../../../Domain/enums/TeamMemberRole";
-
-export type ValidationError = { message: string };
+import { ValidationError } from "../../../Domain/types/ValidationError";
 
 export function validateCreateTeam(dto: CreateTeamDto): ValidationError | null {
     if (!dto.name || !dto.description || !dto.avatar) {

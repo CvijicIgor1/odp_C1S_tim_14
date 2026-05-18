@@ -83,9 +83,9 @@ export class TaskController {
         if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
         const dto = new CreateTaskDto(projectId, title, description, status, priority, deadline, Number(estimatedHours ?? 0));
-        const task = await this.taskWriteService.createTask(dto, req.user!.user_id);
-
-        if (task.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
+        const { result, task } = await this.taskWriteService.createTask(dto, req.user!.user_id);
+        if (result === TaskOperationResult.Forbidden) { res.status(403).json({ success: false, message: "You must be a team member to create a task" }); return; }
+        if (result === TaskOperationResult.Unavailable || !task) { res.status(503).json({ success: false, message: "No database node available" }); return; }
         await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "task", task.id, undefined, req.ip, req.user!.username);
         res.status(201).json({ success: true, message: "Task created successfully", data: task });
     }
@@ -147,8 +147,11 @@ export class TaskController {
         const dto = req.body as AddTaskAssigneeDto;
         if (!dto.userId) { res.status(400).json({ success: false, message: "userId is required" }); return; }
 
-        const ok = await this.taskWriteService.addAssignee(id, dto, req.user!.user_id);
-        if (!ok) { res.status(400).json({ success: false, message: "Cannot assign user: not a team member or already assigned" }); return; }
+        const result = await this.taskWriteService.addAssignee(id, dto, req.user!.user_id);
+        if (result === TaskOperationResult.NotFound) { res.status(404).json({ success: false, message: "Task not found" }); return; }
+        if (result === TaskOperationResult.Forbidden) { res.status(403).json({ success: false, message: "Only the task creator or team owner can assign users" }); return; }
+        if (result === TaskOperationResult.InvalidInput) { res.status(400).json({ success: false, message: "Cannot assign user: not a team member or already assigned" }); return; }
+        if (result === TaskOperationResult.Unavailable) { res.status(503).json({ success: false, message: "No database node available" }); return; }
         await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `assignee:${dto.userId}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Assignee added successfully" });
     }

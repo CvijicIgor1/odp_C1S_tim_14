@@ -1,5 +1,5 @@
 import { Request, Response, Router } from "express";
-import { DbManager } from "../../Database/connection/DbConnectionPool";
+import { IDbHealthService } from "../../Domain/services/health/IDbHealthService";
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { AuditAction } from "../../Domain/enums/AuditLog";
 import { UserRole } from "../../Domain/enums/UserRole";
@@ -10,7 +10,7 @@ export class HealthController {
   private readonly router = Router();
 
   public constructor(
-    private readonly db: DbManager,
+    private readonly db: IDbHealthService,
     private readonly auditService: IAuditService
   ) {
     this.router.get("/health", this.getHealth.bind(this));

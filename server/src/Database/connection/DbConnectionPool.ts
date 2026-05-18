@@ -4,6 +4,7 @@ import { DbNode } from "../../Domain/models/DbNode";
 import { NodeStatus } from "../../Domain/enums/NodeStatus";
 import { HEALTH_CHECK_TIMEOUT, HEALTH_CHECK_INTERVAL_MS, DEGRADED_THRESHOLD_MS } from "../../Domain/constants/Constants";
 import { ILoggerService } from "../../Domain/services/logger/ILoggerService";
+import { IDbHealthService } from "../../Domain/services/health/IDbHealthService";
 
 dotenv.config();
 
@@ -44,7 +45,7 @@ const slave2Pool: Pool = mysql.createPool({
 
 interface NodeInfo { name: string; pool: Pool; node: DbNode; excludedFromReads?: boolean; isOriginalMaster?: boolean; }
 
-export class DbManager {
+export class DbManager implements IDbHealthService {
   private master: NodeInfo;
   private slaves: NodeInfo[];
   private slaveRrIndex: number = 0;

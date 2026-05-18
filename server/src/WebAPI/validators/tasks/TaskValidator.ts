@@ -6,8 +6,7 @@ import {
     COMMENT_MAX_LENGTH,
 } from "../../../Domain/constants/Constants";
 import { UpdateTaskDto } from "../../../Domain/DTOs/tasks/UpdateTaskDto";
-
-export type ValidationError = { message: string };
+import { ValidationError } from "../../../Domain/types/ValidationError";
 
 export function validateEstimatedHours(hours: number): ValidationError | null {
     if (isNaN(hours) || hours < ESTIMATED_HOURS_MIN || hours > ESTIMATED_HOURS_MAX) {

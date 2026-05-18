@@ -5,6 +5,7 @@ import { authenticate } from "../../Middlewares/authentification/AuthMiddleware"
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { CreateTagDto } from "../../Domain/DTOs/tags/CreateTagDto";
+import { parsePagination } from "../../utils/pagination";
 
 export class TagController {
     private readonly router = Router();
@@ -18,8 +19,7 @@ export class TagController {
     }
 
     private async getAllTags(req: Request, res: Response): Promise<void>{
-        const page = parseInt(String(req.query.page ?? "1"), 10);
-        const limit = Math.min(parseInt(String(req.query.limit ?? "20"), 10), 100);
+        const { page, limit } = parsePagination(req.query as Record<string, unknown>);
         const result = await this.tagService.getAll(page, limit);
         res.status(200).json({success: true, data: result});
     }

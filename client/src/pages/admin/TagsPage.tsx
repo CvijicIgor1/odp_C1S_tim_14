@@ -3,12 +3,13 @@ import { PageHeader, Empty, ErrorBox, SuccessBox, Spinner, Pagination } from "..
 import { tagsApi } from "../../api_services/tag/TagAPIService";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import type { TagDto } from "../../models/project/ProjectTypes";
+import { UserRole } from "../../models/user/UserRole";
 
 const PAGE_SIZE = 20;
 
 export default function TagsPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === UserRole.ADMIN;
 
   const [tags, setTags] = useState<TagDto[]>([]);
   const [total, setTotal] = useState(0);

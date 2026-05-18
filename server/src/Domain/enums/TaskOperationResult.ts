@@ -3,4 +3,5 @@ export enum TaskOperationResult {
     NotFound     = "NotFound",
     Forbidden    = "Forbidden",
     InvalidInput = "InvalidInput",
+    Unavailable  = "Unavailable",
 }

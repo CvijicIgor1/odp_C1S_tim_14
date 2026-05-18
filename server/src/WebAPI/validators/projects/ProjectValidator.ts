@@ -1,8 +1,7 @@
 import { PROJECT_NAME_MIN, PROJECT_NAME_MAX } from "../../../Domain/constants/Constants";
 import { CreateProjectDto } from "../../../Domain/DTOs/projects/CreateProjectDto";
 import { UpdateProjectDto } from "../../../Domain/DTOs/projects/UpdateProjectDto";
-
-export type ValidationError = { message: string };
+import { ValidationError } from "../../../Domain/types/ValidationError";
 
 export function validateCreateProject(dto: CreateProjectDto): ValidationError | null {
     if (!dto.name || !dto.description || !dto.deadline) {

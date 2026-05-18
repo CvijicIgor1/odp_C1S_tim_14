@@ -11,9 +11,11 @@ import { AddTagResult } from "../../Domain/enums/AddTagResult";
 import { UpdateProjectResult } from "../../Domain/enums/UpdateProjectResult";
 import { CreateProjectDto } from "../../Domain/DTOs/projects/CreateProjectDto";
 import { UpdateProjectDto } from "../../Domain/DTOs/projects/UpdateProjectDto";
+import { CreateProjectResult } from "../../Domain/enums/CreateProjectResult";
 import { ProjectStatus } from "../../Domain/enums/ProjectStatus";
 import { Priority } from "../../Domain/enums/Priority";
 import { validateCreateProject, validateUpdateProject } from "../validators/projects/ProjectValidator";
+import { parsePagination } from "../../utils/pagination";
 
 export class ProjectController {
     private readonly router = Router();
@@ -45,8 +47,7 @@ export class ProjectController {
         const teamId = parseInt(String(req.params.teamId), 10);
         if (isNaN(teamId)) { res.status(400).json({ success: false, message: "Invalid team ID" }); return; }
 
-        const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),  10));
-        const limit = Math.min(parseInt(String(req.query.limit ?? "20"), 10), 100);
+        const { page, limit } = parsePagination(req.query as Record<string, unknown>);
 
         const filters = {
             status:   req.query.status   ? String(req.query.status)   as ProjectStatus : undefined,
@@ -54,15 +55,14 @@ export class ProjectController {
             tagId:    req.query.tagId    ? parseInt(String(req.query.tagId), 10)        : undefined,
         };
 
-        const result = await this.projectReadService.getTeamProjects(teamId, req.user!.user_id, page, limit, filters);
+          const result = await this.projectReadService.getTeamProjects(teamId, req.user!.user_id, page, limit, filters, req.user?.role === UserRole.ADMIN);
         res.status(200).json({ success: true, data: result });
     }
 
     
     private async getAllAsAdmin(req: Request, res: Response): Promise<void> 
     {
-        const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),  10));
-        const limit = Math.min(parseInt(String(req.query.limit ?? "100"), 10), 200);
+        const { page, limit } = parsePagination(req.query as Record<string, unknown>, 100, 200);
 
         const result = await this.projectReadService.getAllProjectsAsAdmin(page, limit);
         res.status(200).json({ success: true, data: result });
@@ -70,8 +70,7 @@ export class ProjectController {
 
     private async getWatched(req: Request, res: Response): Promise<void> 
     {
-        const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),  10));
-        const limit = Math.min(parseInt(String(req.query.limit ?? "20"), 10), 100);
+        const { page, limit } = parsePagination(req.query as Record<string, unknown>);
 
         const result = await this.projectReadService.getWatchedProjects(req.user!.user_id, page, limit);
         res.status(200).json({ success: true, data: result });
@@ -102,12 +101,12 @@ export class ProjectController {
         if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
         const dto = new CreateProjectDto(name, description, status, priority, deadline, tagIds ?? []);
-        const project = await this.projectWriteService.createProject(teamId, dto, req.user!.user_id);
-
-        if (project.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "project", project.id, undefined, req.ip, req.user!.username);
-        res.status(201).json({ success: true, message: "Project created successfully", data: project });
-    }
+          const { result, project } = await this.projectWriteService.createProject(teamId, dto, req.user!.user_id, req.user?.role === UserRole.ADMIN);
+          if (result === CreateProjectResult.Forbidden) { res.status(403).json({ success: false, message: "You must be a team member to create a project" }); return; }
+          if (result === CreateProjectResult.Unavailable || !project) { res.status(503).json({ success: false, message: "No database node available" }); return; }
+          await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "project", project.id, undefined, req.ip, req.user!.username);
+          res.status(201).json({ success: true, message: "Project created successfully", data: project });
+      }
 
    
     private async update(req: Request, res: Response): Promise<void> 
