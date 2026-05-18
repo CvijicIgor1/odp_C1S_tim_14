@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { ITagService } from "../../Domain/services/tags/ITagService";
+import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
@@ -10,7 +11,7 @@ export class TagController {
 
     public getRouter(): Router { return this.router; }
 
-    public constructor(private readonly tagService: ITagService){
+    public constructor(private readonly tagService: ITagService, private readonly auditService: IAuditService){
         this.router.get("/tags", authenticate, this.getAllTags.bind(this));
         this.router.post("/tags", authenticate, authorize(UserRole.ADMIN), this.createNewTag.bind(this));
         this.router.delete("/tags/:id", authenticate, authorize(UserRole.ADMIN), this.deleteTag.bind(this));
@@ -26,7 +27,7 @@ export class TagController {
     private async createNewTag(req: Request, res: Response): Promise<void> {
         const { name } = req.body as CreateTagDto;
         if (!name) { res.status(400).json({ success: false, message: "Name is required" }); return; }
-        const tag = await this.tagService.create(new CreateTagDto(name));
+        const tag = await this.tagService.create(new CreateTagDto(name), req.user!.user_id);
         if (tag.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
         res.status(201).json({ success: true, message: "Tag created successfully", data: tag });
     }
@@ -34,7 +35,7 @@ export class TagController {
     private async deleteTag(req: Request, res: Response): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid ID of the tag" }); return; }
-        const ok = await this.tagService.delete(id);
+        const ok = await this.tagService.delete(id, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Tag not found" }); return; }
         res.status(200).json({ success: true, message: "Tag deleted successfully" });
     }

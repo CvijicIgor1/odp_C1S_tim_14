@@ -1,4 +1,6 @@
-import { ITaskService } from "../../Domain/services/tasks/ITaskService";
+import { ITaskReadService } from "../../Domain/services/tasks/ITaskReadService";
+import { ITaskWriteService } from "../../Domain/services/tasks/ITaskWriteService";
+import { ITaskCommentService } from "../../Domain/services/tasks/ITaskCommentService";
 import { ITaskQueryRepository } from "../../Domain/repositories/tasks/ITaskQueryRepository";
 import { ITaskCommandRepository } from "../../Domain/repositories/tasks/ITaskCommandRepository";
 import { ITaskAssigneeRepository } from "../../Domain/repositories/tasks/ITaskAssigneeRepository";
@@ -20,7 +22,7 @@ import { TaskAssignee } from "../../Domain/models/TaskAssignee";
 import { TaskOperationResult } from "../../Domain/enums/TaskOperationResult";
 import { AddCommentResult } from "../../Domain/enums/AddCommentResult";
 
-export class TaskService implements ITaskService {
+export class TaskService implements ITaskReadService, ITaskWriteService, ITaskCommentService {
     public constructor(
         private readonly taskQueryRepository: ITaskQueryRepository,
         private readonly taskCommandRepository: ITaskCommandRepository,

@@ -1,5 +1,7 @@
 import { Request, Response, Router } from "express";
-import { ITaskService } from "../../Domain/services/tasks/ITaskService";
+import { ITaskReadService } from "../../Domain/services/tasks/ITaskReadService";
+import { ITaskWriteService } from "../../Domain/services/tasks/ITaskWriteService";
+import { ITaskCommentService } from "../../Domain/services/tasks/ITaskCommentService";
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
@@ -16,7 +18,12 @@ import { validateCreateTask, validateUpdateTask, validateComment } from "../vali
 export class TaskController {
     private readonly router = Router();
 
-    public constructor(private readonly taskService: ITaskService, private readonly auditService: IAuditService) {
+    public constructor(
+        private readonly taskReadService: ITaskReadService,
+        private readonly taskWriteService: ITaskWriteService,
+        private readonly taskCommentService: ITaskCommentService,
+        private readonly auditService: IAuditService
+    ) {
         this.router.get("/projects/:projectId/tasks", authenticate, this.getByProject.bind(this));
         this.router.post("/projects/:projectId/tasks", authenticate, this.create.bind(this));
         this.router.get("/tasks/my", authenticate, this.getMyTasks.bind(this));
@@ -40,14 +47,14 @@ export class TaskController {
 
         const isAdmin = req.user?.role === UserRole.ADMIN;
 
-        const result = await this.taskService.getByProjectId(projectId, req.user!.user_id, isAdmin);
+        const result = await this.taskReadService.getByProjectId(projectId, req.user!.user_id, isAdmin);
         res.status(200).json({ success: true, data: result });
     }
 
 
     private async getMyTasks(req: Request, res: Response): Promise<void>
     {
-        const tasks = await this.taskService.getMyTasks(req.user!.user_id);
+        const tasks = await this.taskReadService.getMyTasks(req.user!.user_id);
         res.status(200).json({ success: true, data: tasks });
     }
 
@@ -59,7 +66,7 @@ export class TaskController {
 
         const isAdmin = req.user?.role === UserRole.ADMIN;
 
-        const task = await this.taskService.getById(id, req.user!.user_id, isAdmin);
+        const task = await this.taskReadService.getById(id, req.user!.user_id, isAdmin);
         if (!task.task || task.task.id === 0) { res.status(404).json({ success: false, message: "Task not found" }); return; }
 
         res.status(200).json({ success: true, data: task });
@@ -76,7 +83,7 @@ export class TaskController {
         if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
         const dto = new CreateTaskDto(projectId, title, description, status, priority, deadline, Number(estimatedHours ?? 0));
-        const task = await this.taskService.createTask(dto, req.user!.user_id);
+        const task = await this.taskWriteService.createTask(dto, req.user!.user_id);
 
         if (task.id === 0) { res.status(503).json({ success: false, message: "No database node available" }); return; }
         await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "task", task.id, undefined, req.ip, req.user!.username);
@@ -93,7 +100,7 @@ export class TaskController {
         const error = validateUpdateTask(dto);
         if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
-        const result = await this.taskService.updateTask(id, dto, req.user!.user_id);
+        const result = await this.taskWriteService.updateTask(id, dto, req.user!.user_id);
 
         if (result === TaskOperationResult.NotFound)  { res.status(404).json({ success: false, message: "Task not found" }); return; }
         if (result === TaskOperationResult.Forbidden) { res.status(403).json({ success: false, message: "Forbidden" }); return; }
@@ -110,7 +117,7 @@ export class TaskController {
 
         const dto = req.body as UpdateTaskStatusDto;
 
-        const result = await this.taskService.updateTaskStatus(id, dto, req.user!.user_id);
+        const result = await this.taskWriteService.updateTaskStatus(id, dto, req.user!.user_id);
 
         if (result === TaskOperationResult.NotFound)  { res.status(404).json({ success: false, message: "Task not found" }); return; }
         if (result === TaskOperationResult.Forbidden) { res.status(403).json({ success: false, message: "Forbidden" }); return; }
@@ -125,7 +132,7 @@ export class TaskController {
         const id = parseInt(String(req.params.id), 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid task ID" }); return; }
 
-        const ok = await this.taskService.deleteTask(id, req.user!.user_id);
+        const ok = await this.taskWriteService.deleteTask(id, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Task not found or forbidden" }); return; }
         await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "task", id, undefined, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Task deleted successfully" });
@@ -140,7 +147,7 @@ export class TaskController {
         const dto = req.body as AddTaskAssigneeDto;
         if (!dto.userId) { res.status(400).json({ success: false, message: "userId is required" }); return; }
 
-        const ok = await this.taskService.addAssignee(id, dto, req.user!.user_id);
+        const ok = await this.taskWriteService.addAssignee(id, dto, req.user!.user_id);
         if (!ok) { res.status(400).json({ success: false, message: "Cannot assign user: not a team member or already assigned" }); return; }
         await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `assignee:${dto.userId}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Assignee added successfully" });
@@ -153,7 +160,7 @@ export class TaskController {
         const userId = parseInt(String(req.params.userId), 10);
         if (isNaN(id) || isNaN(userId)) { res.status(400).json({ success: false, message: "Invalid IDs" }); return; }
 
-        const ok = await this.taskService.removeAssignee(id, userId, req.user!.user_id);
+        const ok = await this.taskWriteService.removeAssignee(id, userId, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Assignee not found" }); return; }
         await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `assignee_removed:${userId}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Assignee removed successfully" });
@@ -169,7 +176,7 @@ export class TaskController {
         const error = validateComment(dto.content);
         if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
-        const { result, comment } = await this.taskService.addComment(id, dto, req.user!.user_id);
+        const { result, comment } = await this.taskCommentService.addComment(id, dto, req.user!.user_id);
 
         if (result === AddCommentResult.NotFound)  { res.status(404).json({ success: false, message: "Task not found" }); return; }
         if (result === AddCommentResult.Forbidden) { res.status(403).json({ success: false, message: "You are not authorized to comment on this task" }); return; }
@@ -183,7 +190,7 @@ export class TaskController {
         const commentId = parseInt(String(req.params.commentId), 10);
         if (isNaN(commentId)) { res.status(400).json({ success: false, message: "Invalid comment ID" }); return; }
 
-        const ok = await this.taskService.deleteComment(commentId, req.user!.user_id);
+        const ok = await this.taskCommentService.deleteComment(commentId, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Comment not found or forbidden" }); return; }
         res.status(200).json({ success: true, message: "Comment deleted successfully" });
     }

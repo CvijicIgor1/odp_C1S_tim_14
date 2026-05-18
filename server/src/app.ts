@@ -87,7 +87,7 @@ const tokenService   = new TokenService();
 const userService    = new UserService(userQueryRepo, userCommandRepo, userAdminRepo);
 const teamService    = new TeamService(teamQueryRepo, teamCommandRepo, teamMemberRepo, auditService, userQueryRepo);
 const projectService = new ProjectService(projectQueryRepo, projectCommandRepo, projectTagRepo, projectWatcherRepo, projectAccessRepo);
-const tagService     = new TagService(tagRepo);
+const tagService     = new TagService(tagRepo, auditService);
 const taskService    = new TaskService(taskQueryRepo, taskCommandRepo, taskAssigneeRepo, taskCommentRepo, taskAccessRepo);
 
 const app = express();
@@ -98,11 +98,9 @@ app.use("/api/v1", new AuthController(authService, tokenService, auditService).g
 app.use("/api/v1", new UserController(userService, auditService).getRouter());
 app.use("/api/v1", new TeamController(teamService, auditService).getRouter());
 app.use("/api/v1", new ProjectController(projectService, projectService, projectService, auditService).getRouter());
-app.use("/api/v1", new TagController(tagService).getRouter());
+app.use("/api/v1", new TagController(tagService, auditService).getRouter());
 app.use("/api/v1", new HealthController(db, auditService).getRouter());
 app.use("/api/v1", new AuditController(auditService).getRouter());
-app.use("/api/v1", new TaskController(taskService, auditService).getRouter());
-
-app.use(errorHandler);
+app.use("/api/v1", new TaskController(taskService, taskService, taskService, auditService).getRouter());
 
 export default app;

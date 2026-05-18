@@ -1,5 +1,7 @@
 import { Request, Response, Router } from "express";
-import { ITeamService } from "../../Domain/services/teams/ITeamService";
+import { ITeamReadService } from "../../Domain/services/teams/ITeamReadService";
+import { ITeamWriteService } from "../../Domain/services/teams/ITeamWriteService";
+import { ITeamMemberService } from "../../Domain/services/teams/ITeamMemberService";
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { authorize } from '../../Middlewares/authorization/AuthorizeMiddleware';
@@ -16,7 +18,10 @@ import { validateCreateTeam, validateUpdateTeam, validateMemberRole } from "../v
 
 export class TeamController {
     private readonly router = Router();
-    public constructor(private readonly teamService: ITeamService, private readonly auditService: IAuditService) {
+    public constructor(
+        private readonly teamService: ITeamReadService & ITeamWriteService & ITeamMemberService,
+        private readonly auditService: IAuditService
+    ) {
         this.router.get("/teams", authenticate, this.getAll.bind(this));
         this.router.get("/teams/all", authenticate, authorize(UserRole.ADMIN), this.getAllAsAdmin.bind(this));
         this.router.post("/teams", authenticate, this.create.bind(this));

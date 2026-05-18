@@ -1,4 +1,6 @@
-import { ITeamService } from "../../Domain/services/teams/ITeamService";
+import { ITeamReadService } from "../../Domain/services/teams/ITeamReadService";
+import { ITeamWriteService } from "../../Domain/services/teams/ITeamWriteService";
+import { ITeamMemberService } from "../../Domain/services/teams/ITeamMemberService";
 import { ITeamQueryRepository } from '../../Domain/repositories/teams/ITeamQueryRepository';
 import { ITeamCommandRepository } from '../../Domain/repositories/teams/ITeamCommandRepository';
 import { ITeamMemberRepository } from '../../Domain/repositories/teams/ITeamMemberRepository';
@@ -18,7 +20,7 @@ import { PaginatedListDto } from '../../Domain/DTOs/paginatedList/PaginatedListD
 import { TeamDto } from "../../Domain/DTOs/teams/TeamDto";
 import { TeamMemberDto } from "../../Domain/DTOs/teams/TeamMemberDto";
 
-export class TeamService implements ITeamService {
+export class TeamService implements ITeamReadService, ITeamWriteService, ITeamMemberService {
     public constructor(
         private readonly teamQueryRepository: ITeamQueryRepository,
         private readonly teamCommandRepository: ITeamCommandRepository,
@@ -91,14 +93,18 @@ export class TeamService implements ITeamService {
         if (!owner) return TeamOperationResult.Forbidden;
         const input = new Team(0, dto.name, dto.description, dto.avatar, new Date(), new Date());
         const ok = await this.teamCommandRepository.update(teamId, input);
-        return ok ? TeamOperationResult.Success : TeamOperationResult.NotFound;
+        if (!ok) return TeamOperationResult.NotFound;
+        await this.auditService.log(userId, AuditAction.UPDATE, "team", teamId);
+        return TeamOperationResult.Success;
     }
 
     async deleteTeam(teamId: number, userId: number): Promise<TeamOperationResult> {
         const owner = await this.teamMemberRepository.isOwner(teamId, userId);
         if (!owner) return TeamOperationResult.Forbidden;
         const ok = await this.teamCommandRepository.delete(teamId);
-        return ok ? TeamOperationResult.Success : TeamOperationResult.NotFound;
+        if (!ok) return TeamOperationResult.NotFound;
+        await this.auditService.log(userId, AuditAction.DELETE, "team", teamId);
+        return TeamOperationResult.Success;
     }
 
     async getTeamMembers(teamId: number, page: number, limit: number, userId: number): Promise<PaginatedListDto<TeamMemberDto>> {
@@ -125,7 +131,9 @@ export class TeamService implements ITeamService {
         if (!isOwner) return TeamOperationResult.Forbidden;
         const noviClan = new TeamMember(0, 0, dto.role, new Date(), dto.username);
         const ok = await this.teamMemberRepository.addMember(teamId, noviClan);
-        return ok ? TeamOperationResult.Success : TeamOperationResult.NotFound;
+        if (!ok) return TeamOperationResult.NotFound;
+        await this.auditService.log(userId, AuditAction.CREATE, "team_member", teamId);
+        return TeamOperationResult.Success;
     }
 
     async removeTeamMember(teamId: number, memberId: number, userId: number): Promise<TeamOperationResult> {
@@ -135,7 +143,9 @@ export class TeamService implements ITeamService {
             if (memberIsOwner) return TeamOperationResult.LastOwner;
         }
         const ok = await this.teamMemberRepository.removeMember(teamId, memberId);
-        return ok ? TeamOperationResult.Success : TeamOperationResult.NotFound;
+        if (!ok) return TeamOperationResult.NotFound;
+        await this.auditService.log(userId, AuditAction.DELETE, "team_member", memberId);
+        return TeamOperationResult.Success;
     }
 
     async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<UpdateRoleResult> {
@@ -148,6 +158,8 @@ export class TeamService implements ITeamService {
         }
 
         const updated = await this.teamCommandRepository.updateMemberRole(teamId, memberId, dto.role);
-        return updated ? UpdateRoleResult.Success : UpdateRoleResult.NotFound;
+        if (!updated) return UpdateRoleResult.NotFound;
+        await this.auditService.log(callerId, AuditAction.UPDATE, "team_member", memberId);
+        return UpdateRoleResult.Success;
     }
 } 
