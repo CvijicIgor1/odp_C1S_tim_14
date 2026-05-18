@@ -4,6 +4,8 @@ import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { AuditAction } from "../../Domain/enums/AuditLog";
+import { TaskOperationResult } from "../../Domain/enums/TaskOperationResult";
+import { AddCommentResult } from "../../Domain/enums/AddCommentResult";
 import { CreateTaskDto } from "../../Domain/DTOs/tasks/CreateTaskDto";
 import { UpdateTaskDto } from "../../Domain/DTOs/tasks/UpdateTaskDto";
 import { UpdateTaskStatusDto } from "../../Domain/DTOs/tasks/UpdateTaskStatusDto";
@@ -91,8 +93,11 @@ export class TaskController {
         const error = validateUpdateTask(dto);
         if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
-        const ok = await this.taskService.updateTask(id, dto, req.user!.user_id);
-        if (!ok) { res.status(404).json({ success: false, message: "Task not found or forbidden" }); return; }
+        const result = await this.taskService.updateTask(id, dto, req.user!.user_id);
+
+        if (result === TaskOperationResult.NotFound)  { res.status(404).json({ success: false, message: "Task not found" }); return; }
+        if (result === TaskOperationResult.Forbidden) { res.status(403).json({ success: false, message: "Forbidden" }); return; }
+
         await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, undefined, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Task updated successfully" });
     }
@@ -105,8 +110,11 @@ export class TaskController {
 
         const dto = req.body as UpdateTaskStatusDto;
 
-        const ok = await this.taskService.updateTaskStatus(id, dto, req.user!.user_id);
-        if (!ok) { res.status(404).json({ success: false, message: "Task not found or forbidden" }); return; }
+        const result = await this.taskService.updateTaskStatus(id, dto, req.user!.user_id);
+
+        if (result === TaskOperationResult.NotFound)  { res.status(404).json({ success: false, message: "Task not found" }); return; }
+        if (result === TaskOperationResult.Forbidden) { res.status(403).json({ success: false, message: "Forbidden" }); return; }
+
         await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, `status:${dto.status}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Task status updated successfully" });
     }
@@ -161,9 +169,11 @@ export class TaskController {
         const error = validateComment(dto.content);
         if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
-        const comment = await this.taskService.addComment(id, dto, req.user!.user_id);
-        if (comment === null) { res.status(404).json({ success: false, message: "Task not found" }); return; }
-        if (comment.id === 0) { res.status(403).json({ success: false, message: "You are not authorized to comment on this task" }); return; }
+        const { result, comment } = await this.taskService.addComment(id, dto, req.user!.user_id);
+
+        if (result === AddCommentResult.NotFound)  { res.status(404).json({ success: false, message: "Task not found" }); return; }
+        if (result === AddCommentResult.Forbidden) { res.status(403).json({ success: false, message: "You are not authorized to comment on this task" }); return; }
+
         res.status(201).json({ success: true, message: "Comment added successfully", data: comment });
     }
 

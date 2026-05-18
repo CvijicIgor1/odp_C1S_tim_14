@@ -7,6 +7,8 @@ import { UpdateTaskDto } from "../../DTOs/tasks/UpdateTaskDto";
 import { UpdateTaskStatusDto } from "../../DTOs/tasks/UpdateTaskStatusDto";
 import { AddTaskAssigneeDto } from "../../DTOs/tasks/AddTaskAssigneeDto";
 import { AddCommentDto } from "../../DTOs/tasks/AddCommentDto";
+import { TaskOperationResult } from "../../enums/TaskOperationResult";
+import { AddCommentResult } from "../../enums/AddCommentResult";
 
 export interface ITaskService
 {
@@ -18,9 +20,9 @@ export interface ITaskService
 
     createTask(dto: CreateTaskDto, userId: number): Promise<TaskDto>;
 
-    updateTask(taskId: number, dto: UpdateTaskDto, userId: number): Promise<boolean>;
+    updateTask(taskId: number, dto: UpdateTaskDto, userId: number): Promise<TaskOperationResult>;
 
-    updateTaskStatus(taskId: number, dto: UpdateTaskStatusDto, userId: number): Promise<boolean>;
+    updateTaskStatus(taskId: number, dto: UpdateTaskStatusDto, userId: number): Promise<TaskOperationResult>;
 
     deleteTask(taskId: number, userId: number): Promise<boolean>;
 
@@ -28,7 +30,7 @@ export interface ITaskService
 
     removeAssignee(taskId: number, assigneeUserId: number, callerId: number): Promise<boolean>;
 
-    addComment(taskId: number, dto: AddCommentDto, userId: number): Promise<CommentDto | null>;
+    addComment(taskId: number, dto: AddCommentDto, userId: number): Promise<{ result: AddCommentResult; comment?: CommentDto }>;
 
     deleteComment(commentId: number, userId: number): Promise<boolean>;
 }

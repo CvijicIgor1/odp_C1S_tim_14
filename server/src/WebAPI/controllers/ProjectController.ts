@@ -8,6 +8,7 @@ import { authenticate } from "../../Middlewares/authentification/AuthMiddleware"
 import { UserRole } from "../../Domain/enums/UserRole";
 import { AuditAction } from "../../Domain/enums/AuditLog";
 import { AddTagResult } from "../../Domain/enums/AddTagResult";
+import { UpdateProjectResult } from "../../Domain/enums/UpdateProjectResult";
 import { CreateProjectDto } from "../../Domain/DTOs/projects/CreateProjectDto";
 import { UpdateProjectDto } from "../../Domain/DTOs/projects/UpdateProjectDto";
 import { ProjectStatus } from "../../Domain/enums/ProjectStatus";
@@ -26,7 +27,7 @@ export class ProjectController {
         this.router.get("/teams/:teamId/projects",      authenticate, this.getTeamProjects.bind(this));
         this.router.post("/teams/:teamId/projects",     authenticate, this.create.bind(this));
         this.router.get("/projects/all",          authenticate, authorize(UserRole.ADMIN), this.getAllAsAdmin.bind(this));
-        this.router.get("/projects/watched",            authenticate, this.getWatched.bind(this)); // mora biti PRIJE /:id
+        this.router.get("/projects/watched",            authenticate, this.getWatched.bind(this));
         this.router.get("/projects/:id",                authenticate, this.getById.bind(this));
         this.router.put("/projects/:id",                authenticate, this.update.bind(this));
         this.router.delete("/projects/:id",             authenticate, this.delete.bind(this));
@@ -66,6 +67,7 @@ export class ProjectController {
         const result = await this.projectReadService.getAllProjectsAsAdmin(page, limit);
         res.status(200).json({ success: true, data: result });
     }
+
     private async getWatched(req: Request, res: Response): Promise<void> 
     {
         const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),  10));
@@ -119,8 +121,12 @@ export class ProjectController {
 
         const isAdmin = req.user?.role === UserRole.ADMIN;
 
-        const ok = await this.projectWriteService.updateProject(id, dto, req.user!.user_id, isAdmin);
-        if (!ok) { res.status(404).json({ success: false, message: "Project not found or forbidden" }); return; }
+        const result = await this.projectWriteService.updateProject(id, dto, req.user!.user_id, isAdmin);
+
+        if (result === UpdateProjectResult.InvalidInput) { res.status(400).json({ success: false, message: "Invalid project data" }); return; }
+        if (result === UpdateProjectResult.Forbidden)    { res.status(403).json({ success: false, message: "Forbidden" }); return; }
+        if (result === UpdateProjectResult.NotFound)     { res.status(404).json({ success: false, message: "Project not found" }); return; }
+
         await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "project", id, undefined, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Project updated successfully" });
     }

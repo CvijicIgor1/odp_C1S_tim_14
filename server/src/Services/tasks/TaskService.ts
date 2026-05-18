@@ -17,6 +17,8 @@ import { GroupedTasksDto } from "../../Domain/DTOs/tasks/GroupedTasksDto";
 import { Task } from "../../Domain/models/Task";
 import { Comment } from "../../Domain/models/Comment";
 import { TaskAssignee } from "../../Domain/models/TaskAssignee";
+import { TaskOperationResult } from "../../Domain/enums/TaskOperationResult";
+import { AddCommentResult } from "../../Domain/enums/AddCommentResult";
 
 export class TaskService implements ITaskService {
     public constructor(
@@ -132,14 +134,14 @@ export class TaskService implements ITaskService {
         taskId: number,
         dto: UpdateTaskDto,
         userId: number
-    ): Promise<boolean> {
+    ): Promise<TaskOperationResult> {
         const task = await this.taskQueryRepository.findById(taskId);
-        if (task.id === 0) return false;
+        if (task.id === 0) return TaskOperationResult.NotFound;
 
         const canEdit = task.createdByUserId === userId
             || await this.taskAccessRepository.isTeamOwnerOfTask(taskId, userId);
 
-        if (!canEdit) return false;
+        if (!canEdit) return TaskOperationResult.Forbidden;
 
         const updatedTask = new Task(
             0,
@@ -152,23 +154,29 @@ export class TaskService implements ITaskService {
             dto.deadline,
             dto.estimatedHours,
         );
-        return this.taskCommandRepository.update(taskId, updatedTask);
+        const ok = await this.taskCommandRepository.update(taskId, updatedTask);
+        if (!ok) return TaskOperationResult.NotFound;
+
+        return TaskOperationResult.Success;
     }
 
     async updateTaskStatus(
         taskId: number,
         dto: UpdateTaskStatusDto,
         userId: number
-    ): Promise<boolean> {
+    ): Promise<TaskOperationResult> {
         const task = await this.taskQueryRepository.findById(taskId);
-        if (task.id === 0) return false;
+        if (task.id === 0) return TaskOperationResult.NotFound;
 
         const canChange = await this.taskAssigneeRepository.isAssignee(taskId, userId)
             || await this.taskAccessRepository.isTeamOwnerOfTask(taskId, userId);
 
-        if (!canChange) return false;
+        if (!canChange) return TaskOperationResult.Forbidden;
 
-        return this.taskCommandRepository.updateStatus(taskId, dto.status);
+        const ok = await this.taskCommandRepository.updateStatus(taskId, dto.status);
+        if (!ok) return TaskOperationResult.NotFound;
+
+        return TaskOperationResult.Success;
     }
 
     async deleteTask(
@@ -215,19 +223,19 @@ export class TaskService implements ITaskService {
         taskId: number,
         dto: AddCommentDto,
         userId: number
-    ): Promise<CommentDto | null> {
+    ): Promise<{ result: AddCommentResult; comment?: CommentDto }> {
         const task = await this.taskQueryRepository.findById(taskId);
-        if (task.id === 0) return null;
+        if (task.id === 0) return { result: AddCommentResult.NotFound };
 
         const canComment = await this.taskAssigneeRepository.isAssignee(taskId, userId)
             || await this.taskAccessRepository.isTeamOwnerOfTask(taskId, userId);
 
-        if (!canComment) return new CommentDto();
+        if (!canComment) return { result: AddCommentResult.Forbidden };
 
         const comment = await this.taskCommentRepository.addComment(taskId, userId, dto.content);
-        if (comment.id === 0) return new CommentDto();
+        if (comment.id === 0) return { result: AddCommentResult.NotFound };
 
-        return this.toCommentDto(comment);
+        return { result: AddCommentResult.Success, comment: this.toCommentDto(comment) };
     }
 
     async deleteComment(

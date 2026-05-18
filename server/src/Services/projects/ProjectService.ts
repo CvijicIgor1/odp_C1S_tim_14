@@ -15,6 +15,7 @@ import { Project } from "../../Domain/models/Project";
 import { Tag } from "../../Domain/models/Tag";
 import { TagDto } from "../../Domain/DTOs/tags/TagDto";
 import { AddTagResult } from "../../Domain/enums/AddTagResult";
+import { UpdateProjectResult } from "../../Domain/enums/UpdateProjectResult";
 
 export class ProjectService implements IProjectReadService, IProjectWriteService, IProjectTagWatchService
 {
@@ -39,7 +40,7 @@ export class ProjectService implements IProjectReadService, IProjectWriteService
             project.priority,
             project.deadline,
             tags.map((t) => new TagDto(t.id, t.name)),
-            watcherCount,              // watcherCount realno trenutno mi ne treba, ali i ne smeta
+            watcherCount,
             project.createdAt,
             project.updatedAt,
         )
@@ -110,11 +111,11 @@ export class ProjectService implements IProjectReadService, IProjectWriteService
 
     async createProject(teamId: number, dto: CreateProjectDto, userId: number): Promise<ProjectDto> 
     {
-        if(dto.deadline){
+        if (!dto.deadline) return new ProjectDto();
+
         const newProject = new Project(0, 0, dto.name, dto.description, dto.status, dto.priority, new Date(dto.deadline), new Date(), new Date());
         const created = await this.projectCommandRepository.create(teamId, newProject);
         if (created.id === 0) return new ProjectDto();
-        
 
         if (dto.tagIds && dto.tagIds.length > 0) {
             await Promise.all(
@@ -123,22 +124,21 @@ export class ProjectService implements IProjectReadService, IProjectWriteService
         }
 
         const tags = await this.projectTagRepository.getTagsForProject(created.id);
-        const watcherCount = 0;
-        return this.toDto(created, tags, watcherCount);
-
-        }
-        else return new ProjectDto();
+        return this.toDto(created, tags, 0);
     }
 
-    async updateProject(id: number, dto: UpdateProjectDto, userId: number,isAdmin: boolean = false): Promise<boolean> 
+    async updateProject(id: number, dto: UpdateProjectDto, userId: number,isAdmin: boolean = false): Promise<UpdateProjectResult> 
     {
-        if(dto.deadline){
+        if (!dto.deadline) return UpdateProjectResult.InvalidInput;
+
+        const canEdit = await this.checkOwnerOrAdmin(id, userId, isAdmin);
+        if (!canEdit) return UpdateProjectResult.Forbidden;
+
         const inputProject = new Project(0, 0, dto.name, dto.description, dto.status, dto.priority, new Date(dto.deadline), new Date(), new Date());
-        const canEdit = await this.checkOwnerOrAdmin(id, userId, isAdmin); // proverava da li je admin/owner ako jeste poziva repo ako ne vraca false
-        if (!canEdit) return false;
-        return this.projectCommandRepository.update(id, inputProject);
-        }
-        else return false;
+        const updated = await this.projectCommandRepository.update(id, inputProject);
+        if (!updated) return UpdateProjectResult.NotFound;
+
+        return UpdateProjectResult.Success;
     }
 
     async deleteProject(id: number, userId: number, isAdmin: boolean = false): Promise<boolean> 
