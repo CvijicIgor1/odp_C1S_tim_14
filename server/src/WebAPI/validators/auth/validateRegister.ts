@@ -1,11 +1,11 @@
 import { ValidationResult } from "../../../Domain/types/ValidationResult";
 
-export const validateRegister = (u: string, e: string, p: string): ValidationResult => {
-  if (!u || u.trim().length < 3 || u.length > 40 || !/^[a-zA-Z0-9-]+$/.test(u))
-    return { valid: false, message: "Username must be 3-40 alphanumeric characters" };
-  if (!e || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
-    return { valid: false, message: "Invalid email address" };
-  if (!p || p.length < 8 || !/[A-Z]/.test(p) || !/[0-9]/.test(p))
-    return { valid: false, message: "Password must be 8+ chars with at least one uppercase and one number" };
+export const validateRegister = (username: string, email: string, password: string): ValidationResult => {
+  if (!username || username.trim().length < 3 || username.length > 40 || !/^[a-zA-Z0-9-]+$/.test(username))
+    return { valid: false, message: "Korisničko ime nije validno ili je zauzeto" };
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return { valid: false, message: "Email je već zauzet" };
+  if (!password || password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password))
+    return { valid: false, message: "Lozinka ne ispunjava uslove" };
   return { valid: true };
 };

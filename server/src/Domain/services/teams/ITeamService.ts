@@ -1,3 +1,4 @@
+import { UpdateRoleResult } from "../../enums/UpdateRoleResult";
 import { PaginatedListDto } from "../../DTOs/entity/PaginatedListDto";
 import { AddMemberDto } from "../../DTOs/teams/AddMemberDto";
 import { CreateTeamDto } from "../../DTOs/teams/CreateTeamDto";
@@ -18,5 +19,5 @@ export interface ITeamService {
     countOwners(teamId: number): Promise<number>;
     addTeamMember(teamId: number, dto: AddMemberDto, userId: number): Promise<boolean>;
     removeTeamMember(teamId: number, memberId: number, userId: number): Promise<boolean>;
-    updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<boolean>;
+    updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<UpdateRoleResult>;
 }

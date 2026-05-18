@@ -30,6 +30,7 @@ import { TaskCommentRepository }  from "./Database/repositories/tasks/TaskCommen
 import { TaskAccessRepository }   from "./Database/repositories/tasks/TaskAccessRepository";
 
 import { AuthService }    from "./Services/auth/AuthService";
+import { TokenService }   from "./Services/auth/TokenService";
 import { UserService }    from "./Services/users/UserService";
 import { AuditService }   from "./Services/audit/AuditService";
 import { TeamService }    from "./Services/teams/TeamService";
@@ -83,6 +84,7 @@ const taskAccessRepo   = new TaskAccessRepository(db, logger, teamQueryRepo);
 // Services
 const auditService   = new AuditService(auditRepo);
 const authService    = new AuthService(userQueryRepo, userCommandRepo);
+const tokenService   = new TokenService();
 const userService    = new UserService(userQueryRepo, userCommandRepo, userAdminRepo);
 const teamService    = new TeamService(teamQueryRepo, teamCommandRepo, teamMemberRepo, auditService, userQueryRepo);
 const projectService = new ProjectService(projectQueryRepo, projectCommandRepo, projectTagRepo, projectWatcherRepo, projectAccessRepo);
@@ -93,7 +95,7 @@ const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL ?? "*" }));
 app.use(express.json({ limit: "10mb" }));
 
-app.use("/api/v1", new AuthController(authService, auditService).getRouter());
+app.use("/api/v1", new AuthController(authService, tokenService, auditService).getRouter());
 app.use("/api/v1", new UserController(userService, auditService).getRouter());
 app.use("/api/v1", new TeamController(teamService, auditService).getRouter());
 app.use("/api/v1", new ProjectController(projectService, projectService, projectService, auditService).getRouter());

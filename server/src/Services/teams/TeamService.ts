@@ -5,6 +5,7 @@ import { ITeamMemberRepository } from '../../Domain/repositories/teams/ITeamMemb
 import { IUserQueryRepository } from '../../Domain/repositories/users/IUserQueryRepository';
 import { IAuditService } from "../../Domain/services/audit/IAuditService";
 import { AuditAction } from "../../Domain/enums/AuditLog";
+import { UpdateRoleResult } from "../../Domain/enums/UpdateRoleResult";
 import { AppError } from "../../Domain/errors/AppError";
 import { AddMemberDto } from "../../Domain/DTOs/teams/AddMemberDto";
 import { CreateTeamDto } from "../../Domain/DTOs/teams/CreateTeamDto";
@@ -133,15 +134,16 @@ export class TeamService implements ITeamService {
         return await this.teamMemberRepository.removeMember(teamId, memberId);
     }
 
-    async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<boolean> {
+    async updateMemberRole(teamId: number, memberId: number, dto: UpdateMemberRoleDto, callerId: number): Promise<UpdateRoleResult> {
         const isOwner = await this.teamMemberRepository.isOwner(teamId, callerId);
         if (!isOwner) throw new AppError(403, "Only the team owner can change member roles");
 
         if (dto.role === TeamMemberRole.MEMBER) {
             const ownerCount = await this.teamMemberRepository.countOwners(teamId);
-            if (ownerCount <= 1) return false;
+            if (ownerCount <= 1) return UpdateRoleResult.LastOwner;
         }
 
-        return await this.teamCommandRepository.updateMemberRole(teamId, memberId, dto.role);
+        const updated = await this.teamCommandRepository.updateMemberRole(teamId, memberId, dto.role);
+        return updated ? UpdateRoleResult.Success : UpdateRoleResult.NotFound;
     }
 } 

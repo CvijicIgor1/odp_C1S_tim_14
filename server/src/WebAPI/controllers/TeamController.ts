@@ -6,6 +6,7 @@ import { authorize } from '../../Middlewares/authorization/AuthorizeMiddleware';
 import { UserRole } from "../../Domain/enums/UserRole";
 import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
 import { AuditAction } from "../../Domain/enums/AuditLog";
+import { UpdateRoleResult } from "../../Domain/enums/UpdateRoleResult";
 import { CreateTeamDto } from "../../Domain/DTOs/teams/CreateTeamDto";
 import { AddMemberDto } from "../../Domain/DTOs/teams/AddMemberDto";
 import { UpdateMemberRoleDto } from "../../Domain/DTOs/teams/UpdateMemberRoleDto";
@@ -117,8 +118,9 @@ export class TeamController {
         const error = validateMemberRole(role);
         if (error) { res.status(400).json({ success: false, message: error.message }); return; }
 
-        const ok = await this.teamService.updateMemberRole(id, memberId, new UpdateMemberRoleDto(role), req.user!.user_id);
-        if (!ok) { res.status(404).json({ success: false, message: "Member not found" }); return; }
+        const result = await this.teamService.updateMemberRole(id, memberId, new UpdateMemberRoleDto(role), req.user!.user_id);
+        if (result === UpdateRoleResult.NotFound) { res.status(404).json({ success: false, message: "Member not found" }); return; }
+        if (result === UpdateRoleResult.LastOwner) { res.status(400).json({ success: false, message: "Tim mora imati tačno jednog vlasnika" }); return; }
         await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team_member", memberId, `role=${role}`, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Role changed successfully" });
     }
