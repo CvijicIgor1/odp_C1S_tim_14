@@ -1,4 +1,5 @@
 import { RowDataPacket } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { ITaskAccessRepository } from "../../../Domain/repositories/tasks/ITaskAccessRepository";
 import { ITeamQueryRepository } from "../../../Domain/repositories/teams/ITeamQueryRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
@@ -30,7 +31,7 @@ export class TaskAccessRepository implements ITaskAccessRepository
         }
         catch (err)
         {
-            this.logger.error("TaskAccessRepository", "isUserInProjectTeam failed", err);
+            this.logger.error("TaskAccessRepository", "isUserInProjectTeam failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -62,7 +63,7 @@ export class TaskAccessRepository implements ITaskAccessRepository
         }
         catch (err)
         {
-            this.logger.error("TaskAccessRepository", "isTeamOwnerOfTask failed", err);
+            this.logger.error("TaskAccessRepository", "isTeamOwnerOfTask failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally

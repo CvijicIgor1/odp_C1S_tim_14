@@ -1,4 +1,5 @@
 import { AuditLog } from "../../../Domain/models/AuditLog";
+import { toLogError } from "../../../utils/logging";
 import { IAuditRepository } from "../../../Domain/repositories/audit/IAuditRepository";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 import { DbManager } from "../../connection/DbConnectionPool";
@@ -25,7 +26,7 @@ export class AuditRepository implements IAuditRepository{
       return new AuditLog(result.insertId, log.user_id, log.username, log.action,
         log.entity_type, log.entity_id, log.detail, log.ip_address);
     } catch (err) {
-      this.logger.error("AuditRepository", "create failed", err);
+      this.logger.error("AuditRepository", "create failed", toLogError(err instanceof Error ? err : String(err)));
       return new AuditLog();
     } finally { res.conn.release(); }
   }
@@ -53,7 +54,7 @@ export class AuditRepository implements IAuditRepository{
       );
       return { logs, totalNumber: cnt[0]?.total ?? 0 };
     } catch (err) {
-      this.logger.error("AuditRepository", "findAll failed", err);
+      this.logger.error("AuditRepository", "findAll failed", toLogError(err instanceof Error ? err : String(err)));
       return { logs: [], totalNumber: 0 };
     } finally { res.conn.release(); }
   }

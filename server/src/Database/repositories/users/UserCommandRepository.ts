@@ -1,4 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { IUserCommandRepository } from "../../../Domain/repositories/users/IUserCommandRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -27,7 +28,7 @@ export class UserCommandRepository implements IUserCommandRepository
         catch (err)
         {
             if ((err as { code?: string }).code === "ER_DUP_ENTRY") return "duplicate";
-            this.logger.error("UserCommandRepository", "create failed", err);
+            this.logger.error("UserCommandRepository", "create failed", toLogError(err instanceof Error ? err : String(err)));
             return new User();
         }
         finally { res.conn.release(); }
@@ -47,7 +48,7 @@ export class UserCommandRepository implements IUserCommandRepository
         }
         catch (err)
         {
-            this.logger.error("UserCommandRepository", "update failed", err);
+            this.logger.error("UserCommandRepository", "update failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally { res.conn.release(); }
@@ -75,7 +76,7 @@ export class UserCommandRepository implements IUserCommandRepository
         }
         catch (err)
         {
-            this.logger.error("UserCommandRepository", "updateProfile failed", err);
+            this.logger.error("UserCommandRepository", "updateProfile failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally { res.conn.release(); }
@@ -94,7 +95,7 @@ export class UserCommandRepository implements IUserCommandRepository
         }
         catch (err)
         {
-            this.logger.error("UserCommandRepository", "exists failed", err);
+            this.logger.error("UserCommandRepository", "exists failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally { res.conn.release(); }

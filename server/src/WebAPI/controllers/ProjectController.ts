@@ -107,7 +107,7 @@ export class ProjectController {
           const { result, project } = await this.projectWriteService.createProject(teamId, dto, req.user!.user_id, req.user?.role === UserRole.ADMIN);
           if (result === CreateProjectResult.Forbidden) { res.status(403).json({ success: false, message: "You must be a team member to create a project" }); return; }
           if (result === CreateProjectResult.Unavailable || !project) { res.status(503).json({ success: false, message: "No database node available" }); return; }
-          await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "project", project.id, undefined, req.ip, req.user!.username);
+          await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "project", project.id, null, req.ip, req.user!.username);
           res.status(201).json({ success: true, message: "Project created successfully", data: project });
       }
 
@@ -129,7 +129,7 @@ export class ProjectController {
         if (result === UpdateProjectResult.Forbidden)    { res.status(403).json({ success: false, message: "Forbidden" }); return; }
         if (result === UpdateProjectResult.NotFound)     { res.status(404).json({ success: false, message: "Project not found" }); return; }
 
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "project", id, undefined, req.ip, req.user!.username);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "project", id, null, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Project updated successfully" });
     }
 
@@ -143,7 +143,7 @@ export class ProjectController {
 
         const ok = await this.projectWriteService.deleteProject(id, req.user!.user_id, isAdmin);
         if (!ok) { res.status(404).json({ success: false, message: "Project not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "project", id, undefined, req.ip, req.user!.username);
+        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "project", id, null, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Project deleted successfully" });
     }
 

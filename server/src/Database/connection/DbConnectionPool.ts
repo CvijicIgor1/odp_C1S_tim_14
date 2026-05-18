@@ -5,6 +5,7 @@ import { NodeStatus } from "../../Domain/enums/NodeStatus";
 import { HEALTH_CHECK_TIMEOUT, HEALTH_CHECK_INTERVAL_MS, DEGRADED_THRESHOLD_MS } from "../../Domain/constants/Constants";
 import { ILoggerService } from "../../Domain/services/logger/ILoggerService";
 import { IDbHealthService } from "../../Domain/services/health/IDbHealthService";
+import { toLogError } from "../../utils/logging";
 
 dotenv.config();
 
@@ -95,7 +96,8 @@ export class DbManager implements IDbHealthService {
       connCurrent = await this.master.pool.getConnection();
       await connCurrent.query("SET GLOBAL read_only = 1");
     } catch (err) {
-      this.logger.error("DB", `[AUTO-RESTORE] Failed to set read_only on ${this.master.name}`, err);
+      const logErr = err instanceof Error ? err : String(err);
+      this.logger.error("DB", `[AUTO-RESTORE] Failed to set read_only on ${this.master.name}`, toLogError(logErr));
       return;
     } finally {
       if (connCurrent) connCurrent.release();
@@ -105,7 +107,8 @@ export class DbManager implements IDbHealthService {
       connOriginal = await original.pool.getConnection();
       await connOriginal.query("SET GLOBAL read_only = 0");
     } catch (err) {
-      this.logger.error("DB", `[AUTO-RESTORE] Failed to disable read_only on original master`, err);
+      const logErr = err instanceof Error ? err : String(err);
+      this.logger.error("DB", `[AUTO-RESTORE] Failed to disable read_only on original master`, toLogError(logErr));
       try {
         const rb = await this.master.pool.getConnection();
         await rb.query("SET GLOBAL read_only = 0");
@@ -139,7 +142,8 @@ export class DbManager implements IDbHealthService {
       await conn.query("RESET REPLICA ALL");
       await conn.query("SET GLOBAL read_only = 0");
     } catch (err) {
-      this.logger.error("DB", `[AUTO-FAILOVER] Failed to prepare ${candidate.name} for promotion`, err);
+      const logErr = err instanceof Error ? err : String(err);
+      this.logger.error("DB", `[AUTO-FAILOVER] Failed to prepare ${candidate.name} for promotion`, toLogError(logErr));
       return;
     } finally {
       if (conn) conn.release();
@@ -204,7 +208,8 @@ export class DbManager implements IDbHealthService {
       await conn.query("RESET REPLICA ALL");
       await conn.query("SET GLOBAL read_only = 0");
     } catch (err) {
-      this.logger.error("DB", `Failed to prepare ${candidate.name} for promotion`, err);
+      const logErr = err instanceof Error ? err : String(err);
+      this.logger.error("DB", `Failed to prepare ${candidate.name} for promotion`, toLogError(logErr));
       return { success: false, message: `Could not promote ${candidate.name}` };
     } finally {
       if (conn) conn.release();
@@ -235,7 +240,8 @@ export class DbManager implements IDbHealthService {
     } catch (err) {
       this.master.node.status = NodeStatus.UNREACHABLE;
       this.master.node.failedConnections++;
-      this.logger.error("DB", "Failed to connect to master", err);
+      const logErr = err instanceof Error ? err : String(err);
+      this.logger.error("DB", "Failed to connect to master", toLogError(logErr));
       return null;
     }
   }
@@ -270,7 +276,8 @@ export class DbManager implements IDbHealthService {
       return { conn, nodeName: this.master.name };
     } catch (err) {
       this.master.node.status = NodeStatus.UNREACHABLE;
-      this.logger.error("DB", "Failed to connect to master for fallback read", err);
+      const logErr = err instanceof Error ? err : String(err);
+      this.logger.error("DB", "Failed to connect to master for fallback read", toLogError(logErr));
       return null;
     }
   }

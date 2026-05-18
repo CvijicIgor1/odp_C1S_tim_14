@@ -1,4 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { IProjectTagRepository } from "../../../Domain/repositories/projects/IProjectTagRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -29,7 +30,7 @@ export class ProjectTagRepository implements IProjectTagRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectTagRepository", "addTag failed", err);
+            this.logger.error("ProjectTagRepository", "addTag failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -51,7 +52,7 @@ export class ProjectTagRepository implements IProjectTagRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectTagRepository", "removeTag failed", err);
+            this.logger.error("ProjectTagRepository", "removeTag failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -74,7 +75,7 @@ export class ProjectTagRepository implements IProjectTagRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectTagRepository", "getTagsForProject failed", err);
+            this.logger.error("ProjectTagRepository", "getTagsForProject failed", toLogError(err instanceof Error ? err : String(err)));
             return [];
         }
         finally
@@ -118,7 +119,7 @@ export class ProjectTagRepository implements IProjectTagRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectTagRepository", "getTagsForProjects failed", err);
+            this.logger.error("ProjectTagRepository", "getTagsForProjects failed", toLogError(err instanceof Error ? err : String(err)));
             return result;
         }
         finally

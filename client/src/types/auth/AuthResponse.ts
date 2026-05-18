@@ -1,1 +1,1 @@
-export type AuthResponse = { success: boolean; message: string; data?: string };
+export type AuthResponse = { success: boolean; message: string; data: string | null };

@@ -28,7 +28,7 @@ export class AuthController {
     const result = await this.authService.login(username!, password!);
     if (result.id === 0) { res.status(401).json({ success: false, message: "Invalid username or password" }); return; }
     const token = this.tokenService.sign(result);
-    await this.auditService.log(result.id, AuditAction.LOGIN, undefined, undefined, undefined, req.ip, result.username);
+    await this.auditService.log(result.id, AuditAction.LOGIN, null, null, null, req.ip, result.username);
     res.status(200).json({ success: true, message: "Login successful", data: token });
   }
 
@@ -39,12 +39,12 @@ export class AuthController {
     const result = await this.authService.register(username!, email!, password!, full_name ?? "", image ?? "");
     if (result.id === 0) { res.status(409).json({ success: false, message: "Username or email already taken" }); return; }
     const token = this.tokenService.sign(result);
-    await this.auditService.log(result.id, AuditAction.REGISTER, undefined, undefined, undefined, req.ip, result.username);
+    await this.auditService.log(result.id, AuditAction.REGISTER, null, null, null, req.ip, result.username);
     res.status(201).json({ success: true, message: "Registration successful", data: token });
   }
 
   private async logout(req: Request, res: Response): Promise<void> {
-    await this.auditService.log(req.user!.user_id, AuditAction.LOGOUT, undefined, undefined, undefined, req.ip, req.user!.username);
+    await this.auditService.log(req.user!.user_id, AuditAction.LOGOUT, null, null, null, req.ip, req.user!.username);
     res.status(200).json({ success: true, message: "Logged out" });
   }
 

@@ -1,4 +1,5 @@
 import { RowDataPacket } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { ITeamQueryRepository } from "../../../Domain/repositories/teams/ITeamQueryRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -50,7 +51,7 @@ export class TeamQueryRepository implements ITeamQueryRepository
         }
         catch (err)
         {
-            this.logger.error("TeamQueryRepository", "findAll failed", err);
+            this.logger.error("TeamQueryRepository", "findAll failed", toLogError(err instanceof Error ? err : String(err)));
             return { teams: [], totalNumber: 0 };
         }
         finally
@@ -71,7 +72,7 @@ export class TeamQueryRepository implements ITeamQueryRepository
         }
         catch (err)
         {
-            this.logger.error("TeamQueryRepository", "findAllAsAdmin failed", err);
+            this.logger.error("TeamQueryRepository", "findAllAsAdmin failed", toLogError(err instanceof Error ? err : String(err)));
             return { teams: [], totalNumber: 0 };
         }
         finally
@@ -93,7 +94,7 @@ export class TeamQueryRepository implements ITeamQueryRepository
         }
         catch (err)
         {
-            this.logger.error("TeamQueryRepository", "findById failed", err);
+            this.logger.error("TeamQueryRepository", "findById failed", toLogError(err instanceof Error ? err : String(err)));
             return new Team();
         }
         finally
@@ -115,7 +116,7 @@ export class TeamQueryRepository implements ITeamQueryRepository
         }
         catch (err)
         {
-            this.logger.error("TeamQueryRepository", "getMembers failed", err);
+            this.logger.error("TeamQueryRepository", "getMembers failed", toLogError(err instanceof Error ? err : String(err)));
             return { members: [], totalNumber: 0 };
         }
         finally

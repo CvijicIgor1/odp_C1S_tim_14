@@ -1,4 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { ITaskAssigneeRepository } from "../../../Domain/repositories/tasks/ITaskAssigneeRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -24,7 +25,7 @@ export class TaskAssigneeRepository implements ITaskAssigneeRepository
         }
         catch (err)
         {
-            this.logger.error("TaskAssigneeRepository", "addAssignee failed", err);
+            this.logger.error("TaskAssigneeRepository", "addAssignee failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -46,7 +47,7 @@ export class TaskAssigneeRepository implements ITaskAssigneeRepository
         }
         catch (err)
         {
-            this.logger.error("TaskAssigneeRepository", "removeAssignee failed", err);
+            this.logger.error("TaskAssigneeRepository", "removeAssignee failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -68,7 +69,7 @@ export class TaskAssigneeRepository implements ITaskAssigneeRepository
         }
         catch (err)
         {
-            this.logger.error("TaskAssigneeRepository", "isAssignee failed", err);
+            this.logger.error("TaskAssigneeRepository", "isAssignee failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally

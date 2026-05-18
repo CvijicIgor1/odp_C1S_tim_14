@@ -7,6 +7,7 @@ function err(e: Error, fallback: string): AuthResponse {
   return {
     success: false,
     message: axios.isAxiosError(e) ? (e.response?.data as { message?: string })?.message ?? fallback : fallback,
+    data: null,
   };
 }
 

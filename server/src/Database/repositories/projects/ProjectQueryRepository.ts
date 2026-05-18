@@ -1,4 +1,5 @@
 import { RowDataPacket } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { IProjectQueryRepository } from "../../../Domain/repositories/projects/IProjectQueryRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -63,7 +64,7 @@ export class ProjectQueryRepository implements IProjectQueryRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectQueryRepository", "findAllByTeam failed", err);
+            this.logger.error("ProjectQueryRepository", "findAllByTeam failed", toLogError(err instanceof Error ? err : String(err)));
             return { projects: [], totalNumber: 0 };
         }
         finally
@@ -85,7 +86,7 @@ export class ProjectQueryRepository implements IProjectQueryRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectQueryRepository", "findById failed", err);
+            this.logger.error("ProjectQueryRepository", "findById failed", toLogError(err instanceof Error ? err : String(err)));
             return new Project();
         }
         finally
@@ -114,7 +115,7 @@ export class ProjectQueryRepository implements IProjectQueryRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectQueryRepository", "findAllAsAdmin failed", err);
+            this.logger.error("ProjectQueryRepository", "findAllAsAdmin failed", toLogError(err instanceof Error ? err : String(err)));
             return { projects: [], totalNumber: 0 };
         }
         finally
@@ -147,7 +148,7 @@ export class ProjectQueryRepository implements IProjectQueryRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectQueryRepository", "findWatchedByUser failed", err);
+            this.logger.error("ProjectQueryRepository", "findWatchedByUser failed", toLogError(err instanceof Error ? err : String(err)));
             return { projects: [], totalNumber: 0 };
         }
         finally

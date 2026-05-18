@@ -52,6 +52,8 @@ import { ProjectController } from "./WebAPI/controllers/ProjectController";
 import { TagController }     from "./WebAPI/controllers/TagController";
 import { AuditController }   from "./WebAPI/controllers/AuditController";
 import { TaskController }    from "./WebAPI/controllers/TaskController";
+import { apiNotFoundHandler } from "./Middlewares/errors/NotFoundMiddleware";
+import { createErrorHandler } from "./Middlewares/errors/ErrorMiddleware";
 
 export const logger = new ConsoleLoggerService();
 export const db     = new DbManager(logger);
@@ -121,5 +123,9 @@ for (const router of routers) {
   app.use("/api", router);
   app.use("/api/v1", router);
 }
+
+app.use("/api", apiNotFoundHandler);
+app.use("/api/v1", apiNotFoundHandler);
+app.use(createErrorHandler(logger));
 
 export default app;

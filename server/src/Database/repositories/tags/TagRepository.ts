@@ -1,4 +1,5 @@
 import { ResultSetHeader, RowDataPacket } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { Tag } from "../../../Domain/models/Tag";
 import { ITagRepository } from "../../../Domain/repositories/tags/ITagsRepository";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -36,7 +37,7 @@ export class TagRepository implements ITagRepository {
                 newTag.name
             );
         } catch (err) {
-            this.logger.error("TagRepository", "create failed", err);
+            this.logger.error("TagRepository", "create failed", toLogError(err instanceof Error ? err : String(err)));
             return new Tag();
         } finally {
             res.conn.release();
@@ -55,7 +56,7 @@ export class TagRepository implements ITagRepository {
 
             return result.affectedRows > 0;
         } catch (err) {
-            this.logger.error("TagRepository", "delete failed", err);
+            this.logger.error("TagRepository", "delete failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         } finally {
             res.conn.release();
@@ -86,7 +87,7 @@ export class TagRepository implements ITagRepository {
         } 
         catch (err) 
         {
-            this.logger.error("TagRepository", "findAllTags failed", err);
+            this.logger.error("TagRepository", "findAllTags failed", toLogError(err instanceof Error ? err : String(err)));
             return { tags: [], totalNumber: 0 };
         } 
         finally 

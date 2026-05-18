@@ -122,7 +122,7 @@ export default function HealthDashboard() {
           {i > 0 && (
             <div className="flex items-center gap-2 text-xs font-mono mt-1">
               <span className="text-white/15 uppercase tracking-widest text-[10px]">Replication lag:</span>
-              {node.replicationLagMs === null || node.replicationLagMs === undefined
+              {node.replicationLagMs === null
                 ? <span className="text-white/20">n/a</span>
                 : <span className={node.replicationLagMs > 2000 ? "text-red-400" : node.replicationLagMs > 500 ? "text-yellow-400" : "text-emerald-400"}>
                     {node.replicationLagMs < 1000 ? `${node.replicationLagMs}ms` : `${(node.replicationLagMs / 1000).toFixed(1)}s`}

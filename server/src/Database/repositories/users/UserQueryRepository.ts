@@ -4,6 +4,7 @@ import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 import { User } from "../../../Domain/models/User";
 import { UserRole } from "../../../Domain/enums/UserRole";
+import { toLogError } from "../../../utils/logging";
 
 export class UserQueryRepository implements IUserQueryRepository
 {
@@ -33,7 +34,8 @@ export class UserQueryRepository implements IUserQueryRepository
         }
         catch (err)
         {
-            this.logger.error("UserQueryRepository", "findById failed", err);
+            const logErr = err instanceof Error ? err : String(err);
+            this.logger.error("UserQueryRepository", "findById failed", toLogError(logErr));
             return new User();
         }
         finally { res.conn.release(); }
@@ -50,7 +52,8 @@ export class UserQueryRepository implements IUserQueryRepository
         }
         catch (err)
         {
-            this.logger.error("UserQueryRepository", "findByUsername failed", err);
+            const logErr = err instanceof Error ? err : String(err);
+            this.logger.error("UserQueryRepository", "findByUsername failed", toLogError(logErr));
             return new User();
         }
         finally { res.conn.release(); }
@@ -67,7 +70,8 @@ export class UserQueryRepository implements IUserQueryRepository
         }
         catch (err)
         {
-            this.logger.error("UserQueryRepository", "findByEmail failed", err);
+            const logErr = err instanceof Error ? err : String(err);
+            this.logger.error("UserQueryRepository", "findByEmail failed", toLogError(logErr));
             return new User();
         }
         finally { res.conn.release(); }
@@ -84,7 +88,8 @@ export class UserQueryRepository implements IUserQueryRepository
         }
         catch (err)
         {
-            this.logger.error("UserQueryRepository", "findAll failed", err);
+            const logErr = err instanceof Error ? err : String(err);
+            this.logger.error("UserQueryRepository", "findAll failed", toLogError(logErr));
             return [];
         }
         finally { res.conn.release(); }

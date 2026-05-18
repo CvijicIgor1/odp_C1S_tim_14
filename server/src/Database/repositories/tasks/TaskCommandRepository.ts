@@ -1,4 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { ITaskCommandRepository } from "../../../Domain/repositories/tasks/ITaskCommandRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -33,7 +34,7 @@ export class TaskCommandRepository implements ITaskCommandRepository
         }
         catch (err)
         {
-            this.logger.error("TaskCommandRepository", "create failed", err);
+            this.logger.error("TaskCommandRepository", "create failed", toLogError(err instanceof Error ? err : String(err)));
             return new Task();
         }
         finally
@@ -67,7 +68,7 @@ export class TaskCommandRepository implements ITaskCommandRepository
         }
         catch (err)
         {
-            this.logger.error("TaskCommandRepository", "update failed", err);
+            this.logger.error("TaskCommandRepository", "update failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -89,7 +90,7 @@ export class TaskCommandRepository implements ITaskCommandRepository
         }
         catch (err)
         {
-            this.logger.error("TaskCommandRepository", "updateStatus failed", err);
+            this.logger.error("TaskCommandRepository", "updateStatus failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -111,7 +112,7 @@ export class TaskCommandRepository implements ITaskCommandRepository
         }
         catch (err)
         {
-            this.logger.error("TaskCommandRepository", "delete failed", err);
+            this.logger.error("TaskCommandRepository", "delete failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally

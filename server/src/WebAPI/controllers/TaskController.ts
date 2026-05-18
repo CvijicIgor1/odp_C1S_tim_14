@@ -89,7 +89,7 @@ export class TaskController {
         const { result, task } = await this.taskWriteService.createTask(dto, req.user!.user_id);
         if (result === TaskOperationResult.Forbidden) { res.status(403).json({ success: false, message: "You must be a team member to create a task" }); return; }
         if (result === TaskOperationResult.Unavailable || !task) { res.status(503).json({ success: false, message: "No database node available" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "task", task.id, undefined, req.ip, req.user!.username);
+        await this.auditService.log(req.user!.user_id, AuditAction.CREATE, "task", task.id, null, req.ip, req.user!.username);
         res.status(201).json({ success: true, message: "Task created successfully", data: task });
     }
 
@@ -108,7 +108,7 @@ export class TaskController {
         if (result === TaskOperationResult.NotFound)  { res.status(404).json({ success: false, message: "Task not found" }); return; }
         if (result === TaskOperationResult.Forbidden) { res.status(403).json({ success: false, message: "Forbidden" }); return; }
 
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, undefined, req.ip, req.user!.username);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "task", id, null, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Task updated successfully" });
     }
 
@@ -139,7 +139,7 @@ export class TaskController {
 
         const ok = await this.taskWriteService.deleteTask(id, req.user!.user_id);
         if (!ok) { res.status(404).json({ success: false, message: "Task not found or forbidden" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "task", id, undefined, req.ip, req.user!.username);
+        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "task", id, null, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Task deleted successfully" });
     }
 

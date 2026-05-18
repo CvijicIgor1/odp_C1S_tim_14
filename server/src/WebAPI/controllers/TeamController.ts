@@ -78,7 +78,7 @@ export class TeamController {
         const result = await this.teamWriteService.updateTeam(id, dto, req.user!.user_id, req.user?.role === UserRole.ADMIN);
         if (result === TeamOperationResult.Forbidden) { res.status(403).json({ success: false, message: "Only the team owner or an admin can update the team" }); return; }
         if (result === TeamOperationResult.NotFound) { res.status(404).json({ success: false, message: "Team not found" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team", id, undefined, req.ip, req.user!.username);
+        await this.auditService.log(req.user!.user_id, AuditAction.UPDATE, "team", id, null, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Team updated successfully" });
     }
 
@@ -88,7 +88,7 @@ export class TeamController {
         const result = await this.teamWriteService.deleteTeam(id, req.user!.user_id, req.user?.role === UserRole.ADMIN);
         if (result === TeamOperationResult.Forbidden) { res.status(403).json({ success: false, message: "Only the team owner or an admin can delete the team" }); return; }
         if (result === TeamOperationResult.NotFound) { res.status(404).json({ success: false, message: "Team not found" }); return; }
-        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team", id, undefined, req.ip, req.user!.username);
+        await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team", id, null, req.ip, req.user!.username);
         res.status(200).json({ success: true, message: "Team deleted successfully" });
     }
 
@@ -139,7 +139,7 @@ export class TeamController {
           if (result === TeamOperationResult.Forbidden) { res.status(403).json({ success: false, message: "Only the team owner or an admin can remove members other than themselves" }); return; }
           if (result === TeamOperationResult.LastOwner) { res.status(400).json({ success: false, message: "Cannot remove the last owner of a team" }); return; }
           if (result === TeamOperationResult.NotFound)  { res.status(404).json({ success: false, message: "Member not found" }); return; }
-          await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team_member", memberId, undefined, req.ip, req.user!.username);
+          await this.auditService.log(req.user!.user_id, AuditAction.DELETE, "team_member", memberId, null, req.ip, req.user!.username);
           res.status(200).json({ success: true, message: "Member removed successfully" });
       }
 }

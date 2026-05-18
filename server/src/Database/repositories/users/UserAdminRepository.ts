@@ -1,4 +1,5 @@
 import { ResultSetHeader } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { IUserAdminRepository } from "../../../Domain/repositories/users/IUserAdminRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -24,7 +25,7 @@ export class UserAdminRepository implements IUserAdminRepository
         }
         catch (err)
         {
-            this.logger.error("UserAdminRepository", "updateRole failed", err);
+            this.logger.error("UserAdminRepository", "updateRole failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally { res.conn.release(); }
@@ -43,7 +44,7 @@ export class UserAdminRepository implements IUserAdminRepository
         }
         catch (err)
         {
-            this.logger.error("UserAdminRepository", "updateStatus failed", err);
+            this.logger.error("UserAdminRepository", "updateStatus failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally { res.conn.release(); }
@@ -62,7 +63,7 @@ export class UserAdminRepository implements IUserAdminRepository
         }
         catch (err)
         {
-            this.logger.error("UserAdminRepository", "deactivate failed", err);
+            this.logger.error("UserAdminRepository", "deactivate failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally { res.conn.release(); }

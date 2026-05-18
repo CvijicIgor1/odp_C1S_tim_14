@@ -1,4 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { ITaskCommentRepository } from "../../../Domain/repositories/tasks/ITaskCommentRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -32,7 +33,7 @@ export class TaskCommentRepository implements ITaskCommentRepository
         }
         catch (err)
         {
-            this.logger.error("TaskCommentRepository", "getComments failed", err);
+            this.logger.error("TaskCommentRepository", "getComments failed", toLogError(err instanceof Error ? err : String(err)));
             return [];
         }
         finally
@@ -54,7 +55,7 @@ export class TaskCommentRepository implements ITaskCommentRepository
         }
         catch (err)
         {
-            this.logger.error("TaskCommentRepository", "findCommentById failed", err);
+            this.logger.error("TaskCommentRepository", "findCommentById failed", toLogError(err instanceof Error ? err : String(err)));
             return new Comment();
         }
         finally
@@ -78,7 +79,7 @@ export class TaskCommentRepository implements ITaskCommentRepository
         }
         catch (err)
         {
-            this.logger.error("TaskCommentRepository", "addComment failed", err);
+            this.logger.error("TaskCommentRepository", "addComment failed", toLogError(err instanceof Error ? err : String(err)));
             return new Comment();
         }
         finally
@@ -100,7 +101,7 @@ export class TaskCommentRepository implements ITaskCommentRepository
         }
         catch (err)
         {
-            this.logger.error("TaskCommentRepository", "deleteComment failed", err);
+            this.logger.error("TaskCommentRepository", "deleteComment failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally

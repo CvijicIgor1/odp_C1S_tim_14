@@ -38,11 +38,11 @@ export class AuditService implements IAuditService {
     async log(
         userId: number | null,
         action: AuditAction,
-        entityType?: string,
-        entityId?: number,
-        detail?: string,
-        ipAddress?: string,
-        username?: string
+        entityType?: string | null,
+        entityId?: number | null,
+        detail?: string | null,
+        ipAddress?: string | null,
+        username?: string | null
     ): Promise<void> {
         await this.auditRepo.create(
             new AuditLog(0, userId ?? null, username ?? null, action, entityType ?? null, entityId ?? null, detail ?? null, ipAddress ?? null)

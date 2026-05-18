@@ -87,7 +87,7 @@ export default function ProfilePage() {
         editUsername.trim(),
         editEmail.trim(),
         editAvatar,
-        newPassword || undefined,
+        newPassword || "",
       );
       if (res.success) {
         setSuccess("Profile updated successfully");

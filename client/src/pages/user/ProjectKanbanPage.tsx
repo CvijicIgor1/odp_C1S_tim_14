@@ -144,11 +144,11 @@ export default function ProjectKanbanPage() {
     setSuccess("");
     try {
       const res = await projectsApi.update(pid, {
-        name: editName.trim() || undefined,
-        description: editDesc.trim() || undefined,
-        status: editStatus as import("../../models/project/ProjectTypes").ProjectStatus || undefined,
-        priority: editPriority as import("../../models/project/ProjectTypes").Priority || undefined,
-        deadline: editDeadline || undefined,
+        name: editName.trim(),
+        description: editDesc.trim(),
+        status: editStatus as import("../../models/project/ProjectTypes").ProjectStatus,
+        priority: editPriority as import("../../models/project/ProjectTypes").Priority,
+        deadline: editDeadline,
       });
       if (res.success) {
         setSuccess("Project updated");

@@ -39,7 +39,7 @@ export class UserService implements IUserService {
 
   async updateProfile(id: number, username: string, email: string, avatar: string, newPassword?: string): Promise<boolean> {
     if (newPassword) {
-      const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS).catch(() => undefined);
+      const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS).catch(() => null);
       if (!passwordHash) return false;
       return this.userCommandRepository.updateProfile(id, username, email, avatar, passwordHash);
     }

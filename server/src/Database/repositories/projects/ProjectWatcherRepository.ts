@@ -1,4 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { IProjectWatcherRepository } from "../../../Domain/repositories/projects/IProjectWatcherRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -37,7 +38,7 @@ export class ProjectWatcherRepository implements IProjectWatcherRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectWatcherRepository", "addWatcher failed", err);
+            this.logger.error("ProjectWatcherRepository", "addWatcher failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -59,7 +60,7 @@ export class ProjectWatcherRepository implements IProjectWatcherRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectWatcherRepository", "removeWatcher failed", err);
+            this.logger.error("ProjectWatcherRepository", "removeWatcher failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -81,7 +82,7 @@ export class ProjectWatcherRepository implements IProjectWatcherRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectWatcherRepository", "isWatcher failed", err);
+            this.logger.error("ProjectWatcherRepository", "isWatcher failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -103,7 +104,7 @@ export class ProjectWatcherRepository implements IProjectWatcherRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectWatcherRepository", "getWatcherCount failed", err);
+            this.logger.error("ProjectWatcherRepository", "getWatcherCount failed", toLogError(err instanceof Error ? err : String(err)));
             return 0;
         }
         finally
@@ -132,7 +133,7 @@ export class ProjectWatcherRepository implements IProjectWatcherRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectWatcherRepository", "getWatcherCounts failed", err);
+            this.logger.error("ProjectWatcherRepository", "getWatcherCounts failed", toLogError(err instanceof Error ? err : String(err)));
             return result;
         }
         finally

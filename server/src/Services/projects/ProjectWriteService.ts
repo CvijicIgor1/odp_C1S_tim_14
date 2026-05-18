@@ -72,7 +72,9 @@ export class ProjectWriteService implements IProjectWriteService {
     async updateProject(id: number, dto: UpdateProjectDto, userId: number, isAdmin: boolean = false): Promise<UpdateProjectResult> {
         const canEdit = await this.checkOwnerOrAdmin(id, userId, isAdmin);
         if (!canEdit) return UpdateProjectResult.Forbidden;
-        const deadline = dto.deadline ? new Date(dto.deadline) : undefined;
+        const existing = await this.projectQueryRepository.findById(id);
+        if (!existing || existing.id === 0) return UpdateProjectResult.NotFound;
+        const deadline = dto.deadline ? new Date(dto.deadline) : existing.deadline;
         const inputProject = new Project(0, 0, dto.name, dto.description, dto.status, dto.priority, deadline, new Date(), new Date());
         const updated = await this.projectCommandRepository.update(id, inputProject);
         if (!updated) return UpdateProjectResult.NotFound;

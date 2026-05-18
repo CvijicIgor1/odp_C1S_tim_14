@@ -1,5 +1,6 @@
 import "dotenv/config";
 import app, { db, logger } from "./app";
+import { toLogError } from "./utils/logging";
 
 const PORT = parseInt(process.env.PORT ?? "4000", 10);
 
@@ -11,4 +12,4 @@ async function start(): Promise<void> {
   });
 }
 
-start().catch((err) => logger.error("Server", "Fatal startup error", err));
+start().catch((err) => logger.error("Server", "Fatal startup error", toLogError(err instanceof Error ? err : String(err))));

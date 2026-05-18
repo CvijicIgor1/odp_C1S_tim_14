@@ -1,4 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { ITeamMemberRepository } from "../../../Domain/repositories/teams/ITeamMemberRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -27,7 +28,7 @@ export class TeamMemberRepository implements ITeamMemberRepository
         }
         catch (err)
         {
-            this.logger.error("TeamMemberRepository", "addMember user lookup failed", err);
+            this.logger.error("TeamMemberRepository", "addMember user lookup failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -47,7 +48,7 @@ export class TeamMemberRepository implements ITeamMemberRepository
         }
         catch (err)
         {
-            this.logger.error("TeamMemberRepository", "addMember failed", err);
+            this.logger.error("TeamMemberRepository", "addMember failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -69,7 +70,7 @@ export class TeamMemberRepository implements ITeamMemberRepository
         }
         catch (err)
         {
-            this.logger.error("TeamMemberRepository", "removeMember failed", err);
+            this.logger.error("TeamMemberRepository", "removeMember failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -90,7 +91,7 @@ export class TeamMemberRepository implements ITeamMemberRepository
         }
         catch (err)
         {
-            this.logger.error("TeamMemberRepository", "removeMember project lookup failed", err);
+            this.logger.error("TeamMemberRepository", "removeMember project lookup failed", toLogError(err instanceof Error ? err : String(err)));
             return true;
         }
         finally
@@ -112,7 +113,7 @@ export class TeamMemberRepository implements ITeamMemberRepository
         }
         catch (err)
         {
-            this.logger.error("TeamMemberRepository", "removeMember watcher cascade failed", err);
+            this.logger.error("TeamMemberRepository", "removeMember watcher cascade failed", toLogError(err instanceof Error ? err : String(err)));
         }
         finally
         {
@@ -132,7 +133,7 @@ export class TeamMemberRepository implements ITeamMemberRepository
         }
         catch (err)
         {
-            this.logger.error("TeamMemberRepository", "removeMember task lookup failed", err);
+            this.logger.error("TeamMemberRepository", "removeMember task lookup failed", toLogError(err instanceof Error ? err : String(err)));
             return true;
         }
         finally
@@ -155,7 +156,7 @@ export class TeamMemberRepository implements ITeamMemberRepository
         }
         catch (err)
         {
-            this.logger.error("TeamMemberRepository", "removeMember assignee cascade failed", err);
+            this.logger.error("TeamMemberRepository", "removeMember assignee cascade failed", toLogError(err instanceof Error ? err : String(err)));
             return true;
         }
         finally

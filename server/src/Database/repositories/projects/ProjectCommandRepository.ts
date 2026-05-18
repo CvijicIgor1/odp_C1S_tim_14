@@ -1,4 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { IProjectCommandRepository } from "../../../Domain/repositories/projects/IProjectCommandRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -29,7 +30,7 @@ export class ProjectCommandRepository implements IProjectCommandRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectCommandRepository", "create failed", err);
+            this.logger.error("ProjectCommandRepository", "create failed", toLogError(err instanceof Error ? err : String(err)));
             return new Project();
         }
         finally
@@ -63,7 +64,7 @@ export class ProjectCommandRepository implements IProjectCommandRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectCommandRepository", "update failed", err);
+            this.logger.error("ProjectCommandRepository", "update failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -85,7 +86,7 @@ export class ProjectCommandRepository implements IProjectCommandRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectCommandRepository", "delete failed", err);
+            this.logger.error("ProjectCommandRepository", "delete failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally

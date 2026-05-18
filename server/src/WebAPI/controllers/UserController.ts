@@ -13,7 +13,7 @@ export class UserController {
   public constructor(private readonly userService: IUserService, private readonly auditService: IAuditService) {
     this.router.get("/users",          authenticate, authorize(UserRole.ADMIN), this.getAll.bind(this));
     this.router.get("/users/all", authenticate, authorize(UserRole.ADMIN), this.getAll.bind(this));
-    this.router.get("/users/:id",this.getById.bind(this));
+    this.router.get("/users/:id", authenticate, this.getById.bind(this));
     this.router.put("/users/:id/role", authenticate, authorize(UserRole.ADMIN), this.updateRole.bind(this));
     this.router.patch("/users/:id/role", authenticate, authorize(UserRole.ADMIN), this.updateRole.bind(this));
     this.router.patch("/users/:id/status",          authenticate, authorize(UserRole.ADMIN), this.updateStatus.bind(this));

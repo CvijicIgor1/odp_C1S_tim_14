@@ -1,4 +1,5 @@
 import { RowDataPacket } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { IProjectAccessRepository } from "../../../Domain/repositories/projects/IProjectAccessRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -30,7 +31,7 @@ export class ProjectAccessRepository implements IProjectAccessRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectAccessRepository", "isTeamMember failed", err);
+            this.logger.error("ProjectAccessRepository", "isTeamMember failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -58,7 +59,7 @@ export class ProjectAccessRepository implements IProjectAccessRepository
         }
         catch (err)
         {
-            this.logger.error("ProjectAccessRepository", "isTeamOwner failed", err);
+            this.logger.error("ProjectAccessRepository", "isTeamOwner failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally

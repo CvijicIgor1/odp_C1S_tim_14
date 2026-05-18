@@ -1,4 +1,5 @@
 import { RowDataPacket } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { ITaskQueryRepository } from "../../../Domain/repositories/tasks/ITaskQueryRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -53,7 +54,7 @@ export class TaskQueryRepository implements ITaskQueryRepository
         }
         catch (err)
         {
-            this.logger.error("TaskQueryRepository", "findByProjectId failed", err);
+            this.logger.error("TaskQueryRepository", "findByProjectId failed", toLogError(err instanceof Error ? err : String(err)));
             return empty;
         }
         finally
@@ -75,7 +76,7 @@ export class TaskQueryRepository implements ITaskQueryRepository
         }
         catch (err)
         {
-            this.logger.error("TaskQueryRepository", "findById failed", err);
+            this.logger.error("TaskQueryRepository", "findById failed", toLogError(err instanceof Error ? err : String(err)));
             return new Task();
         }
         finally
@@ -100,7 +101,7 @@ export class TaskQueryRepository implements ITaskQueryRepository
         }
         catch (err)
         {
-            this.logger.error("TaskQueryRepository", "findByAssignee failed", err);
+            this.logger.error("TaskQueryRepository", "findByAssignee failed", toLogError(err instanceof Error ? err : String(err)));
             return [];
         }
         finally
@@ -122,7 +123,7 @@ export class TaskQueryRepository implements ITaskQueryRepository
         }
         catch (err)
         {
-            this.logger.error("TaskQueryRepository", "getAssignees failed", err);
+            this.logger.error("TaskQueryRepository", "getAssignees failed", toLogError(err instanceof Error ? err : String(err)));
             return [];
         }
         finally

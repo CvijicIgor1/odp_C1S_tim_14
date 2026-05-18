@@ -64,7 +64,7 @@ export class TaskWriteService implements ITaskWriteService {
 
         if (!canEdit) return TaskOperationResult.Forbidden;
 
-        const updatedTask = new Task(0, 0, 0, dto.title, dto.description, undefined, dto.priority, dto.deadline, dto.estimatedHours);
+        const updatedTask = new Task(0, 0, 0, dto.title, dto.description, task.status, dto.priority, dto.deadline, dto.estimatedHours);
         const ok = await this.taskCommandRepository.update(taskId, updatedTask);
         if (!ok) return TaskOperationResult.NotFound;
 

@@ -1,4 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { toLogError } from "../../../utils/logging";
 import { ITeamCommandRepository } from "../../../Domain/repositories/teams/ITeamCommandRepository";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -31,7 +32,7 @@ export class TeamCommandRepository implements ITeamCommandRepository
         }
         catch (err)
         {
-            this.logger.error("TeamCommandRepository", "create failed", err);
+            this.logger.error("TeamCommandRepository", "create failed", toLogError(err instanceof Error ? err : String(err)));
             return new Team();
         }
         finally
@@ -63,7 +64,7 @@ export class TeamCommandRepository implements ITeamCommandRepository
         }
         catch (err)
         {
-            this.logger.error("TeamCommandRepository", "update failed", err);
+            this.logger.error("TeamCommandRepository", "update failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -85,7 +86,7 @@ export class TeamCommandRepository implements ITeamCommandRepository
         }
         catch (err)
         {
-            this.logger.error("TeamCommandRepository", "delete failed", err);
+            this.logger.error("TeamCommandRepository", "delete failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
@@ -108,7 +109,7 @@ export class TeamCommandRepository implements ITeamCommandRepository
         }
         catch (err)
         {
-            this.logger.error("TeamCommandRepository", "updateMemberRole failed", err);
+            this.logger.error("TeamCommandRepository", "updateMemberRole failed", toLogError(err instanceof Error ? err : String(err)));
             return false;
         }
         finally
